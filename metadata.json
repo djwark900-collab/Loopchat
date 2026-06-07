@@ -1,0 +1,6 @@
+{
+  "name": "LoopChat",
+  "description": "An interactive live-streaming and social creator simulator where users can stream, chat, receive virtual gifts, manage integrated level up and coin systems, customize profile images, and copy unique creator IDs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

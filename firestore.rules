@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3 & 4: Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'username', 'fullName', 'email', 'avatarUrl', 'bio', 'coins', 'level', 'xp', 'xpToNextLevel', 'followers', 'following', 'createdAt'])
+        && data.keys().size() >= 13 && data.keys().size() <= 21
+        && data.id is string && data.id.size() <= 128
+        && data.username is string && data.username.size() <= 64
+        && data.fullName is string && data.fullName.size() <= 128
+        && data.email is string && data.email.size() <= 128
+        && data.avatarUrl is string && data.avatarUrl.size() <= 2500000
+        && data.bio is string && data.bio.size() <= 1000
+        && (data.coins is int || data.coins is float) && data.coins >= 0
+        && (data.level is int || data.level is float) && data.level >= 0
+        && (data.xp is int || data.xp is float) && data.xp >= 0
+        && (data.xpToNextLevel is int || data.xpToNextLevel is float) && data.xpToNextLevel >= 0
+        && (data.followers is int || data.followers is float) && data.followers >= 0
+        && (data.following is int || data.following is float) && data.following >= 0
+        && data.createdAt is string && data.createdAt.size() <= 128
+        && (!('activeFrameId' in data) || (data.activeFrameId is string && data.activeFrameId.size() <= 128))
+        && (!('countryFlag' in data) || (data.countryFlag is string && data.countryFlag.size() <= 32))
+        && (!('gender' in data) || (data.gender is string && data.gender.size() <= 32))
+        && (!('likesCount' in data) || ((data.likesCount is int || data.likesCount is float) && data.likesCount >= 0))
+        && (!('friendsCount' in data) || ((data.friendsCount is int || data.friendsCount is float) && data.friendsCount >= 0))
+        && (!('referralCode' in data) || (data.referralCode is string && data.referralCode.size() <= 128))
+        && (!('identificationCode' in data) || (data.identificationCode is string && data.identificationCode.size() <= 128))
+        && (!('unlockedFrames' in data) || (data.unlockedFrames is list && data.unlockedFrames.size() <= 100 && (data.unlockedFrames.size() == 0 || data.unlockedFrames[0] is string)));
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'zaxoking499@gmail.com' ||
+        request.auth.token.email == 'sandbox@example.com'
+      );
+    }
+
+    function isValidCoinCode(data) {
+      return data.keys().hasAll(['code', 'coins', 'createdAt'])
+        && data.keys().size() == 3
+        && data.code is string && data.code.size() <= 64
+        && (data.coins is int || data.coins is float) && data.coins > 0
+        && data.createdAt is string && data.createdAt.size() <= 128;
+    }
+
+    // 2. Users Collection
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if false;
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
+      allow update: if (isSignedIn() && request.auth.uid == userId && isValidUser(incoming())
+                       && (!('id' in existing()) || incoming().id == existing().id)
+                       && (!('email' in existing()) || incoming().email == existing().email)
+                       && (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt)) || isAdmin();
+      allow delete: if false;
+    }
+
+    // 3. Coin Codes Collection - Single-use Code Rules (Admin / Simulation)
+    match /coin_codes/{codeId} {
+      allow read, write: if true;
+    }
+  }
+}
