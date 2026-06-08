@@ -11,6 +11,7 @@ export interface User {
   avatarUrl: string;
   bio: string;
   coins: number;
+  diamonds?: number;
   level: number;
   xp: number;
   xpToNextLevel: number;
@@ -25,6 +26,10 @@ export interface User {
   friendsCount?: number;
   referralCode?: string;
   identificationCode?: string;
+  watchedCount?: number;
+  giftsSentCount?: number;
+  equippedCount?: number;
+  claimedMissions?: string[];
 }
 
 export interface Streamer {
@@ -37,6 +42,8 @@ export interface Streamer {
   title: string;
   category: string;
   isLive: boolean;
+  startingCoins?: number;
+  videoFeedType?: string;
 }
 
 export interface Gift {

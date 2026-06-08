@@ -125,6 +125,89 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
   // Tabs selection in Phone Mockup
   const [activeSubTab, setActiveSubTab] = useState<"reels" | "feeds" | "collections">("reels");
 
+  // Reels, Feeds, and Collections local data states to support deletions
+  const [reelsList, setReelsList] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`reels_list_${currentUser.id}`);
+      return saved ? JSON.parse(saved) : [
+        { id: "reel-1", tag: "#live_highlight", title: "My Live Stream Moments", bg: "https://picsum.photos/seed/highlight1/300/500" },
+        { id: "reel-2", tag: "#gaming_life", title: "Arena Championship Goal", bg: "https://picsum.photos/seed/highlight2/300/500" }
+      ];
+    } catch {
+      return [
+        { id: "reel-1", tag: "#live_highlight", title: "My Live Stream Moments", bg: "https://picsum.photos/seed/highlight1/300/500" },
+        { id: "reel-2", tag: "#gaming_life", title: "Arena Championship Goal", bg: "https://picsum.photos/seed/highlight2/300/500" }
+      ];
+    }
+  });
+
+  const [feedsList, setFeedsList] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`feeds_list_${currentUser.id}`);
+      return saved ? JSON.parse(saved) : [
+        { 
+          id: "feed-1", 
+          time: "3 hours ago", 
+          content: "Proud to showcase my brand-new Creator Profile Studio! Spent loopcoins in the avatar frame shop to get this luminescent border. Grab yours from the boutique! 🔮🎨", 
+          likes: "1.2k Likes", 
+          comments: "8 Comments" 
+        }
+      ];
+    } catch {
+      return [
+        { 
+          id: "feed-1", 
+          time: "3 hours ago", 
+          content: "Proud to showcase my brand-new Creator Profile Studio! Spent loopcoins in the avatar frame shop to get this luminescent border. Grab yours from the boutique! 🔮🎨", 
+          likes: "1.2k Likes", 
+          comments: "8 Comments" 
+        }
+      ];
+    }
+  });
+
+  const [collectionsList, setCollectionsList] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`collections_list_${currentUser.id}`);
+      return saved ? JSON.parse(saved) : [
+        { id: "col-1", name: "Premium Gift Badge", icon: "💎", description: "Unlocks standard co-host points" },
+        { id: "col-2", name: "Cyber Sunset Loop Frame", icon: "🌆", description: "Purchased from Customizer deck" },
+        { id: "col-3", name: "Lofi Beats Golden Record", icon: "🎧", description: "Earned from daily activity tasks" }
+      ];
+    } catch {
+      return [
+        { id: "col-1", name: "Premium Gift Badge", icon: "💎", description: "Unlocks standard co-host points" },
+        { id: "col-2", name: "Cyber Sunset Loop Frame", icon: "🌆", description: "Purchased from Customizer deck" },
+        { id: "col-3", name: "Lofi Beats Golden Record", icon: "🎧", description: "Earned from daily activity tasks" }
+      ];
+    }
+  });
+
+  // Persist to local storage
+  useEffect(() => {
+    localStorage.setItem(`reels_list_${currentUser.id}`, JSON.stringify(reelsList));
+  }, [reelsList, currentUser.id]);
+
+  useEffect(() => {
+    localStorage.setItem(`feeds_list_${currentUser.id}`, JSON.stringify(feedsList));
+  }, [feedsList, currentUser.id]);
+
+  useEffect(() => {
+    localStorage.setItem(`collections_list_${currentUser.id}`, JSON.stringify(collectionsList));
+  }, [collectionsList, currentUser.id]);
+
+  const handleDeleteReel = (id: string) => {
+    setReelsList(prev => prev.filter(r => r.id !== id));
+  };
+
+  const handleDeleteFeed = (id: string) => {
+    setFeedsList(prev => prev.filter(f => f.id !== id));
+  };
+
+  const handleDeleteCollection = (id: string) => {
+    setCollectionsList(prev => prev.filter(c => c.id !== id));
+  };
+
   // Editor states
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState(currentUser.fullName);
@@ -414,12 +497,12 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
 
   if (isEditing) {
     return (
-      <div id="fill-profile-view" className="max-w-md mx-auto py-2 px-2 sm:px-4 animate-scaleUp">
-        {/* Mobile Mockup Frame Container */}
-        <div className="bg-[#FAF9FC] text-[#1E192B] rounded-[40px] shadow-2xl border-4 sm:border-8 border-stone-800 overflow-hidden relative font-sans flex flex-col justify-between min-h-[690px] text-left">
+      <div id="fill-profile-view" className="w-full min-h-screen md:min-h-0 md:max-w-md mx-auto relative font-sans py-0 md:py-3 px-0 md:px-2 animate-scaleUp text-left">
+        {/* Responsive profile mockup body wrapper */}
+        <div className="bg-[#FAF9FC] text-[#1E192B] w-full min-h-screen md:min-h-[690px] md:rounded-[40px] shadow-2xl md:border-4 md:border-stone-800 overflow-hidden relative flex flex-col justify-between">
           
-          {/* Status Bar simulation */}
-          <div className="px-6 pt-3 pb-1 flex justify-between items-center text-[11px] font-semibold text-[#828291] font-mono select-none">
+          {/* Status Bar simulation - only on desktop container mode */}
+          <div className="px-6 pt-3 pb-1 hidden md:flex justify-between items-center text-[11px] font-semibold text-[#828291] font-mono select-none shrink-0">
             <span>12:30</span>
             <div className="flex items-center gap-1.5">
               {/* Signal Strength bars */}
@@ -666,11 +749,11 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
             <div className="absolute top-0 right-0 w-120 h-120 bg-white/5 rounded-full border border-white/5 translate-x-1/5 -translate-y-1/5 pointer-events-none animate-spin-slow"></div>
             
             {/* Header Banner Content Overlays: Level Badge and XP info */}
-            <div className="absolute top-4 right-4 flex items-center gap-2">
-              <span className="px-3 py-1 bg-white/20 border border-white/35 text-white backdrop-blur-md text-[10px] sm:text-xs font-black uppercase tracking-wider rounded-xl font-mono">
-                LEVEL {currentUser.level || 1}
+            <div className="absolute top-3 right-3 flex items-center gap-1.5">
+              <span className="px-2 py-0.5 bg-white/20 border border-white/30 text-white backdrop-blur-md text-[8px] sm:text-[10px] font-bold uppercase tracking-wider rounded-lg font-mono">
+                LV {currentUser.level || 1}
               </span>
-              <span className="px-3 py-1 bg-amber-500 text-stone-950 text-[10px] sm:text-xs font-black uppercase tracking-wider rounded-xl font-mono shadow-md">
+              <span className="px-2 py-0.5 bg-amber-500 text-stone-950 text-[8px] sm:text-[10px] font-black uppercase tracking-wider rounded-lg font-mono shadow-sm">
                 XP {currentUser.xp || 0} / {currentUser.xpToNextLevel || 100}
               </span>
             </div>
@@ -771,50 +854,79 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
         {/* ================= COLUMN 1: ANALYTICS + COIN DOCK + CONTENT SUBTABS (COL 6) ================= */}
         <div id="col-profile-main" className="lg:col-span-6 space-y-6">
           
-          {/* Stats count board segment deleted as requested */}
-
-          {/* AVAILABLE COIN PURPLE WALLET CARD */}
-          <div 
-            id="wallet-coin-gradient-card"
-            className="bg-gradient-to-r from-[#A749FD] via-[#9146FF] to-[#713FFD] p-6 rounded-2xl text-white relative overflow-hidden shadow-[0_8px_25px_rgba(113,63,253,0.30)] flex items-center justify-between"
-          >
-            {/* Fine design concentric loop background patterns */}
-            <div className="absolute top-0 right-0 w-36 h-36 bg-white/5 rounded-full border border-white/5 translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
-            <div className="absolute top-0 right-0 w-52 h-52 bg-white/5 rounded-full border border-white/5 translate-x-1/4 -translate-y-1/4 pointer-events-none"></div>
+          {/* WALLET BALANCES GRID (LoopCoins & Diamonds) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             
-            {/* Left layout with Coin metadata and triggers */}
-            <div className="space-y-3.5 z-10">
-              <span className="text-[11px] font-sans font-bold text-white/95 uppercase tracking-widest block">
-                Available Wallet Balance
-              </span>
+            {/* AVAILABLE COIN PURPLE WALLET CARD */}
+            <div 
+              id="wallet-coin-gradient-card"
+              className="bg-gradient-to-tr from-[#9146FF] to-[#713FFD] p-3.5 sm:p-4 rounded-xl text-white relative overflow-hidden shadow-md flex items-center justify-between"
+            >
+              {/* Fine design concentric loop background patterns */}
+              <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full border border-white/5 translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
               
-              <span className="text-4xl font-extrabold font-sans tracking-tight block leading-none">
-                {currentUser.coins.toLocaleString()}
-              </span>
+              {/* Left layout with Coin metadata and triggers */}
+              <div className="space-y-1.5 z-10">
+                <span className="text-[9px] font-sans font-extrabold text-white/90 uppercase tracking-wider block leading-none">
+                  Available LoopCoins
+                </span>
+                
+                <span className="text-lg font-black font-sans tracking-tight block leading-none">
+                  {currentUser.coins.toLocaleString()}
+                </span>
 
-              <button
-                type="button"
-                onClick={onOpenCoinStore}
-                className="px-4 py-2 bg-white text-[#9146FF] hover:bg-stone-50 font-black text-[11px] uppercase rounded-full shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
-              >
-                Top up LoopCoins <span className="text-[12px] font-light font-mono">»</span>
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={onOpenCoinStore}
+                  className="px-2.5 py-1 bg-white text-[#9146FF] hover:bg-stone-50 font-black text-[8px] uppercase rounded-lg shadow-sm transition-all active:scale-95 flex items-center gap-0.5 cursor-pointer"
+                >
+                  Buy Coins <span className="text-[8px] font-light font-mono">»</span>
+                </button>
+              </div>
 
-            {/* Right side stellar star coin graphics */}
-            <div className="relative shrink-0 pr-1.5 z-10">
-              {/* Concentric rotating glowing ring */}
-              <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center p-2 animate-spin-slow">
-                <div className="w-full h-full bg-[#FFBC13]/25 rounded-full flex items-center justify-center p-1.5">
-                  <div className="w-full h-full bg-[#FFA300] rounded-full border-2 border-white flex items-center justify-center">
-                    <Coins className="w-9 h-9 text-amber-100 animate-pulse" />
+              {/* Right side stellar star coin graphics */}
+              <div className="relative shrink-0 z-10 pr-0.5">
+                {/* Concentric rotating glowing ring */}
+                <div className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center p-1">
+                  <div className="w-full h-full bg-[#FFBC13]/25 rounded-full flex items-center justify-center p-0.5">
+                    <div className="w-full h-full bg-[#FFA300] rounded-full border border-white flex items-center justify-center">
+                      <Coins className="w-3.5 h-3.5 text-amber-100" />
+                    </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Little gold indicator star */}
-              <div className="absolute -top-1 -right-1 p-1 bg-yellow-400 text-stone-900 rounded-full text-[9px] font-bold shadow-md">
-                ★
+            {/* AVAILABLE DIAMONDS CYAN WALLET CARD */}
+            <div 
+              id="wallet-diamonds-gradient-card"
+              className="bg-gradient-to-tr from-[#00A5FF] to-[#0070FF] p-3.5 sm:p-4 rounded-xl text-white relative overflow-hidden shadow-md flex items-center justify-between"
+            >
+              {/* Fine design concentric loop background patterns */}
+              <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full border border-white/5 translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
+              
+              {/* Left layout with Diamonds metadata */}
+              <div className="space-y-1.5 z-10">
+                <span className="text-[9px] font-sans font-extrabold text-white/90 uppercase tracking-wider block leading-none">
+                  My Diamonds
+                </span>
+                
+                <span className="text-lg font-black font-sans tracking-tight block leading-none font-mono">
+                  {(currentUser.diamonds || 0).toLocaleString()}
+                </span>
+
+                <span className="inline-block text-[8px] font-extrabold bg-black/25 text-cyan-200 border border-cyan-400/25 px-1.5 py-0.5 rounded-lg leading-none">
+                  ⚡ Livestream Tips
+                </span>
+              </div>
+
+              {/* Right side stellar anim diamond */}
+              <div className="relative shrink-0 z-10 pr-0.5">
+                <div className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center p-1">
+                  <div className="w-full h-full bg-cyan-400/25 rounded-full flex items-center justify-center text-center leading-none text-xs select-none animate-pulse">
+                    💎
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -867,73 +979,135 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
             </div>
 
             {/* Custom Tab Content Windows */}
-            <div className="py-3 text-center flex flex-col justify-center items-center space-y-4">
+            <div className="py-3 text-center flex flex-col justify-center items-center space-y-4 w-full">
               
               {activeSubTab === "reels" ? (
-                <div className="grid grid-cols-2 gap-4 w-full">
-                  <div className="aspect-[9/16] bg-stone-100 rounded-2xl flex flex-col justify-end p-4 relative overflow-hidden group shadow-md border border-stone-200/50">
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                    <div className="relative text-left text-white z-10 leading-tight space-y-1">
-                      <span className="px-2 py-0.5 bg-[#9F5FFE] text-white text-[8px] font-black uppercase tracking-wider rounded-md">
-                        #live_highlight
-                      </span>
-                      <h5 className="font-extrabold text-sm truncate">My Live Stream Moments</h5>
-                    </div>
-                  </div>
-                  <div className="aspect-[9/16] bg-stone-100 rounded-2xl flex flex-col justify-end p-4 relative overflow-hidden group shadow-md border border-stone-200/50">
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                    <div className="relative text-left text-white z-10 leading-tight space-y-1">
-                      <span className="px-2 py-0.5 bg-[#9F5FFE] text-white text-[8px] font-black uppercase tracking-wider rounded-md">
-                        #gaming_life
-                      </span>
-                      <h5 className="font-extrabold text-sm truncate">Arena Championship Goal</h5>
-                    </div>
-                  </div>
-                </div>
-              ) : activeSubTab === "feeds" ? (
-                <div className="space-y-4 w-full">
-                  <div className="p-5 bg-white rounded-2xl border border-stone-200/60 shadow-sm text-left leading-normal space-y-3">
-                    <div className="flex items-center gap-2.5">
-                      <img src={avatarUrl} alt="Creator Icon" className="w-8 h-8 rounded-full object-cover border border-stone-200" />
-                      <div>
-                        <span className="text-xs font-black text-stone-800 block leading-none">{fullName}</span>
-                        <span className="text-[10px] text-stone-400 mt-1 block">3 hours ago</span>
+                reelsList.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-4 w-full">
+                    {reelsList.map((reel) => (
+                      <div key={reel.id} className="aspect-[9/16] bg-stone-100 rounded-2xl flex flex-col justify-end p-4 relative overflow-hidden group shadow-md border border-stone-200/50">
+                        {/* Simulated background color/pattern with seed */}
+                        <div className="absolute inset-0 bg-stone-900 object-cover" style={{ backgroundImage: `url(${reel.bg})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
+                        
+                        {/* Elite Trash Button in top right */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteReel(reel.id);
+                          }}
+                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 border border-stone-850 hover:bg-red-600 hover:border-transparent text-stone-200 hover:text-white transition-all duration-250 cursor-pointer z-20"
+                          title="Delete highlight reel"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        <div className="relative text-left text-white z-10 leading-tight space-y-1">
+                          <span className="px-2 py-0.5 bg-[#9F5FFE] text-white text-[8px] font-black uppercase tracking-wider rounded-md">
+                            {reel.tag}
+                          </span>
+                          <h5 className="font-extrabold text-xs truncate">{reel.title}</h5>
+                        </div>
                       </div>
-                    </div>
-                    <p className="text-xs text-stone-600 font-medium font-sans">
-                      Proud to showcase my brand-new Creator Profile Studio! Spent loopcoins in the avatar frame shop to get this luminescent border. Grab yours from the boutique! 🔮🎨
-                    </p>
-                    <div className="flex gap-4 pt-2 text-stone-400 text-[10px] font-black uppercase tracking-wider border-t border-stone-100">
-                      <span className="text-[#7B3FFE] font-extrabold">♥ 1.2k Likes</span>
-                      <span>💬 8 Comments</span>
-                    </div>
+                    ))}
                   </div>
-                </div>
+                ) : (
+                  <div className="py-12 text-center text-stone-450 text-xs font-medium">
+                     🎬 No active Reels remaining.
+                  </div>
+                )
+              ) : activeSubTab === "feeds" ? (
+                feedsList.length > 0 ? (
+                  <div className="space-y-4 w-full">
+                    {feedsList.map((feed) => (
+                      <div key={feed.id} className="p-5 bg-white rounded-2xl border border-stone-200/60 shadow-sm text-left leading-normal space-y-3 relative">
+                        
+                        {/* Elite Trash Button in top right */}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteFeed(feed.id)}
+                          className="absolute top-4 right-4 p-1.5 rounded-lg bg-stone-50 border border-stone-200/80 hover:bg-red-500 hover:border-transparent text-stone-400 hover:text-white transition-all cursor-pointer z-10"
+                          title="Delete feed post"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        <div className="flex items-center gap-2.5">
+                          <img src={avatarUrl} alt="Creator Icon" className="w-8 h-8 rounded-full object-cover border border-stone-200" />
+                          <div>
+                            <span className="text-xs font-black text-stone-800 block leading-none">{fullName}</span>
+                            <span className="text-[10px] text-stone-400 mt-1 block">{feed.time}</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-stone-600 font-medium font-sans pr-8">
+                          {feed.content}
+                        </p>
+                        <div className="flex gap-4 pt-2 text-stone-400 text-[10px] font-black uppercase tracking-wider border-t border-stone-100">
+                          <span className="text-[#7B3FFE] font-extrabold">{feed.likes}</span>
+                          <span>{feed.comments}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-stone-450 text-xs font-medium">
+                     📰 No active feed updates remaining.
+                  </div>
+                )
               ) : (
-                <div className="py-12 text-center flex flex-col justify-center items-center space-y-3">
-                  {/* High-fidelity Vector magnifying glass representation */}
-                  <svg className="w-24 h-24 text-[#E2E1EC] animate-pulse" viewBox="0 0 120 120" fill="none">
-                    <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 3" className="opacity-40" />
-                    <circle cx="85" cy="25" r="8" stroke="currentColor" strokeWidth="1.5" className="opacity-35" />
-                    <rect x="35" y="30" width="50" height="60" rx="6" fill="#F1F0F7" stroke="#D1D0DE" strokeWidth="2" />
-                    <line x1="45" y1="42" x2="75" y2="42" stroke="#D1D0DE" strokeWidth="2" strokeLinecap="round" />
-                    <line x1="45" y1="54" x2="65" y2="54" stroke="#D1D0DE" strokeWidth="2" strokeLinecap="round" />
-                    <line x1="45" y1="66" x2="75" y2="66" stroke="#D1D0DE" strokeWidth="2" strokeLinecap="round" />
-                    <g className="filter drop-shadow-[0_4px_8px_rgba(159,156,180,0.25)]">
-                      <circle cx="65" cy="65" r="18" fill="white" stroke="#9F5FFE" strokeWidth="2.5" />
-                      <path d="M59 59L71 71M71 59L59 71" stroke="#9F5FFE" strokeWidth="2.5" strokeLinecap="round" />
-                      <path d="M78 78L92 92" stroke="#B0AED2" strokeWidth="4.5" strokeLinecap="round" />
-                    </g>
-                  </svg>
-                  <div>
-                    <h5 className="text-[#a5a4b5] text-xs font-extrabold uppercase tracking-widest">
-                      Empty Collections Wallet
-                    </h5>
-                    <p className="text-[10px] text-stone-400 max-w-xs mx-auto mt-1">
-                      No custom directories found! Try publishing stream feeds or completing creator quests.
-                    </p>
+                collectionsList.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-3 w-full">
+                    {collectionsList.map((col) => (
+                      <div key={col.id} className="p-4 bg-white rounded-2xl border border-stone-200/60 shadow-sm text-left flex items-center justify-between gap-3 relative">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl p-2 bg-[#FAF9FC] rounded-xl border border-stone-100 shrink-0">
+                            {col.icon}
+                          </span>
+                          <div className="leading-tight">
+                            <h5 className="font-extrabold text-xs text-stone-850">{col.name}</h5>
+                            <p className="text-[10px] text-stone-400 mt-1 font-sans">{col.description}</p>
+                          </div>
+                        </div>
+
+                        {/* Delete Collection Item Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCollection(col.id)}
+                          className="p-1.5 rounded-lg bg-stone-50 border border-stone-200 hover:bg-red-500 hover:border-transparent text-stone-400 hover:text-white transition-all cursor-pointer shrink-0"
+                          title="Delete collection reward item"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                </div>
+                ) : (
+                  <div className="py-12 text-center flex flex-col justify-center items-center space-y-3">
+                    {/* High-fidelity Vector magnifying glass representation */}
+                    <svg className="w-24 h-24 text-[#E2E1EC]" viewBox="0 0 120 120" fill="none">
+                      <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 3" className="opacity-40" />
+                      <circle cx="85" cy="25" r="8" stroke="currentColor" strokeWidth="1.5" className="opacity-35" />
+                      <rect x="35" y="30" width="50" height="60" rx="6" fill="#F1F0F7" stroke="#D1D0DE" strokeWidth="2" />
+                      <line x1="45" y1="42" x2="75" y2="42" stroke="#D1D0DE" strokeWidth="2" strokeLinecap="round" />
+                      <line x1="45" y1="54" x2="65" y2="54" stroke="#D1D0DE" strokeWidth="2" strokeLinecap="round" />
+                      <line x1="45" y1="66" x2="75" y2="66" stroke="#D1D0DE" strokeWidth="2" strokeLinecap="round" />
+                      <g className="filter drop-shadow-[0_4px_8px_rgba(159,156,180,0.25)]">
+                        <circle cx="65" cy="65" r="18" fill="white" stroke="#9F5FFE" strokeWidth="2.5" />
+                        <path d="M59 59L71 71M71 59L59 71" stroke="#9F5FFE" strokeWidth="2.5" strokeLinecap="round" />
+                        <path d="M78 78L92 92" stroke="#B0AED2" strokeWidth="4.5" strokeLinecap="round" />
+                      </g>
+                    </svg>
+                    <div>
+                      <h5 className="text-[#a5a4b5] text-xs font-extrabold uppercase tracking-widest">
+                        Empty Collections Wallet
+                      </h5>
+                      <p className="text-[10px] text-stone-400 max-w-xs mx-auto mt-1 font-sans">
+                        No custom directories found! Try publishing stream feeds or completing creator quests.
+                      </p>
+                    </div>
+                  </div>
+                )
               )}
 
             </div>
@@ -1045,91 +1219,6 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
                 );
               })}
             </div>
-
-          </div>
-
-          {/* CARD 2: DETAILS CUSTOMIZER FORM */}
-          <div id="profile-details-customizer" className="bg-stone-900 border border-stone-800 rounded-2xl p-6 shadow-xl space-y-5">
-            
-            <div className="flex items-center justify-between border-b border-stone-800/85 pb-3">
-              <h4 className="text-md font-bold text-white flex items-center gap-2">
-                <Edit2 className="w-5 h-5 text-amber-500" />
-                Interactive Identity Customizer
-              </h4>
-              <span className="text-[10px] bg-stone-950 text-stone-400 font-mono font-bold px-2 py-0.5 rounded border border-stone-850">
-                Setup Preview
-              </span>
-            </div>
-
-            <form onSubmit={handleSaveProfile} className="space-y-4">
-              
-              {/* Row 1: Full name and handle */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-mono uppercase text-stone-400 tracking-wider mb-2 font-bold">
-                    Profile Display Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Elena Rostova"
-                    className="w-full px-4 py-2 bg-stone-950/75 border border-stone-800 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-mono uppercase text-stone-400 tracking-wider mb-2 font-bold">
-                    Username / Creator Handle
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={username}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^a-zA-Z0-9_@]/g, "");
-                      setUsername(val);
-                    }}
-                    placeholder="@handle"
-                    className="w-full px-4 py-2 bg-stone-950/75 border border-stone-800 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500 font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* Bio block */}
-              <div>
-                <label className="block text-[10px] font-mono uppercase text-stone-400 tracking-wider mb-2 font-bold">
-                  Bio Description
-                </label>
-                <textarea
-                  rows={2}
-                  maxLength={160}
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder="Tell your fans who you are in short words..."
-                  className="w-full px-4 py-2.5 bg-stone-950/75 border border-stone-800 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500 resize-none"
-                />
-              </div>
-
-              {/* Trigger Submit buttons */}
-              <button
-                type="submit"
-                className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-sans font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Save className="w-4 h-4" /> Save Customized Identity Description
-              </button>
-
-            </form>
-
-            {/* Hidden Input File Element trigger for Upload picture uploads */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImageFileChange}
-              accept="image/*"
-              className="hidden"
-            />
 
           </div>
 

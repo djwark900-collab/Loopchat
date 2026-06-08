@@ -28,7 +28,9 @@ interface LiveStreamSimulatorProps {
   activeStreamer: Streamer | null; // null if broadcasting
   onClose: () => void;
   onCoinsUpdate: (newCoins: number) => void;
+  onDiamondsUpdate?: (newDiamonds: number) => void;
   onLevelXpUpdate: (newLevel: number, newXp: number) => void;
+  onGiftSent?: () => void;
 }
 
 interface Particle {
@@ -57,7 +59,9 @@ export default function LiveStreamSimulator({
   activeStreamer,
   onClose,
   onCoinsUpdate,
+  onDiamondsUpdate,
   onLevelXpUpdate,
+  onGiftSent,
 }: LiveStreamSimulatorProps) {
   const isBroadcasting = activeStreamer === null;
 
@@ -76,9 +80,17 @@ export default function LiveStreamSimulator({
   const [selectedGiftId, setSelectedGiftId] = useState<string>("gift-rose");
   const [notEnoughCoinsMsg, setNotEnoughCoinsMsg] = useState(false);
 
+  // States for tracking Stream Session Statistics (Session Overview)
+  const [showSessionOverview, setShowSessionOverview] = useState(false);
+  const [durationSeconds, setDurationSeconds] = useState(0);
+  const [totalUniqueUsers, setTotalUniqueUsers] = useState(142); // Starts at a lively room size
+  const [totalGiftsCount, setTotalGiftsCount] = useState(0);
+  const [totalCoinsEarned, setTotalCoinsEarned] = useState(0);
+  const [sessionFollowCount, setSessionFollowCount] = useState(3); // Start with active followers
+
   // Mic, Camera toggle states
   const [isMicOn, setIsMicOn] = useState(true);
-  const [isCameraOn, setIsCameraOn] = useState(true);
+  const [isCameraOn, setIsCameraOn] = useState(false); // Default false (deleting camera)
   const [sharesCount, setSharesCount] = useState(0);
 
   // Floating Gifts Visual Alert Bubble
@@ -86,7 +98,21 @@ export default function LiveStreamSimulator({
     sender: string;
     gift: Gift;
     timestamp: number;
+    avatarUrl?: string;
   } | null>(null);
+
+  // Default Host recipient static details
+  const hostRecipient = {
+    username: isBroadcasting ? currentUser.username : activeStreamer?.username || "Host",
+    avatarUrl: isBroadcasting ? currentUser.avatarUrl : activeStreamer?.avatarUrl || "https://picsum.photos/seed/ndnd/150/150",
+    slotLabel: "Host",
+  };
+
+  const [selectedRecipient, setSelectedRecipient] = useState<{
+    username: string;
+    avatarUrl: string;
+    slotLabel: string;
+  }>(hostRecipient);
 
   // 9 Co-hosting/Request Slots (Slots 2 to 9 start as empty requests, Slot 1 is Host)
   const [coHostSlots, setCoHostSlots] = useState<CoHostSlot[]>([
@@ -108,6 +134,112 @@ export default function LiveStreamSimulator({
     })),
   ]);
 
+  // Real-time viewer mic slots status states
+  const [isJoinedOnMic, setIsJoinedOnMic] = useState(false);
+  const [isMicVoiceOn, setIsMicVoiceOn] = useState(true);
+
+  // Helper handler for One-Tap Request to Join Mic
+  const handleOneTapJoinMic = () => {
+    if (isJoinedOnMic) return;
+
+    // Find first empty cohost slot
+    const emptySlotIndex = coHostSlots.findIndex((s) => s.id > 1 && !s.isOccupied && !s.isRequesting);
+    if (emptySlotIndex === -1) {
+      alert("All slots are taken! Click on any cohost guest slot to disconnect it first.");
+      return;
+    }
+
+    const slotId = coHostSlots[emptySlotIndex].id;
+
+    // Connecting state transition
+    setCoHostSlots((prevSlots) =>
+      prevSlots.map((s) => (s.id === slotId ? { ...s, isRequesting: true, statusText: "Connecting..." } : s))
+    );
+
+    // Simulated short 500ms delay to connect
+    setTimeout(() => {
+      setCoHostSlots((prevSlots) =>
+        prevSlots.map((s) =>
+          s.id === slotId
+            ? {
+                ...s,
+                isOccupied: true,
+                isRequesting: false,
+                username: `${currentUser.username} (You)`,
+                avatarUrl: currentUser.avatarUrl,
+                statusText: "On Mic 🎤",
+              }
+            : s
+        )
+      );
+      setIsJoinedOnMic(true);
+      setIsMicVoiceOn(true);
+
+      // Instant chat comment feedback
+      setChatMessages((messages) => [
+        ...messages,
+        {
+          id: `cohost-ann-user-${Date.now()}-${Math.random()}`,
+          username: `${currentUser.username} (You)`,
+          text: `requested and joined Guest Microphone Slot #${slotId - 1}! 🎙️🔥`,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      ]);
+    }, 500);
+  };
+
+  // Helper handler for "Back Mic" (leave co-host mic spot and return to audience)
+  const handleLeaveMic = () => {
+    if (!isJoinedOnMic) return;
+
+    // Reset user slot
+    setCoHostSlots((prevSlots) =>
+      prevSlots.map((s) =>
+        s.username === `${currentUser.username} (You)`
+          ? {
+              ...s,
+              isOccupied: false,
+              isRequesting: false,
+              username: "",
+              avatarUrl: "",
+              statusText: "Request",
+            }
+          : s
+      )
+    );
+
+    setIsJoinedOnMic(false);
+
+    // Send chat message
+    setChatMessages((messages) => [
+      ...messages,
+      {
+        id: `cohost-leave-user-${Date.now()}-${Math.random()}`,
+        username: `${currentUser.username} (You)`,
+        text: `left the mic and returned to standard audience. 👁️`,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      },
+    ]);
+  };
+
+  // Helper handler for toggling voice / mic mute state (Voice Off/On)
+  const handleToggleMicVoice = () => {
+    const nextVoiceState = !isMicVoiceOn;
+    setIsMicVoiceOn(nextVoiceState);
+
+    // Update status text inside slot dynamically
+    setCoHostSlots((prevSlots) =>
+      prevSlots.map((s) =>
+        s.username === `${currentUser.username} (You)`
+          ? {
+              ...s,
+              statusText: nextVoiceState ? "On Mic 🎤" : "Muted 🔇",
+            }
+          : s
+      )
+    );
+  };
+
   // Timers and Canvas Refs
   const chatIntervalRef = useRef<number | null>(null);
   const giftIntervalRef = useRef<number | null>(null);
@@ -120,15 +252,69 @@ export default function LiveStreamSimulator({
   // Sync state if live is active
   useEffect(() => {
     if ((isLiveActive && isBroadcasting) || (!isBroadcasting && activeStreamer)) {
-      const initialViewers = isBroadcasting ? 24 : activeStreamer?.viewersCount || 100;
+      // "live my no bot view and no request bot"
+      // If we are broadcasting ("live my"), starting viewers starts cleanly at 0 (no bot view), otherwise uses active category viewers count
+      const initialViewers = isBroadcasting ? 0 : activeStreamer?.viewersCount || 100;
       setViewersCount(initialViewers);
+
+      if (!isBroadcasting && activeStreamer) {
+        // Pre-occupy some guest slots with active co-hosts only for other listed streams (viewer mode)
+        setCoHostSlots((prevSlots) => {
+          return prevSlots.map((slot) => {
+            if (slot.id === 2) {
+              return {
+                ...slot,
+                isOccupied: true,
+                username: "neon_rider",
+                avatarUrl: "https://picsum.photos/seed/neon_rider/150/150",
+                statusText: "On Mic 🎤",
+              };
+            }
+            if (slot.id === 4) {
+              return {
+                ...slot,
+                isOccupied: true,
+                username: "cyber_phantom",
+                avatarUrl: "https://picsum.photos/seed/cyber_phantom/150/150",
+                statusText: "On Mic 🎤",
+              };
+            }
+            if (slot.id === 7) {
+              return {
+                ...slot,
+                isOccupied: true,
+                username: "star_sailor",
+                avatarUrl: "https://picsum.photos/seed/star_sailor/150/150",
+                statusText: "On Mic 🎤",
+              };
+            }
+            return slot;
+          });
+        });
+      } else {
+        // Start live my with all mic guest slots completely empty of bots
+        setCoHostSlots((prevSlots) =>
+          prevSlots.map((slot) =>
+            slot.id > 1
+              ? {
+                  ...slot,
+                  isOccupied: false,
+                  isRequesting: false,
+                  username: "",
+                  avatarUrl: "",
+                  statusText: "Request",
+                }
+              : slot
+          )
+        );
+      }
 
       setChatMessages([
         {
           id: "sys-1",
           username: "System",
           text: isBroadcasting
-            ? "Your co-host streaming panel is active! Tap any slot to invite guests."
+            ? "Your broadcaster panel is live! Tap empty guest slots to manage requests."
             : `Welcome to ${activeStreamer?.fullName || "Stream's"} live loop channel. Click 'Gift' to tip!`,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           isSystem: true,
@@ -139,7 +325,7 @@ export default function LiveStreamSimulator({
 
   // Simulated Comments Feed
   useEffect(() => {
-    if ((isLiveActive && isBroadcasting) || (!isBroadcasting && activeStreamer)) {
+    if (isLiveActive && !isBroadcasting && activeStreamer) {
       chatIntervalRef.current = window.setInterval(() => {
         const randomUser = CHATTER_USERNAMES[Math.floor(Math.random() * CHATTER_USERNAMES.length)];
         const randomComment = SIMULATED_CHAT_MESSAGES[Math.floor(Math.random() * SIMULATED_CHAT_MESSAGES.length)];
@@ -163,11 +349,11 @@ export default function LiveStreamSimulator({
 
   // Viewer fluctuation
   useEffect(() => {
-    if ((isLiveActive && isBroadcasting) || (!isBroadcasting && activeStreamer)) {
+    if (isLiveActive && !isBroadcasting && activeStreamer) {
       viewerIntervalRef.current = window.setInterval(() => {
         setViewersCount((prev) => {
           const delta = Math.floor(Math.random() * 5) - 2;
-          return Math.max(isBroadcasting ? 5 : 8, prev + delta);
+          return Math.max(8, prev + delta);
         });
       }, 5000);
     }
@@ -263,9 +449,23 @@ export default function LiveStreamSimulator({
       sender,
       gift,
       timestamp: Date.now(),
+      avatarUrl: `https://picsum.photos/seed/${sender}/100/100`,
     });
 
     spawnGiftBurst(gift.icon, 20);
+
+    // Track for Session Overview
+    setTotalGiftsCount((prev) => prev + 1);
+    setTotalCoinsEarned((prev) => prev + gift.cost);
+
+    // Pick a random occupied cohost slot or host to receive this simulated gift (adds score to mic users!)
+    const occupiedSlots = coHostSlots.filter((s) => s.isOccupied);
+    if (occupiedSlots.length > 0) {
+      const luckySlot = occupiedSlots[Math.floor(Math.random() * occupiedSlots.length)];
+      setCoHostSlots((prevSlots) =>
+        prevSlots.map((s) => (s.id === luckySlot.id ? { ...s, score: (s.score || 0) + gift.cost } : s))
+      );
+    }
 
     const systemGiftMsg: ChatMessage = {
       id: `chat-gift-${Date.now()}-${Math.random()}`,
@@ -298,14 +498,56 @@ export default function LiveStreamSimulator({
     setCurrentXp(nextXp);
     onLevelXpUpdate(nextLevel, nextXp);
 
-    // Streamer gets tipped balance
-    const updatedCoins = currentUser.coins + gift.cost;
-    onCoinsUpdate(updatedCoins);
+    // Streamer gets tipped balance: If user is broadcasting (broadcaster), they earn diamonds!
+    if (isBroadcasting) {
+      const updatedDiamonds = (currentUser.diamonds || 0) + gift.cost;
+      onDiamondsUpdate?.(updatedDiamonds);
+    }
+    // If the user is watching (viewer), they do not gain coins/diamonds from other people's simulated gifts!
 
     setTimeout(() => {
       setActiveGiftAlert((prev) => (prev?.timestamp === activeGiftAlert?.timestamp ? null : prev));
     }, 4000);
   };
+
+  // Periodic simulated gifts from other view chatters
+  useEffect(() => {
+    if (isLiveActive && !isBroadcasting && activeStreamer) {
+      giftIntervalRef.current = window.setInterval(() => {
+        const randomGift = VIRTUAL_GIFTS[Math.floor(Math.random() * VIRTUAL_GIFTS.length)];
+        const randomChatter = CHATTER_USERNAMES[Math.floor(Math.random() * CHATTER_USERNAMES.length)];
+        triggerIncomingGift(randomChatter, randomGift);
+      }, 10000); // Trigger every 10 seconds
+    }
+
+    return () => {
+      if (giftIntervalRef.current) clearInterval(giftIntervalRef.current);
+    };
+  }, [isLiveActive, activeStreamer, isBroadcasting]);
+
+  // Session duration elapsed counter and ambient audience scale timer
+  useEffect(() => {
+    let secondTimer: number;
+    let statsTimer: number;
+
+    if (isLiveActive) {
+      secondTimer = window.setInterval(() => {
+        setDurationSeconds((prev) => prev + 1);
+      }, 1000);
+
+      statsTimer = window.setInterval(() => {
+        setTotalUniqueUsers((prev) => prev + Math.floor(Math.random() * 3) - 1);
+        if (Math.random() > 0.8) {
+          setSessionFollowCount((prev) => prev + 1);
+        }
+      }, 6000);
+    }
+
+    return () => {
+      if (secondTimer) clearInterval(secondTimer);
+      if (statsTimer) clearInterval(statsTimer);
+    };
+  }, [isLiveActive]);
 
   // Submit Comments
   const handleSendMessage = (e: React.FormEvent) => {
@@ -316,7 +558,7 @@ export default function LiveStreamSimulator({
     setInputMessage("");
 
     const newMsg: ChatMessage = {
-      id: `chat-usr-${Date.now()}`,
+      id: `chat-usr-${Date.now()}-${Math.random()}`,
       username: `${currentUser.username} (You)`,
       text: val,
       avatarUrl: currentUser.avatarUrl,
@@ -340,7 +582,7 @@ export default function LiveStreamSimulator({
       setChatMessages((prev) => [
         ...prev,
         {
-          id: `chat-reply-${Date.now()}`,
+          id: `chat-reply-${Date.now()}-${Math.random()}`,
           username: isBroadcasting ? "chat_mod" : activeStreamer?.username || "ndnd",
           text: randomBack,
           avatarUrl: `https://picsum.photos/seed/${creatorName}/60/60`,
@@ -361,15 +603,42 @@ export default function LiveStreamSimulator({
     // Deduct
     const remaining = currentUser.coins - gift.cost;
     onCoinsUpdate(remaining);
+    onGiftSent?.();
 
     // Burst
     spawnGiftBurst(gift.icon, 22);
 
+    // Trigger visual floating gift alert bubble immediately with user's sent name
+    setActiveGiftAlert({
+      sender: `${currentUser.username} (You)`,
+      gift,
+      timestamp: Date.now(),
+      avatarUrl: currentUser.avatarUrl,
+    });
+
+    // Track for Session Overview
+    setTotalGiftsCount((p) => p + 1);
+    setTotalCoinsEarned((p) => p + gift.cost);
+
+    // Increment recipient slot score (mic score)
+    setCoHostSlots((prevSlots) =>
+      prevSlots.map((s) => {
+        if (s.isOccupied && s.username === selectedRecipient.username) {
+          return { ...s, score: (s.score || 0) + gift.cost };
+        }
+        return s;
+      })
+    );
+
+    setTimeout(() => {
+      setActiveGiftAlert((prev) => (prev?.timestamp === activeGiftAlert?.timestamp ? null : prev));
+    }, 4000);
+
     // Message
     const giftMessage: ChatMessage = {
-      id: `usr-gift-${Date.now()}`,
+      id: `usr-gift-${Date.now()}-${Math.random()}`,
       username: `${currentUser.username} (You)`,
-      text: `sent ${gift.name} ${gift.icon}!`,
+      text: `sent ${gift.name} ${gift.icon} to @${selectedRecipient.username}!`,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       gift: {
         name: gift.name,
@@ -398,7 +667,7 @@ export default function LiveStreamSimulator({
     // Response alert
     setTimeout(() => {
       const resp = [
-        `OH MY GOD! Thank you so much for the ${gift.name} ${gift.icon}!`,
+        `OMG! Thank you so much for the ${gift.name} ${gift.icon}!`,
         `WOW!! Support is amazing! Appreciate the ${gift.name}!`,
         `That is huge! Thanks a lot @${currentUser.username}! ❤️`,
         `LoopCoins well spent! Thank you so much!`,
@@ -408,10 +677,10 @@ export default function LiveStreamSimulator({
       setChatMessages((prev) => [
         ...prev,
         {
-          id: `chat-streamer-rc-${Date.now()}`,
-          username: isBroadcasting ? "System" : activeStreamer?.username || "ndnd",
+          id: `chat-streamer-rc-${Date.now()}-${Math.random()}`,
+          username: selectedRecipient.username,
           text: selectedResp,
-          avatarUrl: isBroadcasting ? currentUser.avatarUrl : activeStreamer?.avatarUrl,
+          avatarUrl: selectedRecipient.avatarUrl,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -422,70 +691,20 @@ export default function LiveStreamSimulator({
   const handleInteractSlot = (slotId: number) => {
     if (slotId === 1) return; // Keep Host slot locked
 
-    setCoHostSlots((prevSlots) => {
-      return prevSlots.map((slot) => {
-        if (slot.id === slotId) {
-          if (slot.isOccupied) {
-            // Click occupied slot -> Disconnect cohost
-            return {
-              ...slot,
-              isOccupied: false,
-              isRequesting: false,
-              username: "",
-              avatarUrl: "",
-              statusText: "Request",
-            };
-          } else if (slot.isRequesting) {
-            // Cancel request
-            return {
-              ...slot,
-              isRequesting: false,
-              statusText: "Request",
-            };
-          } else {
-            // Trigger automatic requesting simulation
-            setTimeout(() => {
-              // Simulated accept cohosting spot after 1.5 seconds delay!
-              setCoHostSlots((currentSlots) => {
-                return currentSlots.map((s) => {
-                  if (s.id === slotId && s.isRequesting) {
-                    const randomName = CHATTER_USERNAMES[s.id % CHATTER_USERNAMES.length];
-                    return {
-                      ...s,
-                      isOccupied: true,
-                      isRequesting: false,
-                      username: randomName,
-                      avatarUrl: `https://picsum.photos/seed/${randomName}/120/120`,
-                      statusText: `Guest ${s.id - 1}`,
-                    };
-                  }
-                  return s;
-                });
-              });
+    const slot = coHostSlots.find((s) => s.id === slotId);
+    if (!slot) return;
 
-              // Send chat feedback message
-              const visitor = CHATTER_USERNAMES[slotId % CHATTER_USERNAMES.length];
-              setChatMessages((messages) => [
-                ...messages,
-                {
-                  id: `cohost-ann-${Date.now()}`,
-                  username: visitor,
-                  text: `joined Guest Slot #${slotId - 1}! Hello stream! 👋🎤`,
-                  timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                },
-              ]);
-            }, 1500);
-
-            return {
-              ...slot,
-              isRequesting: true,
-              statusText: "Connecting...",
-            };
-          }
-        }
-        return slot;
+    if (slot.isOccupied) {
+      // "live gift add list user mic tap sent gift" -> Choose Guest on mic and trigger Gift panel
+      setSelectedRecipient({
+        username: slot.username,
+        avatarUrl: slot.avatarUrl,
+        slotLabel: `Guest ${slot.id - 1}`,
       });
-    });
+      setIsGiftDrawerOpen(true);
+    } else {
+      // "live no tap request" -> Tapping empty guest slots does not launch join/invite requests
+    }
   };
 
   const startBroadcasting = (e: React.FormEvent) => {
@@ -496,8 +715,129 @@ export default function LiveStreamSimulator({
 
   const activeSelectedGift = VIRTUAL_GIFTS.find((g) => g.id === selectedGiftId) || VIRTUAL_GIFTS[0];
 
+  const formatDurationHorizontal = (totalSecs: number) => {
+    const hrs = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+    return [
+      hrs.toString().padStart(2, "0"),
+      mins.toString().padStart(2, "0"),
+      secs.toString().padStart(2, "0")
+    ].join(":");
+  };
+
+  if (showSessionOverview) {
+    return (
+      <div 
+        id="session-overview-screen" 
+        className="w-full h-screen bg-gradient-to-b from-[#160D2E] via-[#0E0820] to-[#070412] flex flex-col justify-between p-6 px-8 select-none text-center font-sans relative overflow-hidden"
+      >
+        {/* Glow ambient meshes */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full bg-purple-600/10 blur-[90px] pointer-events-none" />
+        <div className="absolute bottom-10 left-10 w-44 h-44 rounded-full bg-indigo-600/5 blur-[70px] pointer-events-none" />
+
+        {/* Section 1: Title and circular profile */}
+        <div className="pt-8">
+          <h2 className="text-white text-2xl font-black tracking-wide mb-6">
+            Session Overview
+          </h2>
+
+          {/* Glowing Avatar Border match Screenshot */}
+          <div className="relative w-24 h-24 rounded-full p-[3px] bg-gradient-to-tr from-[#FB52FF] via-[#B849FF] to-[#3B66FF] flex items-center justify-center mx-auto shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+            <div className="w-full h-full rounded-full bg-[#160D2E] p-[1.5px] overflow-hidden">
+              <img 
+                src={isBroadcasting ? currentUser.avatarUrl : activeStreamer?.avatarUrl || "https://picsum.photos/seed/ndnd/150/150"} 
+                alt="Creator avatar" 
+                className="w-full h-full object-cover rounded-full"
+              />
+            </div>
+          </div>
+
+          <h3 className="text-[#F4E3FF] font-black text-lg mt-3.5 tracking-tight leading-none">
+            {isBroadcasting ? currentUser.fullName || "ndnd" : activeStreamer?.fullName || "ndnd"}
+          </h3>
+          <p className="text-[#A49CC2] text-xs font-bold mt-1.5 opacity-85">
+            @{isBroadcasting ? currentUser.username : activeStreamer?.username || "dnsn"}
+          </p>
+          <p className="text-[#8174AB] text-[9px] font-mono font-bold tracking-widest mt-1.5 uppercase">
+            ID: 87444055
+          </p>
+        </div>
+
+        {/* Section 2: Precise 3 columns x 2 rows grid matches Screenshot */}
+        <div className="grid grid-cols-3 gap-y-7 gap-x-2 w-full max-w-sm mx-auto my-6 border border-[#2B1B48]/40 rounded-2xl bg-[#140D25]/75 p-5 shadow-2xl relative z-10">
+          
+          <div className="flex flex-col items-center justify-center text-center p-1 border-r border-[#2B1B48]/20">
+            <span className="text-white font-black text-lg font-sans drop-shadow-sm">
+              {totalUniqueUsers}
+            </span>
+            <span className="text-[#A49CC2] text-[10px] font-bold mt-1 tracking-tight leading-none whitespace-nowrap">
+              Total Users
+            </span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center text-center p-1 border-r border-[#2B1B48]/20">
+            <span className="text-white font-black text-lg font-sans drop-shadow-sm">
+              {totalGiftsCount}
+            </span>
+            <span className="text-[#A49CC2] text-[10px] font-bold mt-1 tracking-tight leading-none whitespace-nowrap">
+              Total Gift
+            </span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center text-center p-1">
+            <span className="text-white font-black text-lg font-sans drop-shadow-sm">
+              {chatMessages.length}
+            </span>
+            <span className="text-[#A49CC2] text-[10px] font-bold mt-1 tracking-tight leading-none whitespace-nowrap">
+              Total Live Chat
+            </span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center text-center p-1 border-t border-r border-[#2B1B48]/20 pt-4">
+            <span className="text-white font-black text-lg font-sans drop-shadow-sm">
+              {sessionFollowCount}
+            </span>
+            <span className="text-[#A49CC2] text-[10px] font-bold mt-1 tracking-tight leading-none whitespace-nowrap">
+              Follow Count
+            </span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center text-center p-1 border-t border-r border-[#2B1B48]/20 pt-4">
+            <span className="text-white font-black text-[#FCD34D] text-lg font-sans drop-shadow-sm">
+              {totalCoinsEarned}
+            </span>
+            <span className="text-[#A49CC2] text-[10px] font-bold mt-1 tracking-tight leading-none whitespace-nowrap">
+              Coins Earned
+            </span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center text-center p-1 border-t border-[#2B1B48]/20 pt-4">
+            <span className="text-white font-black text-md font-mono mt-0.5 tracking-tight drop-shadow-sm">
+              {formatDurationHorizontal(durationSeconds)}
+            </span>
+            <span className="text-[#A49CC2] text-[10px] font-bold mt-1 tracking-tight leading-none whitespace-nowrap">
+              Duration
+            </span>
+          </div>
+
+        </div>
+
+        {/* Section 3: Pill action button */}
+        <div className="pb-8">
+          <button
+            onClick={onClose}
+            className="w-full max-w-[240px] mx-auto py-3 rounded-full bg-gradient-to-r from-[#9E5DFF] to-[#B76EFC] text-white font-black text-xs tracking-wider uppercase shadow-lg shadow-purple-900/40 hover:scale-[1.03] active:scale-[0.97] transition-all cursor-pointer"
+          >
+            Back To Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div id="live-cohost-arena-parent" className="max-w-md mx-auto relative font-sans text-stone-100 py-3 px-2">
+    <div id="live-cohost-arena-parent" className="w-full min-h-screen md:min-h-0 md:max-w-md mx-auto relative font-sans text-stone-100 md:py-3 py-0 md:px-2 px-0">
       
       {/* 1. SETUP OVERLAY DIALOG IF UNINITIALIZED BROADCASTER */}
       {isBroadcasting && !isLiveActive ? (
@@ -585,9 +925,79 @@ export default function LiveStreamSimulator({
         /* 2. THE MAIN STREAMING WINDOW EMULATOR BEZEL SCREEN */
         <div 
           id="live-bezel-wrapper" 
-          className="relative w-full aspect-[9/16] bg-black rounded-[36px] border-[5px] border-stone-800 shadow-2xl overflow-hidden flex flex-col justify-between"
-          style={{ background: "linear-gradient(to bottom, #000000 0%, #151419 100%)" }}
+          className="relative w-full h-screen md:h-auto md:aspect-[9/16] max-w-md bg-black md:rounded-[36px] md:border-[5px] md:border-stone-800 shadow-2xl overflow-hidden flex flex-col justify-between mx-auto"
+          style={{ background: "#0c0816" }}
         >
+          {/* Simulated Backdrop live video layer */}
+          <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden h-full w-full">
+            {(() => {
+              const theme = activeStreamer?.videoFeedType || "Cosmic Nebula Loop 🌌";
+              if (theme.includes("Neon Cybercity")) {
+                return (
+                  <div className="w-full h-full bg-gradient-to-b from-[#ff2e93]/35 via-[#260e52] to-[#040114] flex flex-col items-center justify-center relative">
+                    <div className="absolute top-[25%] w-36 h-36 rounded-full bg-gradient-to-t from-yellow-300 via-pink-500 to-transparent blur-sm animate-pulse opacity-85" />
+                    <div className="absolute bottom-0 inset-x-0 h-[40%] bg-[linear-gradient(0deg,transparent_24%,rgba(251,82,255,0.15)_25%,rgba(251,82,255,0.15)_26%,transparent_27%,transparent_74%,rgba(251,82,255,0.15)_75%,rgba(251,82,255,0.15)_76%,transparent_77%)] bg-[size:28px_28px] opacity-60" />
+                  </div>
+                );
+              } else if (theme.includes("Techno Beats")) {
+                return (
+                  <div className="w-full h-full bg-[#0a0014] flex flex-col items-center justify-center gap-1.5 relative">
+                    <div className="flex items-end gap-1 px-4 opacity-50">
+                      {[14, 30, 48, 22, 40, 18, 44, 26, 36, 12, 19].map((h, i) => (
+                        <div 
+                          key={i} 
+                          className="w-2.5 bg-gradient-to-t from-pink-500 to-indigo-500 rounded-t animate-pulse" 
+                          style={{ 
+                            height: `${h}px`,
+                            animationDelay: `${i * 100}ms`,
+                            animationDuration: `${400 + (i % 3) * 200}ms`
+                          }} 
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[9px] text-purple-400 font-mono tracking-widest font-black uppercase text-center mt-2">SIMULATING_TECHNO_STAGE_DECK</span>
+                  </div>
+                );
+              } else if (theme.includes("Retro Cozy")) {
+                return (
+                  <div className="w-full h-full bg-gradient-to-br from-[#2e1d11] via-[#1a0e1b] to-[#0d0711] flex flex-col items-center justify-center relative">
+                    <span className="text-3xl animate-bounce mb-2">🏮</span>
+                    <div className="w-44 h-24 bg-amber-500/10 rounded-2xl border border-amber-550/20 backdrop-blur-sm p-3.5 flex flex-col justify-between text-left">
+                      <div className="w-full h-1 bg-amber-500/25 rounded" />
+                      <div className="text-[8px] text-amber-300 font-mono leading-relaxed uppercase">
+                        ☕ Lofi chill beats corner ... simulated screen active
+                      </div>
+                    </div>
+                  </div>
+                );
+              } else if (theme.includes("Matrix Grid")) {
+                return (
+                  <div className="w-full h-full bg-stone-950 flex flex-col items-center justify-center font-mono relative overflow-hidden select-none">
+                    <div className="absolute inset-0 grid grid-cols-6 gap-2 text-green-500/20 text-[9px] p-4 text-center select-none font-bold leading-none opacity-80">
+                      {Array.from({ length: 24 }).map((_, i) => (
+                        <span key={i} className="animate-pulse" style={{ animationDelay: `${i * 120}ms` }}>
+                          {(Math.random() > 0.4 ? "1" : "0")}
+                        </span>
+                      ))}
+                    </div>
+                    <span className="text-green-500 text-[10px] font-bold uppercase tracking-wider block border border-green-500/30 px-3 py-1 rounded bg-black/60 z-10 font-mono scale-95">
+                      CODE_STREAM_ONLINE
+                    </span>
+                  </div>
+                );
+              } else {
+                // Default: Cosmic Nebula Loop
+                return (
+                  <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center relative">
+                    <div className="absolute -inset-[10px] bg-gradient-to-tr from-[#2d1264] via-[#090326] to-[#4c0d45] opacity-80" />
+                    <div className="absolute w-44 h-44 rounded-full bg-indigo-500/15 blur-3xl animate-pulse" />
+                    <div className="absolute w-36 h-36 rounded-full bg-pink-500/10 blur-2xl animate-spin-slow" />
+                  </div>
+                );
+              }
+            })()}
+          </div>
+
           {/* Canvas Floating Gifts Particles Layer */}
           <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-10 w-full h-full" />
 
@@ -617,9 +1027,11 @@ export default function LiveStreamSimulator({
               </div>
 
               {/* Dynamic status count loop views */}
-              <div className="pl-1 flex items-center gap-0.5 text-stone-200 border-l border-stone-800 ml-1">
-                <span className="text-[9px] font-mono font-bold flex items-center gap-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block animate-pulse shrink-0"></span>
+              <div className="pl-1.5 flex items-center gap-1 text-stone-200 border-l border-white/10 ml-1.5">
+                <span className="text-[9px] font-black uppercase text-rose-500 bg-rose-500/10 px-1 py-0.5 rounded border border-rose-500/20 leading-none tracking-wider font-sans select-none scale-90">
+                  LIVE
+                </span>
+                <span className="text-[10px] font-bold font-mono tracking-tight flex items-center gap-0.5 pr-0.5">
                   👁️ {viewersCount.toLocaleString()}
                 </span>
               </div>
@@ -646,32 +1058,63 @@ export default function LiveStreamSimulator({
               </button>
 
               {/* Exit streamer button */}
-              <button 
-                type="button"
-                onClick={onClose}
-                className="w-7 h-7 rounded-full bg-black/65 border border-stone-800 flex items-center justify-center text-stone-300 hover:text-white"
-                title="Close Live Area"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              {isBroadcasting ? (
+                <button 
+                  type="button"
+                  onClick={() => setShowSessionOverview(true)}
+                  className="px-3 py-1.5 bg-red-600 hover:bg-rose-500 border border-red-500/30 text-white font-black text-[10px] uppercase tracking-wider rounded-xl flex items-center gap-1 hover:scale-105 active:scale-95 transition-all shadow-md cursor-pointer whitespace-nowrap"
+                  title="End My Live Session"
+                >
+                  <Power className="w-3.5 h-3.5 text-white" /> End & Delete Live
+                </button>
+              ) : (
+                <button 
+                  type="button"
+                  onClick={() => setShowSessionOverview(true)}
+                  className="w-7 h-7 rounded-full bg-black/65 border border-stone-800 flex items-center justify-center text-stone-300 hover:text-white hover:bg-stone-900 hover:scale-105 active:scale-95 transition-all"
+                  title="Close Live Area"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
 
           {/* ================= STREAM ALERT GESTURES / BURST BANNER ================= */}
           {activeGiftAlert && (
-            <div className="absolute top-[12%] left-1/2 -translate-x-1/2 z-30 w-[90%] bg-stone-900/90 border border-purple-500/30 rounded-2xl p-2.5 flex items-center gap-2.5 shadow-2xl animate-shake pointer-events-none">
-              <span className="text-2xl animate-bounce shrink-0">{activeGiftAlert.gift.icon}</span>
-              <div className="text-left min-w-0">
-                <p className="text-[8px] uppercase tracking-wider text-purple-400 font-mono font-extrabold leading-none">
-                  Superfan Trigger!
-                </p>
-                <p className="text-xs font-bold text-white leading-tight truncate">
-                  {activeGiftAlert.sender}
-                </p>
-                <p className="text-[10px] text-stone-300 leading-none">
-                  sent <span className="text-amber-400">{activeGiftAlert.gift.name}</span> tip!
-                </p>
+            <div className="absolute top-[18%] left-4 z-40 max-w-[85%] pointer-events-none flex items-center gap-2 animate-scaleUp select-none shadow-xl">
+              {/* Compact Sleek Pill */}
+              <div className="bg-stone-950/90 backdrop-blur-md border border-[#5C5CFC]/30 pl-1.5 pr-3 py-1 rounded-full flex items-center gap-2">
+                {/* 1. Sender Avatar circle */}
+                <div className="w-7 h-7 rounded-full overflow-hidden border border-white/15 shrink-0">
+                  <img
+                    src={activeGiftAlert.avatarUrl || `https://picsum.photos/seed/${activeGiftAlert.sender}/100/100`}
+                    alt=""
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "https://picsum.photos/seed/gift/100/100";
+                    }}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {/* 2. Compact text info */}
+                <div className="text-left leading-tight min-w-0 pr-1">
+                  <p className="text-[10px] font-black text-white truncate max-w-[102px]">
+                    {activeGiftAlert.sender.replace(" (You)", "")}
+                  </p>
+                  <p className="text-[8px] text-purple-300 font-bold leading-none mt-0.5 whitespace-nowrap">
+                    sent <span className="text-amber-400 font-extrabold">{activeGiftAlert.gift.name}</span>
+                  </p>
+                </div>
+                {/* 3. Small Animated Gift Logo/icon */}
+                <span className="text-xl animate-bounce shrink-0 filter drop-shadow">
+                  {activeGiftAlert.gift.icon}
+                </span>
               </div>
+
+              {/* 4. Live x1 animated multiplier indicator on the right */}
+              <span className="text-2xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-500 tracking-tighter drop-shadow-md pr-1 pl-1.5 animate-pulse shrink-0 font-sans">
+                x1
+              </span>
             </div>
           )}
 
@@ -681,29 +1124,33 @@ export default function LiveStreamSimulator({
               
               {/* Host / Slot 1 podium box */}
               <div className="aspect-square bg-stone-950 border border-stone-800/80 rounded-xl relative overflow-hidden flex flex-col justify-between p-1.5">
-                <span className="absolute inset-0 bg-gradient-to-t from-stone-950 via-transparent to-black/40 z-0"></span>
-                
-                {/* Simulated webcam wave filter effect */}
-                {isCameraOn ? (
-                  <div className="absolute inset-0 z-0 bg-gradient-to-tr from-[#901a5e]/15 to-[#3b1c6e]/30 scale-105">
-                    <div className="absolute w-2 h-2 rounded-full bg-red-500 top-2 right-2 animate-ping" />
-                    <img 
-                      src={isBroadcasting ? currentUser.avatarUrl : activeStreamer?.avatarUrl || "https://picsum.photos/seed/ndnd/120/120"} 
-                      alt="Stream Video"
-                      className="w-full h-full object-cover opacity-80"
-                    />
+                {/* Audio room host container */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-2 bg-gradient-to-b from-[#18122B] to-[#0A0712] z-0">
+                  {/* Glowing dynamic ring */}
+                  <div className="relative w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-purple-500 via-pink-400 to-amber-300 animate-spin-slow">
+                    <div className="w-full h-full rounded-full bg-stone-900 p-[1.5px]">
+                      <img 
+                        src={isBroadcasting ? currentUser.avatarUrl : activeStreamer?.avatarUrl || "https://picsum.photos/seed/ndnd/120/120"} 
+                        alt="Host Avatar"
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    </div>
                   </div>
-                ) : (
-                  <div className="absolute inset-0 z-0 bg-stone-950 flex items-center justify-center">
-                    <span className="text-[9px] font-mono text-stone-500 uppercase">Camera Off</span>
+                  
+                  {/* Score badge (live mic add score gift) */}
+                  <div className="mt-1.5 flex items-center gap-1 px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/20 rounded-full scale-90 leading-none">
+                    <span className="text-[9px]">⭐</span>
+                    <span className="text-[10px] font-mono font-black text-amber-300">
+                      {coHostSlots.find(s => s.id === 1)?.score || 0}
+                    </span>
                   </div>
-                )}
+                </div>
 
-                <span className="text-[9px] text-stone-300 font-black tracking-wide uppercase px-1.5 py-0.5 bg-black/40 rounded border border-white/5 z-10 w-fit">
+                <span className="text-[8px] text-stone-300 font-extrabold tracking-wide uppercase px-1 py-0.5 bg-purple-950/80 rounded border border-purple-500/30 z-10 w-fit">
                   Host
                 </span>
 
-                <span className="text-[10px] text-white font-black truncate z-10 text-left pl-1">
+                <span className="text-[10px] text-stone-200 font-bold truncate z-10 text-left pl-1">
                   {isBroadcasting ? currentUser.username : activeStreamer?.username || "ndnd"}
                 </span>
               </div>
@@ -722,24 +1169,32 @@ export default function LiveStreamSimulator({
                   }`}
                 >
                   {slot.isOccupied ? (
-                    <>
-                      <div className="absolute inset-0 z-0">
-                        <img 
-                          src={slot.avatarUrl} 
-                          alt="Cohost video stream pointer" 
-                          className="w-full h-full object-cover opacity-85"
-                        />
-                        <span className="absolute inset-x-0 bottom-0 top-1/2 bg-gradient-to-t from-black via-transparent to-transparent"></span>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-1 bg-gradient-to-b from-[#110e1f] to-[#06040d] z-0">
+                      {/* Guest avatar pulsing ring */}
+                      <div className="relative w-10 h-10 rounded-full p-[1.5px] bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-500">
+                        <div className="w-full h-full rounded-full bg-stone-900 p-[1px]">
+                          <img 
+                            src={slot.avatarUrl} 
+                            alt="" 
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                        </div>
                       </div>
                       
-                      <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-green-500 z-15" />
-                      <span className="text-[8px] text-stone-300 px-1 py-0.5 bg-black/45 rounded font-bold uppercase tracking-wider absolute top-1 left-1 z-15">
-                        Guest {slot.id - 1}
-                      </span>
-                      <span className="text-[9px] text-white font-bold truncate z-10 mt-auto drop-shadow-md w-full text-center">
+                      {/* Live mic score badge (live mic add score gift) */}
+                      <div className="mt-1 flex items-center gap-0.5 px-1.5 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full scale-75 leading-none">
+                        <span className="text-[7.5px]">⭐</span>
+                        <span className="text-[8.5px] font-mono font-bold text-cyan-300">
+                          {slot.score || 0}
+                        </span>
+                      </div>
+
+                      <span className="text-[9px] text-stone-200 font-extrabold truncate w-[85px] text-center tracking-tight leading-none mt-1">
                         {slot.username}
                       </span>
-                    </>
+
+                      <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-green-500 z-10 shadow-lg animate-pulse" />
+                    </div>
                   ) : slot.isRequesting ? (
                     <div className="flex flex-col items-center justify-center space-y-1">
                       <span className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></span>
@@ -762,6 +1217,44 @@ export default function LiveStreamSimulator({
               ))}
 
             </div>
+          </div>
+
+          {/* USER MIC CONTROL PANEL (One-Tap Request, Back Mic, Voice Off/On) */}
+          <div className="px-3.5 py-1 z-20 shrink-0">
+            {!isJoinedOnMic ? (
+              <button
+                type="button"
+                onClick={handleOneTapJoinMic}
+                className="w-full py-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-green-500 hover:from-emerald-400 hover:to-green-400 text-stone-950 font-black tracking-tight text-[11px] uppercase rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 animate-pulse"
+              >
+                <Mic className="w-3.5 h-3.5" /> One-Tap Join Mic
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 w-full bg-stone-900/90 border border-purple-500/30 p-1.5 rounded-xl shadow-lg">
+                {/* Voice On/Off toggle */}
+                <button
+                  type="button"
+                  onClick={handleToggleMicVoice}
+                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    isMicVoiceOn 
+                      ? "bg-purple-600 text-white hover:bg-purple-500" 
+                      : "bg-red-950 text-red-400 border border-red-800/50"
+                  }`}
+                >
+                  <span className="text-xs">{isMicVoiceOn ? "🎙️" : "🔇"}</span>
+                  Voice {isMicVoiceOn ? "On" : "Off"}
+                </button>
+
+                {/* Back Mic button */}
+                <button
+                  type="button"
+                  onClick={handleLeaveMic}
+                  className="flex-1 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-stone-700"
+                >
+                  <span className="text-xs">↩️</span> Back Mic
+                </button>
+              </div>
+            )}
           </div>
 
           {/* ================= COMMENTS STREAM FLOATING (Middle Overlap) ================= */}
@@ -851,22 +1344,6 @@ export default function LiveStreamSimulator({
                 <span className="text-[8px] font-bold text-stone-400">Mic</span>
               </button>
 
-              {/* Camera shut switch */}
-              <button
-                type="button"
-                onClick={() => setIsCameraOn(!isCameraOn)}
-                className={`flex flex-col items-center gap-0.5 hover:scale-110 active:scale-95 transition-all cursor-pointer ${
-                  isCameraOn ? "text-stone-300" : "text-amber-500"
-                }`}
-              >
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center border transition-all ${
-                  isCameraOn ? "bg-stone-800 border-stone-700" : "bg-amber-950 border-amber-800"
-                }`}>
-                  <Camera className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-[8px] font-bold text-stone-400">Camera</span>
-              </button>
-
               {/* Share count option */}
               <button
                 type="button"
@@ -898,14 +1375,14 @@ export default function LiveStreamSimulator({
                 
                 {/* Visual swipe indicator handle bar */}
                 <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-14 h-1.5 bg-stone-800 rounded-full"></div>
-
+ 
                 <div className="flex items-center gap-2">
                   <span className="text-xl">🎁</span>
                   <h4 className="text-sm font-black uppercase tracking-wider text-stone-200">
                     Send Gift
                   </h4>
                 </div>
-
+ 
                 {/* Close modal circle icon */}
                 <button
                   type="button"
@@ -917,6 +1394,52 @@ export default function LiveStreamSimulator({
                 </button>
               </div>
 
+              {/* Target recipient list selector widget (live gift add list user mic tap sent gift) */}
+              <div className="mb-3 bg-stone-950 p-2.5 rounded-2xl border border-stone-900 shrink-0 select-none">
+                <div className="text-[10px] text-stone-400 font-extrabold uppercase tracking-wide mb-2 text-left flex items-center justify-between">
+                  <span>Send Gift To:</span>
+                  <span className="text-[9px] text-amber-400 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded tracking-normal">
+                    @{selectedRecipient?.username} ({selectedRecipient?.slotLabel})
+                  </span>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                  {/* Host */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRecipient(hostRecipient)}
+                    className={`px-3 py-1 bg-stone-900 border text-[10px] font-bold rounded-full flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      selectedRecipient?.username === hostRecipient.username
+                        ? "bg-gradient-to-r from-purple-600 to-indigo-600 border-purple-500 text-white shadow-lg"
+                        : "border-stone-800 text-stone-400 hover:text-stone-200"
+                    }`}
+                  >
+                    <img src={hostRecipient.avatarUrl} alt="" className="w-4 h-4 rounded-full bg-stone-950 object-cover" />
+                    <span>{hostRecipient.username} (Host)</span>
+                  </button>
+
+                  {/* Occupied guests */}
+                  {coHostSlots.slice(1).filter((s) => s.isOccupied).map((slot) => (
+                    <button
+                      key={slot.id}
+                      type="button"
+                      onClick={() => setSelectedRecipient({
+                        username: slot.username,
+                        avatarUrl: slot.avatarUrl,
+                        slotLabel: `Guest ${slot.id - 1}`,
+                      })}
+                      className={`px-3 py-1 bg-stone-900 border text-[10px] font-bold rounded-full flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                        selectedRecipient?.username === slot.username
+                          ? "bg-gradient-to-r from-purple-600 to-indigo-600 border-purple-500 text-white shadow-lg"
+                          : "border-stone-800 text-stone-400 hover:text-stone-200"
+                    }`}
+                    >
+                      <img src={slot.avatarUrl} alt="" className="w-4 h-4 rounded-full bg-stone-950 object-cover" />
+                      <span>{slot.username} (Guest {slot.id - 1})</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Warnings loop */}
               {notEnoughCoinsMsg && (
                 <div className="p-2 mb-2 bg-red-950/50 border border-red-850/40 text-red-400 text-[10px] text-center rounded-lg font-bold animate-shake shrink-0">
@@ -924,47 +1447,54 @@ export default function LiveStreamSimulator({
                 </div>
               )}
 
-              {/* 12 Grid Virtual gifts list (Highly styled matching Screenshot 2) */}
-              <div className="grid grid-cols-4 gap-2 flex-1 overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-stone-900 pr-1">
-                {VIRTUAL_GIFTS.map((gift) => {
-                  const isSelected = selectedGiftId === gift.id;
-                  return (
-                    <div
-                      key={gift.id}
-                      onClick={() => setSelectedGiftId(gift.id)}
-                      className={`relative p-2.5 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 cursor-pointer select-none ${
-                        isSelected 
-                          ? "bg-[#632890]/25 border-2 border-purple-500 scale-95 shadow-md" 
-                          : "bg-stone-950 border border-stone-900 hover:border-purple-900"
-                      }`}
-                    >
-                      {/* Animated Floating preview for high fidelity */}
-                      <span className="text-3xl mb-1.5 drop-shadow">
-                        {gift.icon}
-                      </span>
-                      <span className="text-[10px] font-black text-white text-center truncate w-full mb-0.5 leading-none">
-                        {gift.name}
-                      </span>
-                      <span className="text-[9px] font-extrabold text-amber-500 font-mono tracking-tight flex items-center justify-center gap-0.5">
-                        ⭐ {gift.cost < 1000 ? gift.cost : `${(gift.cost / 1000).toFixed(1)}k`}
-                      </span>
+              {/* 12 Grid Virtual gifts list (Highly styled with scrollable action) */}
+              <div className="relative border border-stone-900 bg-[#0c0a12]/80 rounded-2xl p-2 mb-2 shrink-0">
+                <div className="text-[10px] uppercase tracking-wider text-purple-400 font-extrabold mb-1.5 flex items-center justify-between px-1">
+                  <span>✨ Gift Collection</span>
+                  <span className="text-[9px] text-stone-500 font-medium animate-bounce">Scroll Down for More 👇</span>
+                </div>
+                
+                <div className="grid grid-cols-4 gap-2 h-[180px] overflow-y-auto p-0.5 scrollbar-thin scrollbar-thumb-purple-900/40">
+                  {VIRTUAL_GIFTS.map((gift) => {
+                    const isSelected = selectedGiftId === gift.id;
+                    return (
+                      <div
+                        key={gift.id}
+                        onClick={() => setSelectedGiftId(gift.id)}
+                        className={`relative p-2 rounded-xl flex flex-col items-center justify-center transition-all duration-300 cursor-pointer select-none ${
+                          isSelected 
+                            ? "bg-[#632890]/25 border-2 border-purple-500 scale-95 shadow-md" 
+                            : "bg-stone-950 border border-stone-900 hover:border-purple-900"
+                        }`}
+                      >
+                        {/* Animated Floating preview for high fidelity */}
+                        <span className="text-2xl mb-1 drop-shadow">
+                          {gift.icon}
+                        </span>
+                        <span className="text-[9px] font-black text-white text-center truncate w-full mb-0.5 leading-none">
+                          {gift.name}
+                        </span>
+                        <span className="text-[8px] font-extrabold text-amber-500 font-mono tracking-tight flex items-center justify-center gap-0.5">
+                          ⭐ {gift.cost < 1000 ? gift.cost : `${(gift.cost / 1000).toFixed(1)}k`}
+                        </span>
 
-                      {/* Display dedicated PURPLE "Send" button block inside selected tile - MATCHES SCREENSHOT 2 */}
-                      {isSelected && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSendGiftLocal(gift);
-                          }}
-                          className="mt-2 w-full py-1 text-[9px] font-black uppercase text-white bg-gradient-to-r from-purple-600 to-[#923FEF] hover:from-[#A855F7] rounded-lg tracking-wider animate-scaleUp cursor-pointer shadow border border-white/10"
-                        >
-                          Send
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
+                        {/* Display dedicated PURPLE "Send" button block inside selected tile - MATCHES SCREENSHOT 2 */}
+                        {isSelected && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSendGiftLocal(gift);
+                            }}
+                            className="mt-1 w-full py-1 text-[8px] font-black uppercase text-white bg-gradient-to-r from-purple-600 to-[#923FEF] hover:from-[#A855F7] rounded-md tracking-wider animate-scaleUp cursor-pointer shadow border border-white/5"
+                          >
+                            Send
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Bottom footer bar: Golden buy coin pill indicator */}
@@ -973,18 +1503,17 @@ export default function LiveStreamSimulator({
                   Select a premium item and click Send
                 </div>
 
-                {/* Coin balance buy pill exactly matching screenshot */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsGiftDrawerOpen(false);
-                    onClose(); // Exit to go to profile store
-                  }}
-                  className="py-1.5 px-3 bg-indigo-950/50 border border-purple-500/35 hover:border-purple-400 rounded-full flex items-center gap-1.5 cursor-pointer text-xs font-black text-amber-400 font-mono hover:scale-105 duration-200"
-                  title="Buy more Coins"
-                >
-                  ⭐ {currentUser.coins} <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
-                </button>
+                {/* Coin and Diamond balance static display */}
+                <div className="flex items-center gap-2">
+                  <div className="py-1.5 px-3 bg-stone-950/40 border border-stone-800 rounded-full flex items-center gap-1.5 text-[11px] font-black text-amber-400 font-mono">
+                    <span>🪙</span>
+                    <span>{currentUser.coins}</span>
+                  </div>
+                  <div className="py-1.5 px-3 bg-stone-950/40 border border-stone-800 rounded-full flex items-center gap-1.5 text-[11px] font-black text-cyan-400 font-mono">
+                    <span>💎</span>
+                    <span>{currentUser.diamonds || 0}</span>
+                  </div>
+                </div>
               </div>
 
             </div>
