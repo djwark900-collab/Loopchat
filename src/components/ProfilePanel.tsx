@@ -27,7 +27,7 @@ import {
   ChevronDown,
   Camera
 } from "lucide-react";
-import { db, handleFirestoreError, OperationType } from "../utils/firebase";
+import { db, handleFirestoreError, OperationType, isFirestoreQuotaExceeded } from "../utils/firebase";
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "firebase/firestore";
 
 interface ProfilePanelProps {
@@ -446,6 +446,10 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
 
   const handleCreateCoinCode = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isFirestoreQuotaExceeded) {
+       setAdminError("Firestore quota exceeded. Cannot create codes now.");
+       return;
+    }
     if (!newCodeName.trim()) {
       setAdminError("Please enter or generate a code");
       return;
@@ -473,6 +477,7 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
   };
 
   const handleDeleteCoinCode = async (id: string) => {
+    if (isFirestoreQuotaExceeded) return;
     try {
       const codeRef = doc(db, "coin_codes", id);
       await deleteDoc(codeRef);

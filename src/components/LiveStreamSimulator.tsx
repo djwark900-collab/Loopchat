@@ -6,8 +6,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { User, Streamer, ChatMessage, Gift } from "../types";
 import { VIRTUAL_GIFTS, SIMULATED_CHAT_MESSAGES, CHATTER_USERNAMES } from "../utils/mockData";
-import { doc, setDoc, collection, onSnapshot, query, serverTimestamp, deleteDoc } from "firebase/firestore";
-import { db, handleFirestoreError, OperationType, auth } from "../lib/firebase";
+import { doc, setDoc, collection, onSnapshot, query, serverTimestamp, deleteDoc, updateDoc, increment, getDoc } from "firebase/firestore";
+import { db, handleFirestoreError, OperationType, auth, isFirestoreQuotaExceeded } from "../lib/firebase";
 import {
   Power,
   MessageSquare,
@@ -68,8 +68,9 @@ export default function LiveStreamSimulator({
   const isBroadcasting = activeStreamer === null;
 
   // Stream States
-  const [setupTitle, setSetupTitle] = useState("");
-  const [setupCategory, setSetupCategory] = useState("IRL Chatting");
+  const [setupTitle, setSetupTitle] = useState("PUBG Mobile - Road to Conqueror! 🔫🍗");
+  const [setupCategory, setSetupCategory] = useState("Gaming & Esports");
+  const [setupVideoFeed, setSetupVideoFeed] = useState("Battlefield High-Action Warzone 🧨");
   const [isLiveActive, setIsLiveActive] = useState(false);
   const [currentStreamerDocId, setCurrentStreamerDocId] = useState<string | null>(null);
   const [viewersCount, setViewersCount] = useState(0);
@@ -306,13 +307,32 @@ export default function LiveStreamSimulator({
 
   // Sync state if live is active
   useEffect(() => {
+    let incrementTimeout: any = null;
+
     if ((isLiveActive && isBroadcasting) || (!isBroadcasting && activeStreamer)) {
       // "live my no bot view and no request bot"
       // If we are broadcasting ("live my"), starting viewers starts cleanly at 0 (no bot view), otherwise uses active category viewers count
       const initialViewers = isBroadcasting ? 0 : activeStreamer?.viewersCount || 100;
       setViewersCount(initialViewers);
 
+      // Persist viewer increment to Firestore only if user stays for at least 3 seconds
       if (!isBroadcasting && activeStreamer) {
+        incrementTimeout = setTimeout(async () => {
+          try {
+            const streamerRef = doc(db, "streamers", activeStreamer.id);
+            // double check existence to avoid errors if stream ended
+            if (isFirestoreQuotaExceeded) return;
+            const snap = await getDoc(streamerRef);
+            if (snap.exists() && snap.data().isLive) {
+               await updateDoc(streamerRef, { viewersCount: increment(1) });
+               console.debug("Viewer count incremented in Firestore");
+            }
+          } catch (err) {
+            // Silently handle quota or missing doc
+            console.warn("Could not increment viewer count:", err);
+          }
+        }, 3000); // 3-second grace period
+
         // Pre-occupy some guest slots with active co-hosts only for other listed streams (viewer mode)
         setCoHostSlots((prevSlots) => {
           return prevSlots.map((slot) => {
@@ -376,6 +396,10 @@ export default function LiveStreamSimulator({
         },
       ]);
     }
+
+    return () => {
+      if (incrementTimeout) clearTimeout(incrementTimeout);
+    };
   }, [isLiveActive, activeStreamer, isBroadcasting]);
 
   // Simulated Comments Feed (DISABLED - Fake delete)
@@ -846,6 +870,12 @@ export default function LiveStreamSimulator({
     if (!setupTitle.trim() || !auth.currentUser) return;
 
     const streamerId = `streamer-${Date.now()}`;
+    if (isFirestoreQuotaExceeded) {
+       // Allow "local-only" start if quota hit
+       setIsLiveActive(true);
+       return;
+    }
+
     const newStreamer: any = {
       id: streamerId,
       username: `@${currentUser.username}`,
@@ -857,7 +887,7 @@ export default function LiveStreamSimulator({
       category: setupCategory,
       isLive: true,
       startingCoins: 0,
-      videoFeedType: "Cosmic Nebula Loop 🌌",
+      videoFeedType: setupVideoFeed,
       creatorId: auth.currentUser.uid,
       createdAt: serverTimestamp()
     };
@@ -1038,10 +1068,29 @@ export default function LiveStreamSimulator({
                   onChange={(e) => setSetupCategory(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-stone-950/70 border border-stone-850 rounded-xl text-white text-xs focus:outline-none focus:border-purple-500 cursor-pointer"
                 >
+                  <option value="Gaming & Esports">Gaming & Esports 🎮</option>
                   <option value="IRL Talk">IRL Talk & Chat</option>
                   <option value="Tech Loop">Coding & Projects</option>
                   <option value="Music Box">DJ & Music Codes</option>
                   <option value="Boutique">Showcase Boutique</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-mono uppercase text-stone-400 tracking-wider mb-2 font-bold">
+                  Video Feed Background
+                </label>
+                <select
+                  value={setupVideoFeed}
+                  onChange={(e) => setSetupVideoFeed(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-stone-950/70 border border-stone-850 rounded-xl text-white text-xs focus:outline-none focus:border-purple-500 cursor-pointer"
+                >
+                  <option value="Battlefield High-Action Warzone 🧨">Battlefield Warzone 🧨</option>
+                  <option value="Cosmic Nebula Loop 🌌">Cosmic Nebula 🌌</option>
+                  <option value="Neon Cybercity Sunset 🌆">Cybercity Sunset 🌆</option>
+                  <option value="Techno Beats Music Deck 🎧">Techno Beats 🎧</option>
+                  <option value="Retro Cozy Anime Study 🏮">Anime Study 🏮</option>
+                  <option value="Matrix Grid Code Flow 📟">Matrix Flow 📟</option>
                 </select>
               </div>
 
@@ -1110,7 +1159,39 @@ export default function LiveStreamSimulator({
           {/* Simulated Backdrop live video layer */}
           <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden h-full w-full">
             {(() => {
-              const theme = overrideVideoFeedTheme || activeStreamer?.videoFeedType || "Cosmic Nebula Loop 🌌";
+              const theme = overrideVideoFeedTheme || activeStreamer?.videoFeedType || setupVideoFeed || "Cosmic Nebula Loop 🌌";
+              if (theme.includes("Battlefield High-Action Warzone")) {
+                return (
+                  <div className="w-full h-full relative overflow-hidden bg-[#0A0D08]">
+                    {/* Dark smoke/warzone layer */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-stone-950 via-stone-900/40 to-stone-950" />
+                    <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-orange-600/10 blur-[100px] animate-pulse" />
+                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-stone-800/20 blur-[120px]" />
+                    
+                    {/* Simulated debris/particles for warzone feel */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30">
+                       <div className="w-full h-full relative">
+                         {[...Array(20)].map((_, i) => (
+                           <div 
+                             key={i}
+                             className="absolute w-1 h-1 bg-amber-500/40 rounded-full animate-float"
+                             style={{
+                               top: `${Math.random() * 100}%`,
+                               left: `${Math.random() * 100}%`,
+                               animationDelay: `${Math.random() * 5}s`,
+                               animationDuration: `${5 + Math.random() * 10}s`
+                             }}
+                           />
+                         ))}
+                       </div>
+                    </div>
+
+                    <div className="absolute inset-0 flex items-center justify-center p-8 opacity-20">
+                      <Video className="w-48 h-48 text-stone-700/50 rotate-12" />
+                    </div>
+                  </div>
+                );
+              }
               if (theme.includes("Neon Cybercity")) {
                 return (
                   <div className="w-full h-full bg-gradient-to-b from-[#ff2e93]/35 via-[#260e52] to-[#040114] flex flex-col items-center justify-center relative">

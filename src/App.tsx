@@ -12,7 +12,7 @@ import CoinsModal from "./components/CoinsModal";
 import DailyMissions from "./components/DailyMissions";
 import { doc, getDoc, setDoc, collection, onSnapshot, query, serverTimestamp, deleteDoc, increment, updateDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
-import { auth, db, handleFirestoreError, OperationType } from "./lib/firebase";
+import { auth, db, handleFirestoreError, OperationType, isFirestoreQuotaExceeded } from "./lib/firebase";
 
 import { 
   Sparkles, 
@@ -48,9 +48,9 @@ export default function App() {
 
   // Dynamic customization for "add creator live" state
   const [isAddCreatorLiveOpen, setIsAddCreatorLiveOpen] = useState(false);
-  const [newLiveTitle, setNewLiveTitle] = useState("");
+  const [newLiveTitle, setNewLiveTitle] = useState("PUBG Mobile - Road to Conqueror! 🔫🍗");
   const [newLiveUsername, setNewLiveUsername] = useState("");
-  const [newLiveCategory, setNewLiveCategory] = useState("IRL Chatting");
+  const [newLiveCategory, setNewLiveCategory] = useState("Gaming & Esports");
   const [newLiveLevel, setNewLiveLevel] = useState(1);
   const [newLiveViewers, setNewLiveViewers] = useState(0);
   const [newLiveCoins, setNewLiveCoins] = useState(0); 
@@ -61,6 +61,11 @@ export default function App() {
   const handleAddCreatorLive = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newLiveTitle.trim() || !newLiveUsername.trim() || !auth.currentUser) return;
+    if (isFirestoreQuotaExceeded) {
+       alert("Daily server limit reached! Your live can start but won't be listed globally right now.");
+       setIsAddCreatorLiveOpen(false);
+       return;
+    }
 
     const formattedUsername = newLiveUsername.replace(/^@/, '');
     const seed = Math.floor(Math.random() * 1000);
@@ -115,6 +120,8 @@ export default function App() {
 
   // Sync with Firebase Auth state on mount/init
   useEffect(() => {
+    let syncTimeout: any = null;
+
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         try {
@@ -144,41 +151,82 @@ export default function App() {
         localStorage.removeItem("loopchat_current_user");
       }
     });
-    return () => unsubscribe();
-  }, []);
 
-  // Pre-seed "CVV" creator code if it doesn't exist in Firestore
-  useEffect(() => {
-    const seedCVVCode = async () => {
-      try {
-        const codeRef = doc(db, "coin_codes", "CVV");
-        const codeSnap = await getDoc(codeRef);
-        if (!codeSnap.exists()) {
-          await setDoc(codeRef, {
-            code: "CVV",
-            coins: 5000,
-            createdAt: new Date().toISOString()
-          });
-          console.log("Successfully pre-seeded 'CVV' creator code!");
-        }
-      } catch (err) {
-        console.error("Failed to seed CVV creator code:", err);
-      }
+    return () => {
+      unsubscribe();
+      if (syncTimeout) clearTimeout(syncTimeout);
     };
-    seedCVVCode();
   }, []);
 
-  // Sync user state with local storage & Firestore
+  // Optimized Pre-seed "CVV" creator code - only once per app load
+  const [hasAttemptedSeed, setHasAttemptedSeed] = useState(false);
+  useEffect(() => {
+    if (hasAttemptedSeed) return;
+
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (!firebaseUser || hasAttemptedSeed) return;
+      
+      setHasAttemptedSeed(true);
+      const seedCVVCode = async () => {
+        try {
+          const codeRef = doc(db, "coin_codes", "CVV");
+          const codeSnap = await getDoc(codeRef);
+          if (!codeSnap.exists()) {
+            await setDoc(codeRef, {
+              code: "CVV",
+              coins: 5000,
+              createdAt: serverTimestamp() 
+            });
+            console.log("Successfully pre-seeded 'CVV' creator code!");
+          }
+        } catch (err) {
+          // Check for quota or permission errors silently
+          if (err instanceof Error && err.message.includes("quota")) {
+            console.warn("Firestore quota reached - skipping CVV seed.");
+          } else {
+            console.warn("Notice: CVV code seeding noted:", err);
+          }
+        }
+      };
+      seedCVVCode();
+    });
+    return () => unsubscribe();
+  }, [hasAttemptedSeed]);
+
+  // Ref for debouncing Firestore writes
+  const persistenceTimeoutRef = React.useRef<any>(null);
+
+  // Sync user state with local storage & Firestore (DEBOUNCED)
   const handleUserUpdate = async (updatedUser: User) => {
+    // 1. Update local reactive state immediately for snappy UI
     setCurrentUser(updatedUser);
     localStorage.setItem("loopchat_current_user", JSON.stringify(updatedUser));
-    try {
-      const userRef = doc(db, "users", updatedUser.id);
-      await setDoc(userRef, updatedUser, { merge: true });
-    } catch (err) {
-      console.error("Failed syncing updated profile with Firestore:", err);
-      handleFirestoreError(err, OperationType.WRITE, `users/${updatedUser.id}`);
+    
+    // 2. Debounce Firestore persistence to save write units
+    if (isFirestoreQuotaExceeded) {
+       console.debug("Firestore write skipped: Quota exceeded flag is active.");
+       return;
     }
+
+    if (persistenceTimeoutRef.current) {
+      clearTimeout(persistenceTimeoutRef.current);
+    }
+
+    persistenceTimeoutRef.current = setTimeout(async () => {
+      try {
+        const userRef = doc(db, "users", updatedUser.id);
+        await setDoc(userRef, updatedUser, { merge: true });
+        console.debug("User profile synced to Firestore");
+      } catch (err) {
+        // Handle quota issues gracefully without breaking the UI flow
+        if (err instanceof Error && err.message.includes("resource-exhausted")) {
+          console.warn("Firestore Quota Exhausted: Profile saved locally but not to cloud.");
+        } else {
+          console.error("Failed syncing updated profile with Firestore:", err);
+          // Don't throw for every minor failed sync to prevent UI crashes
+        }
+      }
+    }, 3000); // 3-second debounce window
   };
 
   const handleCoinsPurchased = (coinsCount: number) => {
@@ -242,6 +290,7 @@ export default function App() {
   };
 
   const handleRemoveStreamer = async (streamerId: string) => {
+    if (isFirestoreQuotaExceeded) return;
     try {
       await deleteDoc(doc(db, "streamers", streamerId));
     } catch (err) {
@@ -252,16 +301,6 @@ export default function App() {
   const handleJoinStreamer = async (streamer: Streamer) => {
     setSelectedStreamer(streamer);
     if (!currentUser) return;
-
-    // Increment viewers count in Firestore
-    try {
-      const streamerRef = doc(db, "streamers", streamer.id);
-      await updateDoc(streamerRef, {
-        viewersCount: increment(1)
-      });
-    } catch (err) {
-      console.error("Failed to increment viewers count:", err);
-    }
 
     // Track distinct watch channels dynamically in local storage
     const watchedChannelsKey = `watched_channels_${currentUser.id}`;

@@ -5,13 +5,8 @@ service cloud.firestore {
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
-    function isSignedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function isSignedIn() { return request.auth != null; }
     function isOwner(creatorId) { return isSignedIn() && creatorId == request.auth.uid; }
-
-    // Default deny catch-all
-    match /{document=**} {
-      allow read, write: if false;
-    }
 
     // --- Streamers ---
     function isValidStreamer(data) {
@@ -19,8 +14,8 @@ service cloud.firestore {
         && data.username is string && data.username.size() <= 50
         && data.title is string && data.title.size() <= 150
         && data.isLive is bool
-        && data.creatorId is string && data.creatorId == request.auth.uid
-        && data.createdAt == request.time
+        && data.creatorId is string && data.creatorId.size() <= 128
+        && data.createdAt is timestamp
         && (!('viewersCount' in data) || data.viewersCount is int >= 0)
         && (!('level' in data) || data.level is int >= 1)
         && (!('startingCoins' in data) || data.startingCoins is int >= 0)
@@ -32,15 +27,21 @@ service cloud.firestore {
     }
 
     match /streamers/{streamerId} {
-      allow read: if true; // Streams are public
-      allow create: if isSignedIn() && isValidId(streamerId) && isValidStreamer(incoming()) && incoming().keys().size() <= 15;
-      allow update: if isSignedIn() && isValidId(streamerId) && isOwner(existing().creatorId) 
-        && isValidStreamer(incoming())
-        && incoming().creatorId == existing().creatorId
-        && incoming().createdAt == existing().createdAt
-        && (
-          incoming().diff(existing()).affectedKeys().hasOnly(['viewersCount', 'title', 'category', 'isLive', 'level', 'startingCoins', 'videoFeedType', 'customVideoUrl', 'fullName', 'avatarUrl', 'username'])
-        );
+      allow get, list: if true; // Publicly accessible
+      allow create: if isSignedIn() && isValidId(streamerId) && isValidStreamer(incoming()) 
+        && incoming().creatorId == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update: if isSignedIn() && isValidId(streamerId) && (
+        // Action: Viewer Increment (Anyone)
+        (incoming().diff(existing()).affectedKeys().hasOnly(['viewersCount']) && incoming().viewersCount == existing().viewersCount + 1) ||
+        // Action: Full Update (Owner)
+        (isOwner(existing().creatorId) 
+          && isValidStreamer(incoming())
+          && incoming().creatorId == existing().creatorId
+          && incoming().createdAt == existing().createdAt
+          && incoming().diff(existing()).affectedKeys().hasOnly(['viewersCount', 'title', 'category', 'isLive', 'level', 'startingCoins', 'videoFeedType', 'customVideoUrl', 'fullName', 'avatarUrl', 'username'])
+        )
+      );
       allow delete: if isSignedIn() && isValidId(streamerId) && isOwner(existing().creatorId);
     }
 
@@ -50,8 +51,8 @@ service cloud.firestore {
         && data.name is string && data.name.size() <= 50
         && data.icon is string && data.icon.size() <= 10
         && data.cost is int && data.cost >= 0
-        && data.creatorId is string && data.creatorId == request.auth.uid
-        && data.createdAt == request.time
+        && data.creatorId.size() <= 128
+        && data.createdAt is timestamp
         && (!('effect' in data) || data.effect is string && data.effect.size() <= 100)
         && (!('category' in data) || data.category is string && data.category.size() <= 50)
         && (!('videoFeedTheme' in data) || data.videoFeedTheme is string && data.videoFeedTheme.size() <= 100)
@@ -59,8 +60,10 @@ service cloud.firestore {
     }
 
     match /gifts/{giftId} {
-      allow read: if true; // Gifts are public
-      allow create: if isSignedIn() && isValidId(giftId) && isValidGift(incoming()) && incoming().keys().size() <= 10;
+      allow get, list: if true; 
+      allow create: if isSignedIn() && isValidId(giftId) && isValidGift(incoming()) 
+        && incoming().creatorId == request.auth.uid
+        && incoming().createdAt == request.time;
       allow update: if isSignedIn() && isValidId(giftId) && isOwner(existing().creatorId)
         && isValidGift(incoming())
         && incoming().creatorId == existing().creatorId
@@ -69,6 +72,57 @@ service cloud.firestore {
           incoming().diff(existing()).affectedKeys().hasOnly(['name', 'icon', 'cost', 'effect', 'category', 'videoFeedTheme', 'customVideoUrl'])
         );
       allow delete: if isSignedIn() && isValidId(giftId) && isOwner(existing().creatorId);
+    }
+
+    // --- Users ---
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'username', 'fullName', 'avatarUrl', 'coins', 'level', 'xp'])
+        && data.id is string && data.id.size() <= 128
+        && data.username is string && data.username.size() <= 100
+        && data.fullName is string && data.fullName.size() <= 150
+        && data.avatarUrl is string && data.avatarUrl.size() <= 2000
+        && data.coins is int
+        && data.level is int
+        && data.xp is int
+        && (!('email' in data) || data.email is string)
+        && (!('bio' in data) || data.bio is string)
+        && (!('diamonds' in data) || data.diamonds is int)
+        && (!('xpToNextLevel' in data) || data.xpToNextLevel is int)
+        && (!('followers' in data) || data.followers is int)
+        && (!('following' in data) || data.following is int)
+        && (!('createdAt' in data) || data.createdAt is string)
+        && (!('activeFrameId' in data) || data.activeFrameId is string)
+        && (!('unlockedFrames' in data) || data.unlockedFrames is list)
+        && (!('countryFlag' in data) || data.countryFlag is string)
+        && (!('gender' in data) || data.gender is string)
+        && (!('likesCount' in data) || data.likesCount is int)
+        && (!('friendsCount' in data) || data.friendsCount is int)
+        && (!('referralCode' in data) || data.referralCode is string)
+        && (!('identificationCode' in data) || data.identificationCode is string)
+        && (!('watchedCount' in data) || data.watchedCount is int)
+        && (!('giftsSentCount' in data) || data.giftsSentCount is int)
+        && (!('equippedCount' in data) || data.equippedCount is int)
+        && (!('claimedMissions' in data) || data.claimedMissions is list);
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create, update: if isSignedIn() && userId == request.auth.uid && isValidUser(incoming());
+      allow delete: if false;
+    }
+
+    // --- Coin Codes ---
+    match /coin_codes/{code} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
