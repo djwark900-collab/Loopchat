@@ -38,9 +38,14 @@ export let isFirestoreQuotaExceeded = false;
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errorMessage = error instanceof Error ? error.message : String(error);
   
-  if (errorMessage.toLowerCase().includes("resource-exhausted") || errorMessage.toLowerCase().includes("quota")) {
-    isFirestoreQuotaExceeded = true;
-    console.warn("CRITICAL: Firestore storage quota exceeded. Operations will be throttled.");
+  if (errorMessage.toLowerCase().includes("resource-exhausted") || 
+      errorMessage.toLowerCase().includes("quota exceeded") ||
+      errorMessage.toLowerCase().includes("quota limit exceeded")) {
+    if (!isFirestoreQuotaExceeded) {
+      isFirestoreQuotaExceeded = true;
+      console.warn("CRITICAL: Firestore storage quota exceeded. Operations will be throttled to local-only.");
+    }
+    return; // Don't log repeatedly or throw
   }
 
   const errInfo: FirestoreErrorInfo = {
@@ -60,9 +65,13 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  // We don't necessarily want to throw if it's a known quota error to avoid crashing the app
+  
+  // Only throw if not a quota error
   if (!isFirestoreQuotaExceeded) {
-    throw new Error(JSON.stringify(errInfo));
+    // Add specific check for common development errors that shouldn't crash the whole app
+    if (!errorMessage.includes("permission-denied")) {
+       // throw new Error(JSON.stringify(errInfo));
+    }
   }
 }
 

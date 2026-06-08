@@ -174,10 +174,12 @@ export default function App() {
       
       setHasAttemptedSeed(true);
       const seedCVVCode = async () => {
+        if (isFirestoreQuotaExceeded) return;
         try {
           const codeRef = doc(db, "coin_codes", "CVV");
           const codeSnap = await getDoc(codeRef);
           if (!codeSnap.exists()) {
+            if (isFirestoreQuotaExceeded) return;
             await setDoc(codeRef, {
               code: "CVV",
               coins: 5000,
@@ -187,7 +189,7 @@ export default function App() {
           }
         } catch (err) {
           // Check for quota or permission errors silently
-          if (err instanceof Error && err.message.includes("quota")) {
+          if (err instanceof Error && (err.message.includes("quota") || err.message.includes("resource-exhausted"))) {
             console.warn("Firestore quota reached - skipping CVV seed.");
           } else {
             console.warn("Notice: CVV code seeding noted:", err);
@@ -208,9 +210,8 @@ export default function App() {
     setCurrentUser(updatedUser);
     localStorage.setItem("loopchat_current_user", JSON.stringify(updatedUser));
     
-    // 2. Debounce Firestore persistence to save write units
+    // 2. Debounce Firestore persistence to save write units (15-second window for heavy simulation)
     if (isFirestoreQuotaExceeded) {
-       console.debug("Firestore write skipped: Quota exceeded flag is active.");
        return;
     }
 
@@ -219,20 +220,18 @@ export default function App() {
     }
 
     persistenceTimeoutRef.current = setTimeout(async () => {
+      // Re-check quota right before execution
+      if (isFirestoreQuotaExceeded) return;
+
       try {
         const userRef = doc(db, "users", updatedUser.id);
         await setDoc(userRef, updatedUser, { merge: true });
-        console.debug("User profile synced to Firestore");
+        console.debug("User profile successfully synced to Cloud Firestore.");
       } catch (err) {
-        // Handle quota issues gracefully without breaking the UI flow
-        if (err instanceof Error && err.message.includes("resource-exhausted")) {
-          console.warn("Firestore Quota Exhausted: Profile saved locally but not to cloud.");
-        } else {
-          console.error("Failed syncing updated profile with Firestore:", err);
-          // Don't throw for every minor failed sync to prevent UI crashes
-        }
+        // Handle quota issues gracefully using shared handler
+        handleFirestoreError(err, OperationType.UPDATE, `users/${updatedUser.id}`);
       }
-    }, 3000); // 3-second debounce window
+    }, 15000); // 15-second debounce window to prevent quota exhaustion
   };
 
   const handleCoinsPurchased = (coinsCount: number) => {
@@ -385,6 +384,13 @@ export default function App() {
           {/* Dynamic Global Wallet & Stats Badges */}
           <div className="flex items-center gap-2.5 sm:gap-4">
             
+            {/* Cloud Sync Status Indicator */}
+            {isFirestoreQuotaExceeded && (
+              <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-500 text-[8px] font-black uppercase tracking-widest animate-pulse">
+                Offline Mode
+              </div>
+            )}
+
             {/* Level indicators */}
             <div className="bg-stone-950/60 border border-stone-800/60 px-2.5 py-1 rounded-xl flex items-center gap-1">
               <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -456,116 +462,153 @@ export default function App() {
         </main>
       ) : activeTab === "live" ? (
         /* 
-          NEW REFACTORED LIVE COMMUNITY TAB: 
-          Provides "list live all user" experience as requested.
+          ENHANCED LIVE DISCOVERY HUB: 
+          Provides immersive "all user live" experience with trending and discovery sections.
         */
         <main className="flex-1 flex flex-col relative overflow-hidden bg-[#0c0816]">
-          {/* Header for Live Tab */}
-          <div className="p-5 flex items-center justify-between border-b border-stone-850 bg-black/40 backdrop-blur-md sticky top-0 z-20">
-             <div className="flex items-center gap-2.5">
-               <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></div>
-               <h3 className="text-xl font-black text-white tracking-tight">Live Hub</h3>
+          {/* Immersive Header for Live Discovery */}
+          <div className="p-6 flex items-center justify-between border-b border-stone-850/50 bg-black/60 backdrop-blur-xl sticky top-0 z-30">
+             <div className="flex items-center gap-3">
+               <div className="relative">
+                 <div className="w-3 h-3 rounded-full bg-red-500 animate-ping absolute inset-0 opacity-75"></div>
+                 <div className="w-3 h-3 rounded-full bg-red-600 relative"></div>
+               </div>
+               <div>
+                  <h3 className="text-xl font-black text-white tracking-widest uppercase italic">Live Hub</h3>
+                  <p className="text-[10px] text-stone-500 font-mono font-bold uppercase tracking-tighter">Community Discovery</p>
+               </div>
              </div>
-             <div className="text-[10px] text-stone-500 font-mono flex items-center gap-2">
-                <Users className="w-3 h-3 text-indigo-400" /> {streamersList.length} ONLINE
+             <div className="flex items-center gap-3">
+                <div className="hidden sm:flex flex-col items-end mr-2">
+                   <span className="text-[10px] text-indigo-400 font-black tracking-widest uppercase">Global Lobby</span>
+                   <span className="text-[9px] text-stone-500 font-mono">{streamersList.length} Active Channels</span>
+                </div>
+                <button
+                  onClick={() => setIsBroadcastingStudio(true)}
+                  className="px-5 py-2.5 bg-gradient-to-r from-red-600 to-indigo-600 hover:from-red-500 hover:to-indigo-500 text-white font-black rounded-xl text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-900/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                >
+                  <Video className="w-4 h-4" /> Go Live
+                </button>
              </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8 pb-24">
-             {/* 1. BROADCASTER ENTRY SECTION */}
-             <div className="bg-gradient-to-br from-indigo-900/40 via-purple-900/20 to-stone-900/60 border-2 border-indigo-500/40 rounded-3xl p-6 relative overflow-hidden shadow-2xl group transition-all hover:border-amber-500/30">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-500/5 duration-500"></div>
-                <div className="relative z-10 space-y-4">
-                   <div className="flex items-center gap-3">
-                     <div className="p-3 bg-indigo-500/20 rounded-2xl border border-indigo-400/20">
-                        <Video className="w-6 h-6 text-indigo-400" />
-                     </div>
-                     <div>
-                        <h4 className="text-lg font-black text-white leading-none">Broadcaster Studio</h4>
-                        <p className="text-[11px] text-indigo-300/80 font-medium mt-1">Start your own live loop experience</p>
-                     </div>
-                   </div>
-                   
-                   <p className="text-xs text-stone-400 leading-relaxed max-w-sm">
-                      Go live to interact with your followers, receive animated crowns & roses, and earn diamonds from tips!
-                   </p>
-
-                   <button
-                     onClick={() => {
-                       // We can still use the same simulator but with a 'full-tab' overlay intent if needed.
-                       // For now, let's keep the Simulator being the manager but we'll trigger it here.
-                       // Actually, let's just make the simulator render its setup if activeStreamer is null.
-                       // But the user is ALREADY in simulator if tab === 'live'.
-                       // So I should CHANGE tab === 'live' to be THIS view, and then trigger the simulator OVERLAY.
-                       setIsBroadcastingStudio(true);
-                     }}
-                     className="w-full sm:w-auto px-10 py-3 bg-gradient-to-r from-red-600 via-purple-600 to-indigo-600 hover:from-red-500 hover:to-indigo-550 text-white font-black rounded-2xl text-xs uppercase tracking-widest shadow-[0_8px_20px_rgba(79,70,229,0.3)] transition-all hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
-                   >
-                     Go Live Now
-                   </button>
+          <div className="flex-1 overflow-y-auto px-5 py-6 space-y-10 pb-32">
+             
+             {/* 1. FEATURED / TRENDING CREATORS */}
+             <section className="space-y-4">
+                <div className="flex items-center gap-2 px-1">
+                   <Flame className="w-5 h-5 text-amber-500" />
+                   <h4 className="text-sm font-black text-white uppercase tracking-wider">Trending Creators</h4>
                 </div>
-             </div>
+                <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                   {streamersList.slice(0, 5).map((live) => (
+                      <div 
+                        key={`trending-${live.id}`}
+                        onClick={() => setSelectedStreamer(live)}
+                        className="flex-shrink-0 w-64 group cursor-pointer"
+                      >
+                         <div className="relative aspect-video rounded-3xl overflow-hidden border border-stone-850 group-hover:border-amber-500/50 transition-all duration-500">
+                            <img src={live.avatarUrl} className="w-full h-full object-cover group-hover:scale-110 duration-700" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                            <div className="absolute top-3 left-3 flex items-center gap-2">
+                               <div className="px-2 py-1 bg-red-600 text-white text-[8px] font-black rounded-lg uppercase tracking-tighter">Live</div>
+                               <div className="px-2 py-1 bg-black/40 backdrop-blur-md text-white text-[8px] font-bold rounded-lg flex items-center gap-1">
+                                  <Users className="w-2.5 h-2.5" /> {live.viewersCount}
+                               </div>
+                            </div>
+                            <div className="absolute bottom-4 left-4 right-4">
+                               <p className="text-xs font-black text-white truncate drop-shadow-md">{live.title}</p>
+                               <div className="flex items-center gap-2 mt-1">
+                                  <img src={live.avatarUrl} className="w-5 h-5 rounded-full border border-white/20" />
+                                  <span className="text-[10px] text-stone-300 font-bold">@{live.username}</span>
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                   ))}
+                </div>
+             </section>
 
-             {/* 2. LIVE COMMUNITY LIST - "list live all user" */}
-             <div className="space-y-4">
+             {/* 2. DISCOVERY DIRECTORY - ALL USER LIST */}
+             <section className="space-y-5">
                 <div className="flex items-center justify-between px-1">
-                   <h4 className="text-[10px] font-black uppercase text-amber-500 tracking-wider flex items-center gap-1.5">
-                     <Flame className="w-3.5 h-3.5" /> Discovery Directory
-                   </h4>
-                   <button 
-                     onClick={() => setActiveTab("home")}
-                     className="text-[10px] font-bold text-stone-500 hover:text-white transition-colors"
-                   >
-                      View Category Filters »
-                   </button>
+                   <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-indigo-500/10 rounded-lg">
+                        <Users className="w-5 h-5 text-indigo-400" />
+                      </div>
+                      <h4 className="text-sm font-black text-white uppercase tracking-wider">All User Live</h4>
+                   </div>
+                   <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1.5 px-3 py-1 bg-stone-900 border border-stone-800 rounded-full">
+                         <Search className="w-3.5 h-3.5 text-stone-500" />
+                         <span className="text-[10px] text-stone-500 font-bold uppercase">Filter</span>
+                      </div>
+                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
-                  {streamersList.filter(s => s.creatorId !== auth.currentUser?.uid).map((live) => (
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                  {streamersList.map((live) => (
                     <div 
                       key={live.id} 
                       onClick={() => setSelectedStreamer(live)}
-                      className="bg-stone-900/60 border border-stone-850 rounded-2xl overflow-hidden hover:border-indigo-500/30 transition-all group cursor-pointer shadow-lg"
+                      className="bg-[#110d1f]/60 border border-stone-850/50 rounded-2xl overflow-hidden hover:border-indigo-500/20 transition-all group cursor-pointer shadow-xl relative"
                     >
+                      {/* Live Badge for own content if applicable */}
+                      {live.creatorId === auth.currentUser?.uid && (
+                        <div className="absolute top-2 right-2 z-10 px-2 py-0.5 bg-indigo-600 text-white text-[7px] font-black rounded uppercase">My Live</div>
+                      )}
+
                       <div className="relative aspect-video">
-                         <img src={live.avatarUrl} className="w-full h-full object-cover group-hover:scale-110 duration-500" />
-                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                            <p className="text-[11px] font-black text-white truncate">{live.fullName}</p>
-                         </div>
-                         <div className="absolute top-1.5 left-1.5 bg-red-600 text-white font-black text-[7px] px-1.5 py-0.5 rounded flex items-center gap-1 uppercase tracking-tighter">
-                            <Users className="w-2 h-2" /> {live.viewersCount}
+                         <img src={live.avatarUrl} className="w-full h-full object-cover group-hover:brightness-110 duration-500" />
+                         <div className="absolute inset-0 bg-gradient-to-t from-[#0c0816] to-transparent opacity-80" />
+                         <div className="absolute bottom-3 left-3 right-3">
+                            <p className="text-[10px] font-black text-white truncate leading-tight mb-1">{live.title}</p>
+                            <span className="text-[9px] text-indigo-400 font-bold uppercase tracking-widest">{live.category.split(' ')[0]}</span>
                          </div>
                       </div>
-                      <div className="p-2.5">
-                         <p className="text-[9px] text-[#A78BFA] font-bold uppercase truncate">{live.title}</p>
-                         <div className="flex items-center justify-between mt-2">
-                            <span className="text-[8px] text-stone-500 font-mono">@{live.username}</span>
-                            <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                               <Play className="w-2.5 h-2.5 text-indigo-400 fill-indigo-400" />
+                      <div className="p-3 flex items-center justify-between border-t border-stone-850/30">
+                         <div className="flex items-center gap-2 overflow-hidden">
+                           <img src={live.avatarUrl} className="w-7 h-7 rounded-full border border-stone-800 object-cover" />
+                           <div className="overflow-hidden">
+                              <p className="text-[10px] font-bold text-stone-200 truncate">{live.fullName}</p>
+                              <p className="text-[8px] text-stone-500 font-mono truncate">@{live.username}</p>
+                           </div>
+                         </div>
+                         <div className="flex flex-col items-end">
+                            <div className="text-[9px] font-black text-stone-300 flex items-center gap-1">
+                               <Users className="w-2.5 h-2.5" /> {live.viewersCount}
                             </div>
                          </div>
                       </div>
                     </div>
                   ))}
 
-                  {streamersList.filter(s => s.creatorId !== auth.currentUser?.uid).length === 0 && (
-                    <div className="col-span-2 py-12 text-center border-2 border-dashed border-stone-850 rounded-3xl">
-                       <p className="text-xs text-stone-500 font-medium italic">No other live loops found. Start yours to appear here!</p>
+                  {streamersList.length === 0 && (
+                    <div className="col-span-full py-20 text-center border-2 border-dashed border-stone-850 rounded-[40px] bg-stone-900/20">
+                       <div className="w-16 h-16 bg-stone-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-stone-800">
+                          <Plus className="w-8 h-8 text-stone-600" />
+                       </div>
+                       <p className="text-sm text-stone-400 font-bold italic">No active loops found.</p>
+                       <p className="text-[10px] text-stone-600 uppercase tracking-widest mt-2">Start your studio session to appear here</p>
                     </div>
                   )}
                 </div>
-             </div>
+             </section>
           </div>
 
-          {/* STUDIO SETUP OVERLAY IF TRIGGERED */}
+          {/* BROADCAST STUDIO OVERLAY */}
           {isBroadcastingStudio && (
-            <div className="absolute inset-0 z-50 bg-[#0c0816] flex flex-col pt-4">
-               <div className="px-4 flex justify-end">
-                  <button onClick={() => setIsBroadcastingStudio(false)} className="p-2 bg-stone-900 rounded-full text-stone-400">
+            <div className="absolute inset-0 z-50 bg-[#0c0816] flex flex-col">
+               <div className="px-6 py-4 flex justify-between items-center border-b border-stone-850/40 bg-black/40">
+                  <div className="flex items-center gap-2">
+                     <Video className="w-5 h-5 text-red-500" />
+                     <h4 className="text-xs font-black text-white uppercase tracking-widest italic">Host Studio Selection</h4>
+                  </div>
+                  <button onClick={() => setIsBroadcastingStudio(false)} className="p-2 bg-stone-900/60 rounded-full text-stone-400 hover:text-white transition-colors border border-stone-800">
                     <X className="w-5 h-5" />
                   </button>
                </div>
-               <div className="flex-1 overflow-y-auto px-4 py-2">
+               <div className="flex-1 overflow-y-auto px-4 py-4">
                  <LiveStreamSimulator
                    currentUser={currentUser}
                    activeStreamer={null}

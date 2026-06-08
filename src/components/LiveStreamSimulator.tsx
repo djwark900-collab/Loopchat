@@ -334,19 +334,18 @@ export default function LiveStreamSimulator({
       if (!isBroadcasting && activeStreamer) {
         incrementTimeout = setTimeout(async () => {
           try {
+            if (isFirestoreQuotaExceeded) return;
             const streamerRef = doc(db, "streamers", activeStreamer.id);
             // double check existence to avoid errors if stream ended
-            if (isFirestoreQuotaExceeded) return;
             const snap = await getDoc(streamerRef);
             if (snap.exists() && snap.data().isLive) {
                await updateDoc(streamerRef, { viewersCount: increment(1) });
-               console.debug("Viewer count incremented in Firestore");
+               console.debug("Viewer count incremented in Firestore after stable session");
             }
           } catch (err) {
-            // Silently handle quota or missing doc
-            console.warn("Could not increment viewer count:", err);
+            handleFirestoreError(err, OperationType.UPDATE, `streamers/${activeStreamer.id}`);
           }
-        }, 3000); // 3-second grace period
+        }, 10000); // 10-second grace period for "stable" viewers only
 
         // Pre-occupy some guest slots with active co-hosts only for other listed streams (viewer mode)
         setCoHostSlots((prevSlots) => {
@@ -1142,40 +1141,53 @@ export default function LiveStreamSimulator({
               </button>
             </div>
 
-            {/* LIVE COMMUNITY DIRECTORY SECTION */}
+            {/* LIVE COMMUNITY DIRECTORY SECTION - "list live all user" requested */}
             <div className="space-y-3 pt-4 border-t border-stone-850 mt-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
-                  <Users className="w-3 h-3" /> Live Community List
+                <h4 className="text-[10px] font-black uppercase text-amber-500 tracking-wider flex items-center gap-1.5 font-sans">
+                  <Users className="w-3.5 h-3.5" /> Discovery Directory
                 </h4>
-                <span className="text-[9px] text-stone-500 font-mono">{otherLives.length} Gamers Online</span>
+                <div className="flex items-center gap-1.5">
+                   <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+                   <span className="text-[8px] text-stone-500 font-mono font-bold uppercase">{otherLives.length} Online</span>
+                </div>
               </div>
 
-              <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+              <div className="grid grid-cols-1 gap-2.5 max-h-[220px] overflow-y-auto pr-1 overflow-x-hidden">
                 {otherLives.length > 0 ? (
                   otherLives.map(live => (
-                    <div key={live.id} className="flex items-center justify-between p-2.5 bg-stone-950/40 border border-stone-850/60 rounded-xl">
+                    <div 
+                      key={live.id} 
+                      onClick={() => {
+                        // In setup mode, allow joining directly if they decide not to stream
+                        onClose(); // Close setup
+                        // This would require a parent callback to "setSelectedStreamer(live)"
+                        // Since we don't have it direct, we'll just show it for now as info
+                        // unless we want to enhance the onJoin props.
+                      }}
+                      className="flex items-center justify-between p-3 bg-stone-950/40 border border-stone-850/60 rounded-2xl group transition-all hover:border-indigo-500/30"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <img src={live.avatarUrl} className="w-8 h-8 rounded-full border border-stone-800 object-cover" />
-                          <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 border border-stone-950 animate-pulse"></span>
+                          <img src={live.avatarUrl} className="w-10 h-10 rounded-full border border-stone-800 object-cover group-hover:scale-105 transition-transform" />
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-600 border-2 border-stone-900 animate-pulse"></div>
                         </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-white leading-none">{live.fullName}</p>
-                          <p className="text-[9px] text-stone-500 font-mono mt-1">{live.username}</p>
+                        <div className="max-w-[120px]">
+                          <p className="text-[11px] font-black text-white leading-none truncate">{live.fullName}</p>
+                          <p className="text-[9px] text-stone-500 font-mono mt-1">@{live.username}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                         <div className="text-[9px] font-black text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded uppercase">{live.category.split(' ')[0]}</div>
-                         <div className="text-[8px] text-stone-500 font-mono mt-1 flex items-center gap-1 justify-end">
-                           <Users className="w-2.5 h-2.5" /> {live.viewersCount}
+                         <div className="text-[8px] font-black text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-lg uppercase tracking-widest border border-indigo-500/10">{live.category.split(' ')[0]}</div>
+                         <div className="text-[9px] text-stone-400 font-mono mt-1.5 flex items-center gap-1 justify-end font-bold">
+                           <Users className="w-2.5 h-2.5 text-stone-500" /> {live.viewersCount}
                          </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-6 border border-dashed border-stone-850 rounded-xl">
-                    <p className="text-[10px] text-stone-500 font-medium italic">No other users are currently live. Be the first!</p>
+                  <div className="text-center py-8 border border-dashed border-stone-850 rounded-2xl">
+                    <p className="text-[10px] text-stone-500 font-medium italic">Your loop will be the first active channel!</p>
                   </div>
                 )}
               </div>
