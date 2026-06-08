@@ -122,10 +122,10 @@ export default function LiveStreamSimulator({
   // States for tracking Stream Session Statistics (Session Overview)
   const [showSessionOverview, setShowSessionOverview] = useState(false);
   const [durationSeconds, setDurationSeconds] = useState(0);
-  const [totalUniqueUsers, setTotalUniqueUsers] = useState(142); // Starts at a lively room size
+  const [totalUniqueUsers, setTotalUniqueUsers] = useState(0);
   const [totalGiftsCount, setTotalGiftsCount] = useState(0);
   const [totalCoinsEarned, setTotalCoinsEarned] = useState(0);
-  const [sessionFollowCount, setSessionFollowCount] = useState(3); // Start with active followers
+  const [sessionFollowCount, setSessionFollowCount] = useState(0);
 
   // Mic, Camera toggle states
   const [isMicOn, setIsMicOn] = useState(true);
@@ -369,8 +369,9 @@ export default function LiveStreamSimulator({
     }
   }, [isLiveActive, activeStreamer, isBroadcasting]);
 
-  // Simulated Comments Feed
+  // Simulated Comments Feed (DISABLED - Fake delete)
   useEffect(() => {
+    /* Simulation disabled by user request
     if (isLiveActive && !isBroadcasting && activeStreamer) {
       chatIntervalRef.current = window.setInterval(() => {
         const randomUser = CHATTER_USERNAMES[Math.floor(Math.random() * CHATTER_USERNAMES.length)];
@@ -387,14 +388,16 @@ export default function LiveStreamSimulator({
         setChatMessages((prev) => [...prev.slice(-25), newMessage]);
       }, 2500);
     }
+    */
 
     return () => {
       if (chatIntervalRef.current) clearInterval(chatIntervalRef.current);
     };
   }, [isLiveActive, activeStreamer, isBroadcasting]);
 
-  // Viewer fluctuation
+  // Viewer fluctuation (DISABLED - Fake delete)
   useEffect(() => {
+    /* Simulation disabled by user request
     if (isLiveActive && !isBroadcasting && activeStreamer) {
       viewerIntervalRef.current = window.setInterval(() => {
         setViewersCount((prev) => {
@@ -403,6 +406,7 @@ export default function LiveStreamSimulator({
         });
       }, 5000);
     }
+    */
 
     return () => {
       if (viewerIntervalRef.current) clearInterval(viewerIntervalRef.current);
@@ -584,8 +588,9 @@ export default function LiveStreamSimulator({
     }, 5000);
   };
 
-  // Periodic simulated gifts from other view chatters
+  // Periodic simulated gifts from other view chatters (DISABLED - Fake delete)
   useEffect(() => {
+    /* Simulation disabled by user request
     if (isLiveActive && !isBroadcasting && activeStreamer) {
       giftIntervalRef.current = window.setInterval(() => {
         const randomGift = VIRTUAL_GIFTS[Math.floor(Math.random() * VIRTUAL_GIFTS.length)];
@@ -593,6 +598,7 @@ export default function LiveStreamSimulator({
         triggerIncomingGift(randomChatter, randomGift);
       }, 10000); // Trigger every 10 seconds
     }
+    */
 
     return () => {
       if (giftIntervalRef.current) clearInterval(giftIntervalRef.current);
@@ -609,12 +615,14 @@ export default function LiveStreamSimulator({
         setDurationSeconds((prev) => prev + 1);
       }, 1000);
 
+      /* Stats fluctuation disabled by user request
       statsTimer = window.setInterval(() => {
         setTotalUniqueUsers((prev) => prev + Math.floor(Math.random() * 3) - 1);
         if (Math.random() > 0.8) {
           setSessionFollowCount((prev) => prev + 1);
         }
       }, 6000);
+      */
     }
 
     return () => {
@@ -1045,25 +1053,30 @@ export default function LiveStreamSimulator({
           className="relative w-full h-screen md:h-auto md:aspect-[9/16] max-w-md bg-black md:rounded-[36px] md:border-[5px] md:border-stone-800 shadow-2xl overflow-hidden flex flex-col justify-between mx-auto"
           style={{ background: "#0c0816" }}
         >
-          {/* Simulated Backdrop live video layer */}
-          <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden h-full w-full">
-            {overrideVideoUrl ? (
-              <div className="relative w-full h-full flex items-center justify-center bg-black">
-                <video
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  src={overrideVideoUrl}
-                  className="w-full h-full object-cover animate-fadeIn"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-                <div className="absolute top-4 right-4 flex items-center gap-1.5 px-2 py-1 bg-amber-500/80 backdrop-blur rounded-lg shadow-lg animate-bounce">
-                  <Video className="w-3 h-3 text-white" />
-                  <span className="text-[10px] text-white font-black uppercase tracking-tighter">Premium Video Active</span>
+          {/* Video Takeover Overlay (Front & Sound) */}
+          {overrideVideoUrl && (
+            <div className="absolute inset-0 z-[60] pointer-events-none select-none overflow-hidden h-full w-full bg-black">
+              <video
+                autoPlay
+                loop
+                playsInline
+                src={overrideVideoUrl}
+                className="w-full h-full object-cover animate-fadeIn"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+              <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-rose-600/90 backdrop-blur rounded-xl shadow-[0_0_20px_rgba(225,29,72,0.4)] animate-bounce">
+                <Video className="w-3.5 h-3.5 text-white" />
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-white font-black uppercase tracking-tighter leading-none">PREMIUM VIDEO GIFT</span>
+                  <span className="text-[7px] text-rose-100 font-bold uppercase tracking-widest leading-none mt-0.5">Live Takeover Active</span>
                 </div>
               </div>
-            ) : (() => {
+            </div>
+          )}
+
+          {/* Simulated Backdrop live video layer */}
+          <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden h-full w-full">
+            {(() => {
               const theme = overrideVideoFeedTheme || activeStreamer?.videoFeedType || "Cosmic Nebula Loop 🌌";
               if (theme.includes("Neon Cybercity")) {
                 return (

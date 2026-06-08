@@ -132,53 +132,6 @@ export const COIN_PACKAGES: CoinPackage[] = [
   }
 ];
 
-export const MOCK_STREAMERS: Streamer[] = [
-  {
-    id: "streamer-amy",
-    username: "amy_spinz",
-    fullName: "Amy Henderson",
-    avatarUrl: "https://picsum.photos/seed/amy/150/150",
-    level: 14,
-    viewersCount: 342,
-    title: "DJ Set Live! Sunset Chill Vibes 🎧🎵",
-    category: "Music & Beats",
-    isLive: true
-  },
-  {
-    id: "streamer-lucas",
-    username: "lucas_codes",
-    fullName: "Lucas Thorne",
-    avatarUrl: "https://picsum.photos/seed/lucas/150/150",
-    level: 28,
-    viewersCount: 1105,
-    title: "Building LoopChat with 1M active connections 💻🚀",
-    category: "Software Development",
-    isLive: true
-  },
-  {
-    id: "streamer-marcus",
-    username: "chef_marcus",
-    fullName: "Chef Marcus",
-    avatarUrl: "https://picsum.photos/seed/marcus/150/150",
-    level: 9,
-    viewersCount: 184,
-    title: "Perfecting Hand-Pulled Noodles from scratch! 🍜🔥",
-    category: "Creative Arts & Cooking",
-    isLive: true
-  },
-  {
-    id: "streamer-elena",
-    username: "elena_vibe",
-    fullName: "Elena Rostova",
-    avatarUrl: "https://picsum.photos/seed/elena/150/150",
-    level: 35,
-    viewersCount: 2432,
-    title: "Cozy Coding Chat + Live Guitar QA! Ask Anything 🎸✨",
-    category: "IRL Chatting",
-    isLive: true
-  }
-];
-
 export const SIMULATED_CHAT_MESSAGES = [
   "Wow! This stream is amazing!",
   "Great setup! Love the lighting.",
