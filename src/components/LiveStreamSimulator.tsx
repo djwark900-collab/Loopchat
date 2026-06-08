@@ -6,6 +6,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { User, Streamer, ChatMessage, Gift } from "../types";
 import { VIRTUAL_GIFTS, SIMULATED_CHAT_MESSAGES, CHATTER_USERNAMES } from "../utils/mockData";
+import { doc, setDoc, collection, onSnapshot, query, serverTimestamp, deleteDoc } from "firebase/firestore";
+import { db, handleFirestoreError, OperationType, auth } from "../lib/firebase";
 import {
   Power,
   MessageSquare,
@@ -69,6 +71,7 @@ export default function LiveStreamSimulator({
   const [setupTitle, setSetupTitle] = useState("");
   const [setupCategory, setSetupCategory] = useState("IRL Chatting");
   const [isLiveActive, setIsLiveActive] = useState(false);
+  const [currentStreamerDocId, setCurrentStreamerDocId] = useState<string | null>(null);
   const [viewersCount, setViewersCount] = useState(0);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -81,18 +84,24 @@ export default function LiveStreamSimulator({
   const [notEnoughCoinsMsg, setNotEnoughCoinsMsg] = useState(false);
 
   // State to manage virtual gifts list (to persist custom added premium items)
-  const [giftsList, setGiftsList] = useState<Gift[]>(() => {
-    try {
-      const saved = localStorage.getItem(`custom_virtual_gifts`);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return [...VIRTUAL_GIFTS, ...parsed];
-      }
-    } catch (e) {
-      console.warn("Could not load custom gifts:", e);
-    }
-    return VIRTUAL_GIFTS;
-  });
+  const [giftsList, setGiftsList] = useState<Gift[]>(VIRTUAL_GIFTS);
+
+  // Sync gifts from Firestore
+  useEffect(() => {
+    const q = query(collection(db, "gifts"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fbGifts = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Gift));
+      // Merge with default gifts, avoiding duplicates by ID
+      setGiftsList((prev) => {
+        const defaultIds = VIRTUAL_GIFTS.map(g => g.id);
+        const uniqueFB = fbGifts.filter(fg => !defaultIds.includes(fg.id));
+        return [...VIRTUAL_GIFTS, ...uniqueFB];
+      });
+    }, (err) => {
+      handleFirestoreError(err, OperationType.LIST, "gifts");
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Gift multiplier counters (x1, x2, x3, x4 + Custom invente)
   const [giftMultiplier, setGiftMultiplier] = useState<number>(1);
@@ -832,10 +841,34 @@ export default function LiveStreamSimulator({
     }
   };
 
-  const startBroadcasting = (e: React.FormEvent) => {
+  const startBroadcasting = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!setupTitle.trim()) return;
-    setIsLiveActive(true);
+    if (!setupTitle.trim() || !auth.currentUser) return;
+
+    const streamerId = `streamer-${Date.now()}`;
+    const newStreamer: any = {
+      id: streamerId,
+      username: `@${currentUser.username}`,
+      fullName: currentUser.fullName,
+      avatarUrl: currentUser.avatarUrl,
+      level: currentUser.level,
+      viewersCount: 0,
+      title: setupTitle.trim(),
+      category: setupCategory,
+      isLive: true,
+      startingCoins: 0,
+      videoFeedType: "Cosmic Nebula Loop 🌌",
+      creatorId: auth.currentUser.uid,
+      createdAt: serverTimestamp()
+    };
+
+    try {
+      await setDoc(doc(db, "streamers", streamerId), newStreamer);
+      setCurrentStreamerDocId(streamerId);
+      setIsLiveActive(true);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `streamers/${streamerId}`);
+    }
   };
 
   const activeSelectedGift = VIRTUAL_GIFTS.find((g) => g.id === selectedGiftId) || VIRTUAL_GIFTS[0];
@@ -1216,7 +1249,16 @@ export default function LiveStreamSimulator({
               {isBroadcasting ? (
                 <button 
                   type="button"
-                  onClick={() => setShowSessionOverview(true)}
+                  onClick={async () => {
+                    if (currentStreamerDocId) {
+                      try {
+                        await deleteDoc(doc(db, "streamers", currentStreamerDocId));
+                      } catch (err) {
+                        console.error("Failed to delete streamer doc:", err);
+                      }
+                    }
+                    setShowSessionOverview(true);
+                  }}
                   className="px-3 py-1.5 bg-red-600 hover:bg-rose-500 border border-red-500/30 text-white font-black text-[10px] uppercase tracking-wider rounded-xl flex items-center gap-1 hover:scale-105 active:scale-95 transition-all shadow-md cursor-pointer whitespace-nowrap"
                   title="End My Live Session"
                 >
@@ -1967,43 +2009,41 @@ export default function LiveStreamSimulator({
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (!newGiftName.trim()) return;
+                        onClick={async () => {
+                          if (!newGiftName.trim() || !auth.currentUser) return;
                           
-                          const customObj: Gift = {
-                            id: `gift-custom-${Date.now()}`,
+                          const giftId = `gift-custom-${Date.now()}`;
+                          const customObj: any = {
+                            id: giftId,
                             name: newGiftName.trim(),
                             icon: newGiftIcon.trim() || "🎁",
                             cost: newGiftCost,
                             category: "premium",
                             animationStyle: "sparkle",
+                            creatorId: auth.currentUser.uid,
+                            createdAt: serverTimestamp()
                           };
 
                           // Attach video theme override properties safely
                           if (newGiftVideoUrl) {
-                            (customObj as any).customVideoUrl = newGiftVideoUrl;
+                            customObj.customVideoUrl = newGiftVideoUrl;
                           } else {
-                            (customObj as any).videoFeedTheme = newGiftVideoTheme;
+                            customObj.videoFeedTheme = newGiftVideoTheme;
                           }
 
-                          // Save to local hooks
-                          const updated = [...giftsList.filter(g => g.category === "custom" || g.id.startsWith("gift-custom-")), customObj];
                           try {
-                            localStorage.setItem(`custom_virtual_gifts`, JSON.stringify(updated));
-                          } catch (e) {
-                            console.warn("Could not save to localStorage:", e);
+                            await setDoc(doc(db, "gifts", giftId), customObj);
+                            setSelectedGiftId(giftId);
+                            // Reset states and exit
+                            setShowAddGiftPrompt(false);
+                            setNewGiftName("");
+                            setSimulatedFileName("");
+                            setSimulatedGiftVideoFileName("");
+                            setNewGiftVideoUrl("");
+                            setNewGiftIcon("👑");
+                          } catch (err) {
+                            handleFirestoreError(err, OperationType.WRITE, `gifts/${giftId}`);
                           }
-
-                          setGiftsList((prev) => [...prev, customObj]);
-                          setSelectedGiftId(customObj.id);
-
-                          // Reset states and exit
-                          setShowAddGiftPrompt(false);
-                          setNewGiftName("");
-                          setSimulatedFileName("");
-                          setSimulatedGiftVideoFileName("");
-                          setNewGiftVideoUrl("");
-                          setNewGiftIcon("👑");
                         }}
                         className="flex-1 py-2 bg-gradient-to-r from-amber-500 to-yellow-550 hover:from-amber-400 text-stone-950 text-xs font-black uppercase rounded-xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                       >

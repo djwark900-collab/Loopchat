@@ -10,9 +10,9 @@ import LiveStreamSimulator from "./components/LiveStreamSimulator";
 import ProfilePanel from "./components/ProfilePanel";
 import CoinsModal from "./components/CoinsModal";
 import DailyMissions from "./components/DailyMissions";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, onSnapshot, query, serverTimestamp, deleteDoc, increment, updateDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
-import { auth, db, handleFirestoreError, OperationType } from "./utils/firebase";
+import { auth, db, handleFirestoreError, OperationType } from "./lib/firebase";
 
 import { 
   Sparkles, 
@@ -45,6 +45,73 @@ export default function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isJoiningLive, setIsJoiningLive] = useState(false);
   const [joiningTarget, setJoiningTarget] = useState<Streamer | null>(null);
+
+  // Dynamic customization for "add creator live" state
+  const [isAddCreatorLiveOpen, setIsAddCreatorLiveOpen] = useState(false);
+  const [newLiveTitle, setNewLiveTitle] = useState("");
+  const [newLiveUsername, setNewLiveUsername] = useState("");
+  const [newLiveCategory, setNewLiveCategory] = useState("IRL Chatting");
+  const [newLiveLevel, setNewLiveLevel] = useState(1);
+  const [newLiveViewers, setNewLiveViewers] = useState(0);
+  const [newLiveCoins, setNewLiveCoins] = useState(0); 
+  const [newLiveVideoType, setNewLiveVideoType] = useState("Cosmic Nebula Loop 🌌");
+  const [newLiveAvatarUrl, setNewLiveAvatarUrl] = useState("");
+  const [simulatedFileName, setSimulatedFileName] = useState("");
+
+  const handleAddCreatorLive = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLiveTitle.trim() || !newLiveUsername.trim() || !auth.currentUser) return;
+
+    const formattedUsername = newLiveUsername.replace(/^@/, '');
+    const seed = Math.floor(Math.random() * 1000);
+    const finalAvatar = newLiveAvatarUrl.trim() || `https://picsum.photos/seed/custom_${seed}/150/150`;
+    
+    const streamerId = `streamer-${Date.now()}`;
+    const newStreamer: any = {
+      id: streamerId,
+      username: `@${formattedUsername}`,
+      fullName: newLiveUsername.charAt(0).toUpperCase() + newLiveUsername.slice(1),
+      avatarUrl: finalAvatar,
+      level: Number(newLiveLevel) || 1,
+      viewersCount: Number(newLiveViewers) || 0,
+      title: newLiveTitle.trim(),
+      category: newLiveCategory,
+      isLive: true,
+      startingCoins: Number(newLiveCoins) || 0,
+      videoFeedType: newLiveVideoType,
+      creatorId: auth.currentUser.uid,
+      createdAt: serverTimestamp()
+    };
+
+    try {
+      await setDoc(doc(db, "streamers", streamerId), newStreamer);
+      setIsAddCreatorLiveOpen(false);
+      // reset form fields
+      setNewLiveTitle("");
+      setNewLiveUsername("");
+      setNewLiveCategory("IRL Chatting");
+      setNewLiveLevel(1);
+      setNewLiveViewers(0);
+      setNewLiveCoins(0);
+      setNewLiveVideoType("Cosmic Nebula Loop 🌌");
+      setNewLiveAvatarUrl("");
+      setSimulatedFileName("");
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `streamers/${streamerId}`);
+    }
+  };
+
+  // Sync streams from Firestore
+  useEffect(() => {
+    const q = query(collection(db, "streamers"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const streams = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Streamer));
+      setStreamersList(streams);
+    }, (err) => {
+      handleFirestoreError(err, OperationType.LIST, "streamers");
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Sync with Firebase Auth state on mount/init
   useEffect(() => {
@@ -174,13 +241,27 @@ export default function App() {
     handleUserUpdate(updated);
   };
 
-  const handleRemoveStreamer = (streamerId: string) => {
-    setStreamersList(prev => prev.filter(s => s.id !== streamerId));
+  const handleRemoveStreamer = async (streamerId: string) => {
+    try {
+      await deleteDoc(doc(db, "streamers", streamerId));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `streamers/${streamerId}`);
+    }
   };
 
-  const handleJoinStreamer = (streamer: Streamer) => {
+  const handleJoinStreamer = async (streamer: Streamer) => {
     setSelectedStreamer(streamer);
     if (!currentUser) return;
+
+    // Increment viewers count in Firestore
+    try {
+      const streamerRef = doc(db, "streamers", streamer.id);
+      await updateDoc(streamerRef, {
+        viewersCount: increment(1)
+      });
+    } catch (err) {
+      console.error("Failed to increment viewers count:", err);
+    }
 
     // Track distinct watch channels dynamically in local storage
     const watchedChannelsKey = `watched_channels_${currentUser.id}`;
@@ -394,6 +475,14 @@ export default function App() {
                   </div>
                   
                   <div className="flex items-center gap-2 flex-wrap">
+                    {/* Add Creator Live Button Option */}
+                    <button
+                      onClick={() => setIsAddCreatorLiveOpen(true)}
+                      className="px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-550 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all hover:scale-[1.03] active:scale-[0.97] flex items-center gap-1.5 cursor-pointer shadow-md"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-white" /> Add Creator Live
+                    </button>
+
                     <div className="flex items-center gap-1.5 text-xs text-amber-400 font-mono font-bold bg-amber-500/15 border border-amber-500/25 px-2.5 py-1 rounded-full">
                       <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                       SI-ROOM ACTIVE
@@ -594,6 +683,263 @@ export default function App() {
           onClose={() => setIsCoinsModalOpen(false)}
           onCoinsPurchased={handleCoinsPurchased}
         />
+      )}
+
+      {/* ADD CREATOR LIVE MODAL DIALOG */}
+      {isAddCreatorLiveOpen && (
+        <div id="add-creator-live-overlay" className="fixed inset-0 z-50 bg-[#070412]/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-stone-900 border border-stone-800 rounded-3xl w-full max-w-lg p-5 sm:p-6 relative shadow-2xl animate-scaleUp text-left space-y-4 my-8">
+            
+            <button
+              onClick={() => setIsAddCreatorLiveOpen(false)}
+              className="absolute top-4 right-4 p-2 text-stone-400 hover:text-white rounded-full hover:bg-stone-800 transition-all select-none"
+              title="Close dialog"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2 border-b border-stone-850 pb-3">
+              <span className="p-2 bg-gradient-to-tr from-rose-500 to-amber-500 rounded-xl text-stone-950">
+                <Video className="w-5 h-5 text-stone-950" />
+              </span>
+              <div>
+                <h3 className="text-base font-black text-white leading-tight font-sans">
+                  Creator Administration Console
+                </h3>
+                <p className="text-[11px] text-stone-400 font-medium">Add a simulator studio channel to the livestream database</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleAddCreatorLive} className="space-y-4 font-sans text-xs">
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[9px] font-black uppercase text-stone-400 tracking-wider mb-1 select-none">
+                    Creator Name / Handle
+                  </label>
+                  <div className="flex items-center bg-stone-950 border border-stone-800 rounded-xl px-3 py-2">
+                    <span className="text-stone-500 mr-1 font-mono font-bold">@</span>
+                    <input
+                      type="text"
+                      required
+                      value={newLiveUsername}
+                      onChange={(e) => setNewLiveUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
+                      placeholder="e.g. speed_racer"
+                      className="w-full bg-transparent text-white text-xs font-semibold focus:outline-none placeholder:text-stone-600"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[9px] font-black uppercase text-stone-400 tracking-wider mb-1 select-none">
+                    Live Stream Title
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newLiveTitle}
+                    onChange={(e) => setNewLiveTitle(e.target.value)}
+                    placeholder="e.g. Gaming Cup Championship Finals! 🎮🏆"
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-white text-xs font-semibold focus:outline-none placeholder:text-stone-600"
+                  />
+                </div>
+              </div>
+
+              {/* ADMIN: ADD IMAGE FILE & AVATAR SELECTION SYSTEM */}
+              <div className="space-y-2 bg-stone-950/40 p-3 rounded-2xl border border-stone-850">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[9px] font-black uppercase text-amber-400 tracking-wider select-none">
+                    🖼️ Admin Creator Gift: Add Image File / Avatar
+                  </label>
+                  {newLiveAvatarUrl && (
+                    <span className="text-[8px] text-green-400 font-mono font-bold bg-green-500/10 px-1.5 py-0.5 rounded uppercase">Avatar Selected</span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-center">
+                  
+                  {/* File Loader simulation */}
+                  <div className="relative border-2 border-dashed border-stone-800 hover:border-purple-500/40 rounded-xl p-3 text-center cursor-pointer bg-stone-950 hover:bg-stone-900/60 transition-all group">
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setSimulatedFileName(file.name);
+                          const randVal = Math.floor(Math.random() * 900) + 100;
+                          setNewLiveAvatarUrl(`https://picsum.photos/seed/attachment_${randVal}/200/200`);
+                        }
+                      }}
+                    />
+                    <div className="space-y-1">
+                      <div className="text-lg">📁</div>
+                      <span className="text-[10px] font-bold text-stone-200 block truncate max-w-full">
+                        {simulatedFileName ? `Attached: ${simulatedFileName}` : "Drag & Drop Image File"}
+                      </span>
+                      <span className="text-[8px] text-stone-500 block leading-tight">
+                        Simulates attachment upload
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Manual custom avatar URL Input */}
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-[8px] text-stone-400 block font-bold mb-1 uppercase">Or Paste Direct URL</span>
+                      <input
+                        type="url"
+                        value={newLiveAvatarUrl}
+                        onChange={(e) => {
+                          setNewLiveAvatarUrl(e.target.value);
+                          setSimulatedFileName("");
+                        }}
+                        placeholder="e.g. https://example.com/avatar.jpg"
+                        className="w-full bg-stone-950 border border-stone-800 rounded-lg px-2 py-1.5 text-white text-[10px] font-mono focus:outline-none focus:border-purple-600 placeholder:text-stone-700"
+                      />
+                    </div>
+
+                    {/* Pre-configured Presets Row */}
+                    <div className="flex items-center gap-1 overflow-x-auto pb-1 max-w-full">
+                      {[
+                        { label: "Gamer Blue", seed: "cyberblue" },
+                        { label: "Synth", seed: "sunsets" },
+                        { label: "Anime study", seed: "animest" },
+                        { label: "Matrix Hacker", seed: "hackers" },
+                      ].map((preset) => (
+                        <button
+                          key={preset.seed}
+                          type="button"
+                          onClick={() => {
+                            setNewLiveAvatarUrl(`https://picsum.photos/seed/${preset.seed}/200/200`);
+                            setSimulatedFileName(`${preset.seed}_preset.jpg`);
+                          }}
+                          className="px-1.5 py-0.5 bg-stone-800 text-[8px] rounded border border-stone-750 text-stone-300 hover:text-white transition-all whitespace-nowrap"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+
+                  </div>
+
+                </div>
+
+                {/* Micro preview card element */}
+                {newLiveAvatarUrl && (
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 bg-stone-950/70 rounded-xl border border-stone-850/80">
+                    <img 
+                      src={newLiveAvatarUrl} 
+                      alt="Creator Avatar Preview" 
+                      className="w-8 h-8 rounded-full border border-purple-500/50 object-cover bg-stone-900" 
+                    />
+                    <div className="text-left font-sans">
+                      <div className="text-[8px] uppercase tracking-wider text-stone-500 font-bold leading-none">Avatar Live Link</div>
+                      <span className="text-[9px] text-stone-300 truncate block max-w-[280px] font-mono mt-0.5">{newLiveAvatarUrl}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ADMIN: OTHER CONFIGURATION CONTROLLERS */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[9px] font-black uppercase text-stone-400 tracking-wider mb-1 select-none">
+                    Category Tag
+                  </label>
+                  <select
+                    value={newLiveCategory}
+                    onChange={(e) => setNewLiveCategory(e.target.value)}
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-2 py-2 text-white text-xs font-bold focus:outline-none"
+                  >
+                    <option value="IRL Chatting">IRL Chatting</option>
+                    <option value="Music & Beats">Music & Beats</option>
+                    <option value="Gaming & Esports">Gaming & Esports</option>
+                    <option value="Creative & Art">Creative & Art</option>
+                    <option value="Tech & Coding">Tech & Coding</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[9px] font-black uppercase text-stone-400 tracking-wider mb-1 select-none">
+                    Creator Level
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={newLiveLevel}
+                    onChange={(e) => setNewLiveLevel(Number(e.target.value) || 1)}
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-1.5 text-white text-xs font-semibold focus:outline-none font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* ADMIN: ADD VIDEO SCREEN CONTROLLER & ADD COIN STAT */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-stone-950/20 p-3 rounded-2xl border border-stone-850/60">
+                <div className="space-y-1">
+                  <label className="block text-[9px] font-black uppercase text-purple-400 tracking-wider select-none">
+                    📺 Add Video Screen Theme
+                  </label>
+                  <select
+                    value={newLiveVideoType}
+                    onChange={(e) => setNewLiveVideoType(e.target.value)}
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-2.5 py-1.5 text-white text-[10px] font-bold focus:outline-none"
+                  >
+                    <option value="Cosmic Nebula Loop 🌌">Cosmic Nebula Loop 🌌</option>
+                    <option value="Neon Cybercity Sunset 🌆">Neon Cybercity Sunset 🌆</option>
+                    <option value="Techno Beats Music Deck 🎧">Techno Beats Music Deck 🎧</option>
+                    <option value="Retro Cozy Anime Study 🏮">Retro Cozy Anime Study 🏮</option>
+                    <option value="Matrix Grid Code Flow 📟">Matrix Grid Code Flow 📟</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[9px] font-black uppercase text-amber-400 tracking-wider select-none">
+                    🪙 Add Starting Coins Balance
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100000"
+                    value={newLiveCoins}
+                    onChange={(e) => setNewLiveCoins(Math.max(0, Number(e.target.value)))}
+                    placeholder="e.g. 5000"
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-1.5 text-white text-[10px] font-semibold focus:outline-none font-mono"
+                  />
+                  <span className="text-[8px] text-stone-500 block leading-none pt-0.5">Displays coins received in screen stats</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[9px] font-black uppercase text-stone-400 tracking-wider mb-1 select-none">
+                    Starting Viewers Count
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100000"
+                    value={newLiveViewers}
+                    onChange={(e) => setNewLiveViewers(Number(e.target.value) || 0)}
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-1.5 text-white text-xs font-semibold focus:outline-none font-mono"
+                  />
+                </div>
+
+                <div className="flex flex-col justify-end">
+                  <button
+                    type="submit"
+                    className="w-full py-2 bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] hover:from-purple-500 hover:to-pink-500 text-white font-black text-[10px] uppercase tracking-wider rounded-xl shadow-lg transition-transform hover:scale-[1.01] active:scale-[0.99] cursor-pointer block text-center"
+                  >
+                    Add Live Creator Studio
+                  </button>
+                </div>
+              </div>
+
+            </form>
+          </div>
+        </div>
       )}
 
     </div>

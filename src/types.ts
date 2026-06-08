@@ -44,6 +44,9 @@ export interface Streamer {
   isLive: boolean;
   startingCoins?: number;
   videoFeedType?: string;
+  creatorId?: string;
+  createdAt?: string;
+  customVideoUrl?: string;
 }
 
 export interface Gift {
@@ -55,6 +58,8 @@ export interface Gift {
   animationStyle: string; // Tailwind animation styling
   videoFeedTheme?: string;
   customVideoUrl?: string;
+  creatorId?: string;
+  createdAt?: string;
 }
 
 export interface ChatMessage {
