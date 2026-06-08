@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { User, Streamer, ChatMessage, Gift } from "../types";
 import { VIRTUAL_GIFTS, SIMULATED_CHAT_MESSAGES, CHATTER_USERNAMES } from "../utils/mockData";
 import { doc, setDoc, collection, onSnapshot, query, serverTimestamp, deleteDoc, updateDoc, increment, getDoc } from "firebase/firestore";
-import { db, handleFirestoreError, OperationType, auth, isFirestoreQuotaExceeded } from "../lib/firebase";
+import { db, handleFirestoreError, OperationType, auth, firestoreStatus } from "../lib/firebase";
 import {
   Power,
   MessageSquare,
@@ -334,7 +334,7 @@ export default function LiveStreamSimulator({
       if (!isBroadcasting && activeStreamer) {
         incrementTimeout = setTimeout(async () => {
           try {
-            if (isFirestoreQuotaExceeded) return;
+            if (firestoreStatus.isQuotaExceeded) return;
             const streamerRef = doc(db, "streamers", activeStreamer.id);
             // double check existence to avoid errors if stream ended
             const snap = await getDoc(streamerRef);
@@ -884,7 +884,7 @@ export default function LiveStreamSimulator({
     if (!setupTitle.trim() || !auth.currentUser) return;
 
     const streamerId = `streamer-${Date.now()}`;
-    if (isFirestoreQuotaExceeded) {
+    if (firestoreStatus.isQuotaExceeded) {
        // Allow "local-only" start if quota hit
        setIsLiveActive(true);
        return;
@@ -1397,7 +1397,7 @@ export default function LiveStreamSimulator({
                 <button 
                   type="button"
                   onClick={async () => {
-                    if (currentStreamerDocId && !isFirestoreQuotaExceeded) {
+                    if (currentStreamerDocId && !firestoreStatus.isQuotaExceeded) {
                       try {
                         await deleteDoc(doc(db, "streamers", currentStreamerDocId));
                       } catch (err) {
@@ -2179,7 +2179,7 @@ export default function LiveStreamSimulator({
                           }
 
                           try {
-                            if (isFirestoreQuotaExceeded) {
+                            if (firestoreStatus.isQuotaExceeded) {
                                setAddGiftError("Quota exceeded. Gift added locally only.");
                                setGiftsList(prev => [...prev, customObj]);
                                setAddGiftStep("password");

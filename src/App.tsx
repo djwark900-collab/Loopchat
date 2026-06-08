@@ -12,7 +12,7 @@ import CoinsModal from "./components/CoinsModal";
 import DailyMissions from "./components/DailyMissions";
 import { doc, getDoc, setDoc, collection, onSnapshot, query, serverTimestamp, deleteDoc, increment, updateDoc, getDocFromServer } from "firebase/firestore";
 import { signOut } from "firebase/auth";
-import { auth, db, handleFirestoreError, OperationType, isFirestoreQuotaExceeded } from "./lib/firebase";
+import { auth, db, handleFirestoreError, OperationType, firestoreStatus } from "./lib/firebase";
 
 import { 
   Sparkles, 
@@ -41,6 +41,7 @@ export default function App() {
   const [selectedStreamer, setSelectedStreamer] = useState<Streamer | null>(null);
   const [isCoinsModalOpen, setIsCoinsModalOpen] = useState(false);
   const [streamersList, setStreamersList] = useState<Streamer[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isJoiningLive, setIsJoiningLive] = useState(false);
@@ -62,7 +63,7 @@ export default function App() {
   const handleAddCreatorLive = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newLiveTitle.trim() || !newLiveUsername.trim() || !auth.currentUser) return;
-    if (isFirestoreQuotaExceeded) {
+    if (firestoreStatus.isQuotaExceeded) {
        alert("Daily server limit reached! Your live can start but won't be listed globally right now.");
        setIsAddCreatorLiveOpen(false);
        return;
@@ -90,7 +91,7 @@ export default function App() {
     };
 
     try {
-      if (isFirestoreQuotaExceeded) {
+      if (firestoreStatus.isQuotaExceeded) {
          alert("Daily server limit reached! Your live will be local-only.");
          setIsAddCreatorLiveOpen(false);
          return;
@@ -167,19 +168,19 @@ export default function App() {
   // Pre-seed "CVV" creator code - only once per app load
   const [hasAttemptedSeed, setHasAttemptedSeed] = useState(false);
   useEffect(() => {
-    if (hasAttemptedSeed || isFirestoreQuotaExceeded) return;
+    if (hasAttemptedSeed || firestoreStatus.isQuotaExceeded) return;
 
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      if (!firebaseUser || hasAttemptedSeed || isFirestoreQuotaExceeded) return;
+      if (!firebaseUser || hasAttemptedSeed || firestoreStatus.isQuotaExceeded) return;
       
       setHasAttemptedSeed(true);
       const seedCVVCode = async () => {
-        if (isFirestoreQuotaExceeded) return;
+        if (firestoreStatus.isQuotaExceeded) return;
         try {
           const codeRef = doc(db, "coin_codes", "CVV");
           const codeSnap = await getDoc(codeRef);
           if (!codeSnap.exists()) {
-            if (isFirestoreQuotaExceeded) return;
+            if (firestoreStatus.isQuotaExceeded) return;
             await setDoc(codeRef, {
               code: "CVV",
               coins: 5000,
@@ -211,7 +212,7 @@ export default function App() {
     localStorage.setItem("loopchat_current_user", JSON.stringify(updatedUser));
     
     // 2. Debounce Firestore persistence to save write units (15-second window for heavy simulation)
-    if (isFirestoreQuotaExceeded) {
+    if (firestoreStatus.isQuotaExceeded) {
        return;
     }
 
@@ -221,7 +222,7 @@ export default function App() {
 
     persistenceTimeoutRef.current = setTimeout(async () => {
       // Re-check quota right before execution
-      if (isFirestoreQuotaExceeded) return;
+      if (firestoreStatus.isQuotaExceeded) return;
 
       try {
         const userRef = doc(db, "users", updatedUser.id);
@@ -295,7 +296,7 @@ export default function App() {
   };
 
   const handleRemoveStreamer = async (streamerId: string) => {
-    if (isFirestoreQuotaExceeded) return;
+    if (firestoreStatus.isQuotaExceeded) return;
     try {
       await deleteDoc(doc(db, "streamers", streamerId));
     } catch (err) {
@@ -385,7 +386,7 @@ export default function App() {
           <div className="flex items-center gap-2.5 sm:gap-4">
             
             {/* Cloud Sync Status Indicator */}
-            {isFirestoreQuotaExceeded && (
+            {firestoreStatus.isQuotaExceeded && (
               <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-500 text-[8px] font-black uppercase tracking-widest animate-pulse">
                 Offline Mode
               </div>
@@ -539,15 +540,25 @@ export default function App() {
                       <h4 className="text-sm font-black text-white uppercase tracking-wider">All User Live</h4>
                    </div>
                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5 px-3 py-1 bg-stone-900 border border-stone-800 rounded-full">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-900 border border-stone-800 rounded-xl">
                          <Search className="w-3.5 h-3.5 text-stone-500" />
-                         <span className="text-[10px] text-stone-500 font-bold uppercase">Filter</span>
+                         <input 
+                            type="text"
+                            placeholder="SEARCH USERS..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="bg-transparent border-none text-[9px] text-white font-black uppercase tracking-widest focus:outline-none w-24 sm:w-32"
+                         />
                       </div>
                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                  {streamersList.map((live) => (
+                  {streamersList.filter(live => 
+                    live.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                    live.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    live.title.toLowerCase().includes(searchTerm.toLowerCase())
+                  ).map((live) => (
                     <div 
                       key={live.id} 
                       onClick={() => setSelectedStreamer(live)}

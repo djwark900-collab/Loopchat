@@ -13,7 +13,7 @@ import {
   GoogleAuthProvider 
 } from "firebase/auth";
 import { doc, getDoc, setDoc, getDocFromServer } from "firebase/firestore";
-import { auth, db, handleFirestoreError, OperationType, isFirestoreQuotaExceeded } from "../lib/firebase";
+import { auth, db, handleFirestoreError, OperationType, firestoreStatus } from "../lib/firebase";
 
 interface AuthScreenProps {
   onAuthSuccess: (user: User) => void;
@@ -95,7 +95,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
         };
 
         try {
-          if (isFirestoreQuotaExceeded) {
+          if (firestoreStatus.isQuotaExceeded) {
              console.warn("Quota exceeded: skipping initial user doc creation, returning local object.");
              return newUser;
           }
