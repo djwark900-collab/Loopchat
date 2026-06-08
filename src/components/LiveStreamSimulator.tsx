@@ -305,6 +305,21 @@ export default function LiveStreamSimulator({
   const particlesRef = useRef<Particle[]>([]);
   const animationFrameId = useRef<number | null>(null);
 
+  // Sync other lives for community list in setup
+  const [otherLives, setOtherLives] = useState<Streamer[]>([]);
+  useEffect(() => {
+    if (isBroadcasting && !isLiveActive) {
+      const q = query(collection(db, "streamers"));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const streams = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Streamer));
+        setOtherLives(streams.filter(s => s.creatorId !== auth.currentUser?.uid));
+      }, (err) => {
+        console.warn("Failed syncing other lives for setup:", err);
+      });
+      return () => unsubscribe();
+    }
+  }, [isBroadcasting, isLiveActive]);
+
   // Sync state if live is active
   useEffect(() => {
     let incrementTimeout: any = null;
@@ -1125,6 +1140,45 @@ export default function LiveStreamSimulator({
               >
                 Go Live Now
               </button>
+            </div>
+
+            {/* LIVE COMMUNITY DIRECTORY SECTION */}
+            <div className="space-y-3 pt-4 border-t border-stone-850 mt-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                  <Users className="w-3 h-3" /> Live Community List
+                </h4>
+                <span className="text-[9px] text-stone-500 font-mono">{otherLives.length} Gamers Online</span>
+              </div>
+
+              <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                {otherLives.length > 0 ? (
+                  otherLives.map(live => (
+                    <div key={live.id} className="flex items-center justify-between p-2.5 bg-stone-950/40 border border-stone-850/60 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <img src={live.avatarUrl} className="w-8 h-8 rounded-full border border-stone-800 object-cover" />
+                          <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 border border-stone-950 animate-pulse"></span>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-white leading-none">{live.fullName}</p>
+                          <p className="text-[9px] text-stone-500 font-mono mt-1">{live.username}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                         <div className="text-[9px] font-black text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded uppercase">{live.category.split(' ')[0]}</div>
+                         <div className="text-[8px] text-stone-500 font-mono mt-1 flex items-center gap-1 justify-end">
+                           <Users className="w-2.5 h-2.5" /> {live.viewersCount}
+                         </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6 border border-dashed border-stone-850 rounded-xl">
+                    <p className="text-[10px] text-stone-500 font-medium italic">No other users are currently live. Be the first!</p>
+                  </div>
+                )}
+              </div>
             </div>
           </form>
         </div>

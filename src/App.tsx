@@ -45,6 +45,7 @@ export default function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isJoiningLive, setIsJoiningLive] = useState(false);
   const [joiningTarget, setJoiningTarget] = useState<Streamer | null>(null);
+  const [isBroadcastingStudio, setIsBroadcastingStudio] = useState(false);
 
   // Dynamic customization for "add creator live" state
   const [isAddCreatorLiveOpen, setIsAddCreatorLiveOpen] = useState(false);
@@ -454,17 +455,129 @@ export default function App() {
           />
         </main>
       ) : activeTab === "live" ? (
-        /* BROADCASTING GO LIVE MODE LIVESTREAM ARENA (Adaptive Full Screen Window) */
-        <main className="flex-1">
-          <LiveStreamSimulator
-            currentUser={currentUser}
-            activeStreamer={null}
-            onClose={() => setActiveTab("home")}
-            onCoinsUpdate={handleCoinsUpdateAfterGift}
-            onDiamondsUpdate={handleDiamondsUpdate}
-            onLevelXpUpdate={handleLevelXpUpdate}
-            onGiftSent={handleGiftSentNotification}
-          />
+        /* 
+          NEW REFACTORED LIVE COMMUNITY TAB: 
+          Provides "list live all user" experience as requested.
+        */
+        <main className="flex-1 flex flex-col relative overflow-hidden bg-[#0c0816]">
+          {/* Header for Live Tab */}
+          <div className="p-5 flex items-center justify-between border-b border-stone-850 bg-black/40 backdrop-blur-md sticky top-0 z-20">
+             <div className="flex items-center gap-2.5">
+               <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></div>
+               <h3 className="text-xl font-black text-white tracking-tight">Live Hub</h3>
+             </div>
+             <div className="text-[10px] text-stone-500 font-mono flex items-center gap-2">
+                <Users className="w-3 h-3 text-indigo-400" /> {streamersList.length} ONLINE
+             </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8 pb-24">
+             {/* 1. BROADCASTER ENTRY SECTION */}
+             <div className="bg-gradient-to-br from-indigo-900/40 via-purple-900/20 to-stone-900/60 border-2 border-indigo-500/40 rounded-3xl p-6 relative overflow-hidden shadow-2xl group transition-all hover:border-amber-500/30">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-500/5 duration-500"></div>
+                <div className="relative z-10 space-y-4">
+                   <div className="flex items-center gap-3">
+                     <div className="p-3 bg-indigo-500/20 rounded-2xl border border-indigo-400/20">
+                        <Video className="w-6 h-6 text-indigo-400" />
+                     </div>
+                     <div>
+                        <h4 className="text-lg font-black text-white leading-none">Broadcaster Studio</h4>
+                        <p className="text-[11px] text-indigo-300/80 font-medium mt-1">Start your own live loop experience</p>
+                     </div>
+                   </div>
+                   
+                   <p className="text-xs text-stone-400 leading-relaxed max-w-sm">
+                      Go live to interact with your followers, receive animated crowns & roses, and earn diamonds from tips!
+                   </p>
+
+                   <button
+                     onClick={() => {
+                       // We can still use the same simulator but with a 'full-tab' overlay intent if needed.
+                       // For now, let's keep the Simulator being the manager but we'll trigger it here.
+                       // Actually, let's just make the simulator render its setup if activeStreamer is null.
+                       // But the user is ALREADY in simulator if tab === 'live'.
+                       // So I should CHANGE tab === 'live' to be THIS view, and then trigger the simulator OVERLAY.
+                       setIsBroadcastingStudio(true);
+                     }}
+                     className="w-full sm:w-auto px-10 py-3 bg-gradient-to-r from-red-600 via-purple-600 to-indigo-600 hover:from-red-500 hover:to-indigo-550 text-white font-black rounded-2xl text-xs uppercase tracking-widest shadow-[0_8px_20px_rgba(79,70,229,0.3)] transition-all hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
+                   >
+                     Go Live Now
+                   </button>
+                </div>
+             </div>
+
+             {/* 2. LIVE COMMUNITY LIST - "list live all user" */}
+             <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                   <h4 className="text-[10px] font-black uppercase text-amber-500 tracking-wider flex items-center gap-1.5">
+                     <Flame className="w-3.5 h-3.5" /> Discovery Directory
+                   </h4>
+                   <button 
+                     onClick={() => setActiveTab("home")}
+                     className="text-[10px] font-bold text-stone-500 hover:text-white transition-colors"
+                   >
+                      View Category Filters »
+                   </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
+                  {streamersList.filter(s => s.creatorId !== auth.currentUser?.uid).map((live) => (
+                    <div 
+                      key={live.id} 
+                      onClick={() => setSelectedStreamer(live)}
+                      className="bg-stone-900/60 border border-stone-850 rounded-2xl overflow-hidden hover:border-indigo-500/30 transition-all group cursor-pointer shadow-lg"
+                    >
+                      <div className="relative aspect-video">
+                         <img src={live.avatarUrl} className="w-full h-full object-cover group-hover:scale-110 duration-500" />
+                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                            <p className="text-[11px] font-black text-white truncate">{live.fullName}</p>
+                         </div>
+                         <div className="absolute top-1.5 left-1.5 bg-red-600 text-white font-black text-[7px] px-1.5 py-0.5 rounded flex items-center gap-1 uppercase tracking-tighter">
+                            <Users className="w-2 h-2" /> {live.viewersCount}
+                         </div>
+                      </div>
+                      <div className="p-2.5">
+                         <p className="text-[9px] text-[#A78BFA] font-bold uppercase truncate">{live.title}</p>
+                         <div className="flex items-center justify-between mt-2">
+                            <span className="text-[8px] text-stone-500 font-mono">@{live.username}</span>
+                            <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                               <Play className="w-2.5 h-2.5 text-indigo-400 fill-indigo-400" />
+                            </div>
+                         </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {streamersList.filter(s => s.creatorId !== auth.currentUser?.uid).length === 0 && (
+                    <div className="col-span-2 py-12 text-center border-2 border-dashed border-stone-850 rounded-3xl">
+                       <p className="text-xs text-stone-500 font-medium italic">No other live loops found. Start yours to appear here!</p>
+                    </div>
+                  )}
+                </div>
+             </div>
+          </div>
+
+          {/* STUDIO SETUP OVERLAY IF TRIGGERED */}
+          {isBroadcastingStudio && (
+            <div className="absolute inset-0 z-50 bg-[#0c0816] flex flex-col pt-4">
+               <div className="px-4 flex justify-end">
+                  <button onClick={() => setIsBroadcastingStudio(false)} className="p-2 bg-stone-900 rounded-full text-stone-400">
+                    <X className="w-5 h-5" />
+                  </button>
+               </div>
+               <div className="flex-1 overflow-y-auto px-4 py-2">
+                 <LiveStreamSimulator
+                   currentUser={currentUser}
+                   activeStreamer={null}
+                   onClose={() => setIsBroadcastingStudio(false)}
+                   onCoinsUpdate={handleCoinsUpdateAfterGift}
+                   onDiamondsUpdate={handleDiamondsUpdate}
+                   onLevelXpUpdate={handleLevelXpUpdate}
+                   onGiftSent={handleGiftSentNotification}
+                 />
+               </div>
+            </div>
+          )}
         </main>
       ) : (
         /* STANDARD DOCK LAYOUT font */
