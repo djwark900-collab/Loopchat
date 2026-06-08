@@ -8,7 +8,7 @@ import { CoinPackage } from "../types";
 import { COIN_PACKAGES } from "../utils/mockData";
 import { X, Sparkles, Shield, CreditCard, CheckCircle, Coins, Ticket } from "lucide-react";
 import { doc, getDoc, writeBatch } from "firebase/firestore";
-import { db, auth, handleFirestoreError, OperationType } from "../utils/firebase";
+import { db, auth, handleFirestoreError, OperationType, isFirestoreQuotaExceeded } from "../lib/firebase";
 
 interface CoinsModalProps {
   onClose: () => void;
@@ -41,6 +41,11 @@ export default function CoinsModal({ onClose, onCoinsPurchased }: CoinsModalProp
     setIsRedeeming(true);
 
     const codeId = enteredCode.trim().toUpperCase();
+    if (isFirestoreQuotaExceeded) {
+       setRedeemError("Daily server limit reached! Please try again tomorrow.");
+       setIsRedeeming(false);
+       return;
+    }
 
     try {
       // 1. Fetch the code document

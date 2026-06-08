@@ -27,7 +27,7 @@ import {
   ChevronDown,
   Camera
 } from "lucide-react";
-import { db, handleFirestoreError, OperationType, isFirestoreQuotaExceeded } from "../utils/firebase";
+import { db, handleFirestoreError, OperationType, isFirestoreQuotaExceeded } from "../lib/firebase";
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "firebase/firestore";
 
 interface ProfilePanelProps {

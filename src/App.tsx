@@ -10,7 +10,7 @@ import LiveStreamSimulator from "./components/LiveStreamSimulator";
 import ProfilePanel from "./components/ProfilePanel";
 import CoinsModal from "./components/CoinsModal";
 import DailyMissions from "./components/DailyMissions";
-import { doc, getDoc, setDoc, collection, onSnapshot, query, serverTimestamp, deleteDoc, increment, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, onSnapshot, query, serverTimestamp, deleteDoc, increment, updateDoc, getDocFromServer } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { auth, db, handleFirestoreError, OperationType, isFirestoreQuotaExceeded } from "./lib/firebase";
 
@@ -89,6 +89,11 @@ export default function App() {
     };
 
     try {
+      if (isFirestoreQuotaExceeded) {
+         alert("Daily server limit reached! Your live will be local-only.");
+         setIsAddCreatorLiveOpen(false);
+         return;
+      }
       await setDoc(doc(db, "streamers", streamerId), newStreamer);
       setIsAddCreatorLiveOpen(false);
       // reset form fields
@@ -126,7 +131,7 @@ export default function App() {
       if (firebaseUser) {
         try {
           const userRef = doc(db, "users", firebaseUser.uid);
-          const docSnap = await getDoc(userRef);
+          const docSnap = await getDocFromServer(userRef);
           if (docSnap.exists()) {
             const profileData = docSnap.data() as User;
             setCurrentUser(profileData);
@@ -158,13 +163,13 @@ export default function App() {
     };
   }, []);
 
-  // Optimized Pre-seed "CVV" creator code - only once per app load
+  // Pre-seed "CVV" creator code - only once per app load
   const [hasAttemptedSeed, setHasAttemptedSeed] = useState(false);
   useEffect(() => {
-    if (hasAttemptedSeed) return;
+    if (hasAttemptedSeed || isFirestoreQuotaExceeded) return;
 
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      if (!firebaseUser || hasAttemptedSeed) return;
+      if (!firebaseUser || hasAttemptedSeed || isFirestoreQuotaExceeded) return;
       
       setHasAttemptedSeed(true);
       const seedCVVCode = async () => {

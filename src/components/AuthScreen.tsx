@@ -12,8 +12,8 @@ import {
   signInWithPopup, 
   GoogleAuthProvider 
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { auth, db, handleFirestoreError, OperationType, isFirestoreQuotaExceeded } from "../utils/firebase";
+import { doc, getDoc, setDoc, getDocFromServer } from "firebase/firestore";
+import { auth, db, handleFirestoreError, OperationType, isFirestoreQuotaExceeded } from "../lib/firebase";
 
 interface AuthScreenProps {
   onAuthSuccess: (user: User) => void;
@@ -68,7 +68,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
   ) => {
     const userRef = doc(db, "users", firebaseUser.uid);
     try {
-      const docSnap = await getDoc(userRef);
+      const docSnap = await getDocFromServer(userRef);
       if (docSnap.exists()) {
         return docSnap.data() as User;
       } else {

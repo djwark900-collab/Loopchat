@@ -39,6 +39,31 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "icon", "cost", "creatorId"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile document.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "fullName": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "coins": { "type": "number" },
+        "level": { "type": "number" },
+        "xp": { "type": "number" }
+      },
+      "required": ["id", "username", "fullName", "avatarUrl", "coins", "level", "xp"]
+    },
+    "CoinCode": {
+      "title": "Coin Code",
+      "description": "Pre-seeded or admin-created coins redemption code.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "coins": { "type": "number" }
+      },
+      "required": ["code", "coins"]
     }
   },
   "firestore": {
@@ -49,6 +74,14 @@
     "/gifts/{giftId}": {
       "schema": "Gift",
       "description": "Collection of custom gifts accessible to all users."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user profiles."
+    },
+    "/coin_codes/{codeId}": {
+      "schema": "CoinCode",
+      "description": "Redeemable coin codes."
     }
   }
 }

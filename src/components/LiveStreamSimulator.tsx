@@ -1331,7 +1331,7 @@ export default function LiveStreamSimulator({
                 <button 
                   type="button"
                   onClick={async () => {
-                    if (currentStreamerDocId) {
+                    if (currentStreamerDocId && !isFirestoreQuotaExceeded) {
                       try {
                         await deleteDoc(doc(db, "streamers", currentStreamerDocId));
                       } catch (err) {
@@ -2113,6 +2113,13 @@ export default function LiveStreamSimulator({
                           }
 
                           try {
+                            if (isFirestoreQuotaExceeded) {
+                               setAddGiftError("Quota exceeded. Gift added locally only.");
+                               setGiftsList(prev => [...prev, customObj]);
+                               setAddGiftStep("password");
+                               setShowAddGiftPrompt(false);
+                               return;
+                            }
                             await setDoc(doc(db, "gifts", giftId), customObj);
                             setSelectedGiftId(giftId);
                             // Reset states and exit
