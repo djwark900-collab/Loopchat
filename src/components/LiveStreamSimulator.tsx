@@ -80,6 +80,42 @@ export default function LiveStreamSimulator({
   const [selectedGiftId, setSelectedGiftId] = useState<string>("gift-rose");
   const [notEnoughCoinsMsg, setNotEnoughCoinsMsg] = useState(false);
 
+  // State to manage virtual gifts list (to persist custom added premium items)
+  const [giftsList, setGiftsList] = useState<Gift[]>(() => {
+    try {
+      const saved = localStorage.getItem(`custom_virtual_gifts`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return [...VIRTUAL_GIFTS, ...parsed];
+      }
+    } catch (e) {
+      console.warn("Could not load custom gifts:", e);
+    }
+    return VIRTUAL_GIFTS;
+  });
+
+  // Gift multiplier counters (x1, x2, x3, x4 + Custom invente)
+  const [giftMultiplier, setGiftMultiplier] = useState<number>(1);
+  const [customMultiplier, setCustomMultiplier] = useState<string>("");
+  const [isCustomMultiplier, setIsCustomMultiplier] = useState<boolean>(false);
+
+  // Add Custom Gift portal states (password EMAD8912 protection)
+  const [showAddGiftPrompt, setShowAddGiftPrompt] = useState(false);
+  const [addGiftStep, setAddGiftStep] = useState<"password" | "form">("password");
+  const [addGiftPassword, setAddGiftPassword] = useState("");
+  const [showPasswordText, setShowPasswordText] = useState(false);
+  const [addGiftError, setAddGiftError] = useState("");
+
+  const [newGiftName, setNewGiftName] = useState("");
+  const [newGiftIcon, setNewGiftIcon] = useState("👑");
+  const [newGiftCost, setNewGiftCost] = useState(150);
+  const [newGiftEffect, setNewGiftEffect] = useState("animate-bounce");
+  const [newGiftVideoTheme, setNewGiftVideoTheme] = useState("Cosmic Nebula Loop 🌌");
+  const [simulatedFileName, setSimulatedFileName] = useState("");
+
+  // Temporary video background feed override based on sent gift setting
+  const [overrideVideoFeedTheme, setOverrideVideoFeedTheme] = useState<string | null>(null);
+
   // States for tracking Stream Session Statistics (Session Overview)
   const [showSessionOverview, setShowSessionOverview] = useState(false);
   const [durationSeconds, setDurationSeconds] = useState(0);
@@ -93,12 +129,13 @@ export default function LiveStreamSimulator({
   const [isCameraOn, setIsCameraOn] = useState(false); // Default false (deleting camera)
   const [sharesCount, setSharesCount] = useState(0);
 
-  // Floating Gifts Visual Alert Bubble
+  // Floating Gifts Visual Alert Bubble (multiplier responsive)
   const [activeGiftAlert, setActiveGiftAlert] = useState<{
     sender: string;
     gift: Gift;
     timestamp: number;
     avatarUrl?: string;
+    multiplier?: number;
   } | null>(null);
 
   // Default Host recipient static details
@@ -106,6 +143,12 @@ export default function LiveStreamSimulator({
     username: isBroadcasting ? currentUser.username : activeStreamer?.username || "Host",
     avatarUrl: isBroadcasting ? currentUser.avatarUrl : activeStreamer?.avatarUrl || "https://picsum.photos/seed/ndnd/150/150",
     slotLabel: "Host",
+  };
+
+  const allRecipient = {
+    username: "all_recipients",
+    avatarUrl: "👥",
+    slotLabel: "All on Mic",
   };
 
   const [selectedRecipient, setSelectedRecipient] = useState<{
@@ -401,10 +444,27 @@ export default function LiveStreamSimulator({
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rotation);
 
-        ctx.font = `${p.size}px Arial`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(p.char, 0, 0);
+        if (p.char && (p.char.startsWith("blob:") || p.char.startsWith("data:") || p.char.startsWith("http"))) {
+          let cachedImg = (window as any)[`pref_img_${p.char}`];
+          if (!cachedImg) {
+            cachedImg = new Image();
+            cachedImg.src = p.char;
+            (window as any)[`pref_img_${p.char}`] = cachedImg;
+          }
+          if (cachedImg.complete) {
+            ctx.drawImage(cachedImg, -p.size / 2, -p.size / 2, p.size, p.size);
+          } else {
+            ctx.font = `${p.size}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("🎁", 0, 0);
+          }
+        } else {
+          ctx.font = `${p.size}px Arial`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(p.char, 0, 0);
+        }
 
         ctx.restore();
       }
@@ -444,33 +504,44 @@ export default function LiveStreamSimulator({
   };
 
   // Process alert visual banner 
-  const triggerIncomingGift = (sender: string, gift: Gift) => {
+  const triggerIncomingGift = (sender: string, gift: Gift, multiplier = 1) => {
+    const alertTime = Date.now();
     setActiveGiftAlert({
       sender,
       gift,
-      timestamp: Date.now(),
+      timestamp: alertTime,
       avatarUrl: `https://picsum.photos/seed/${sender}/100/100`,
+      multiplier,
     });
 
-    spawnGiftBurst(gift.icon, 20);
+    spawnGiftBurst(gift.icon, Math.min(60, 18 * multiplier));
+
+    // Support screen theme override (add video gift screen)
+    if ((gift as any).videoFeedTheme) {
+      setOverrideVideoFeedTheme((gift as any).videoFeedTheme);
+      setTimeout(() => {
+        setOverrideVideoFeedTheme(null);
+      }, 5000);
+    }
 
     // Track for Session Overview
-    setTotalGiftsCount((prev) => prev + 1);
-    setTotalCoinsEarned((prev) => prev + gift.cost);
+    const quantity = multiplier;
+    setTotalGiftsCount((prev) => prev + quantity);
+    setTotalCoinsEarned((prev) => prev + (gift.cost * quantity));
 
     // Pick a random occupied cohost slot or host to receive this simulated gift (adds score to mic users!)
     const occupiedSlots = coHostSlots.filter((s) => s.isOccupied);
     if (occupiedSlots.length > 0) {
       const luckySlot = occupiedSlots[Math.floor(Math.random() * occupiedSlots.length)];
       setCoHostSlots((prevSlots) =>
-        prevSlots.map((s) => (s.id === luckySlot.id ? { ...s, score: (s.score || 0) + gift.cost } : s))
+        prevSlots.map((s) => (s.id === luckySlot.id ? { ...s, score: (s.score || 0) + (gift.cost * quantity) } : s))
       );
     }
 
     const systemGiftMsg: ChatMessage = {
       id: `chat-gift-${Date.now()}-${Math.random()}`,
       username: sender,
-      text: `sent ${gift.name} ${gift.icon}!`,
+      text: `sent ${gift.name} ${gift.icon} x${quantity}!`,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       gift: {
         name: gift.name,
@@ -481,7 +552,7 @@ export default function LiveStreamSimulator({
     setChatMessages((prev) => [...prev, systemGiftMsg]);
 
     // Apply XP to current user
-    const xpReward = Math.floor(gift.cost * 1.5);
+    const xpReward = Math.floor(gift.cost * quantity * 1.5);
     let nextXp = currentXp + xpReward;
     let nextLevel = currentLevel;
     let xpTarget = currentUser.xpToNextLevel;
@@ -500,14 +571,14 @@ export default function LiveStreamSimulator({
 
     // Streamer gets tipped balance: If user is broadcasting (broadcaster), they earn diamonds!
     if (isBroadcasting) {
-      const updatedDiamonds = (currentUser.diamonds || 0) + gift.cost;
+      const updatedDiamonds = (currentUser.diamonds || 0) + (gift.cost * quantity);
       onDiamondsUpdate?.(updatedDiamonds);
     }
-    // If the user is watching (viewer), they do not gain coins/diamonds from other people's simulated gifts!
 
+    // Hide after exactly 5 seconds
     setTimeout(() => {
-      setActiveGiftAlert((prev) => (prev?.timestamp === activeGiftAlert?.timestamp ? null : prev));
-    }, 4000);
+      setActiveGiftAlert((prev) => (prev?.timestamp === alertTime ? null : prev));
+    }, 5000);
   };
 
   // Periodic simulated gifts from other view chatters
@@ -594,51 +665,81 @@ export default function LiveStreamSimulator({
 
   // Handle active purchase / sending from Bottom Drawer Sheet
   const handleSendGiftLocal = (gift: Gift) => {
-    if (currentUser.coins < gift.cost) {
+    // 1. Calculate Multiplier (x1, x2, x3, x4 or Custom inventive selector)
+    const multiplier = isCustomMultiplier ? (parseInt(customMultiplier) || 1) : giftMultiplier;
+    
+    // 2. Determine Recipients
+    const isAll = selectedRecipient.username === "all_recipients";
+    
+    // Targets can be Host (ID 1) and any occupied guest slots (ID 2+)
+    const targetSlots = isAll 
+      ? coHostSlots.filter(s => s.isOccupied)
+      : coHostSlots.filter(s => s.username === selectedRecipient.username);
+    
+    const targetCount = targetSlots.length || 1;
+    const itemCost = gift.cost * multiplier;
+    const totalCost = itemCost * targetCount;
+
+    if (currentUser.coins < totalCost) {
       setNotEnoughCoinsMsg(true);
       setTimeout(() => setNotEnoughCoinsMsg(false), 3500);
       return;
     }
 
-    // Deduct
-    const remaining = currentUser.coins - gift.cost;
+    // Deduct coins dynamically (tap sent gift -coin)
+    const remaining = currentUser.coins - totalCost;
     onCoinsUpdate(remaining);
     onGiftSent?.();
 
-    // Burst
-    spawnGiftBurst(gift.icon, 22);
+    // Burst particles animation for high fidelity
+    spawnGiftBurst(gift.icon, Math.min(65, 20 * multiplier));
+
+    // Support screen overriding (add video gift screen)
+    if ((gift as any).videoFeedTheme) {
+      setOverrideVideoFeedTheme((gift as any).videoFeedTheme);
+      setTimeout(() => {
+        setOverrideVideoFeedTheme(null);
+      }, 5000);
+    }
 
     // Trigger visual floating gift alert bubble immediately with user's sent name
+    const alertTime = Date.now();
     setActiveGiftAlert({
       sender: `${currentUser.username} (You)`,
       gift,
-      timestamp: Date.now(),
+      timestamp: alertTime,
       avatarUrl: currentUser.avatarUrl,
+      multiplier,
     });
 
     // Track for Session Overview
-    setTotalGiftsCount((p) => p + 1);
-    setTotalCoinsEarned((p) => p + gift.cost);
+    setTotalGiftsCount((p) => p + (multiplier * targetCount));
+    setTotalCoinsEarned((p) => p + totalCost);
 
-    // Increment recipient slot score (mic score)
+    // Increment recipient slot scores (for all targets)
     setCoHostSlots((prevSlots) =>
       prevSlots.map((s) => {
-        if (s.isOccupied && s.username === selectedRecipient.username) {
-          return { ...s, score: (s.score || 0) + gift.cost };
+        const isMatched = isAll 
+          ? s.isOccupied 
+          : (s.isOccupied && s.username === selectedRecipient.username);
+        if (isMatched) {
+          return { ...s, score: (s.score || 0) + itemCost };
         }
         return s;
       })
     );
 
+    // Hide precisely after 5 seconds
     setTimeout(() => {
-      setActiveGiftAlert((prev) => (prev?.timestamp === activeGiftAlert?.timestamp ? null : prev));
-    }, 4000);
+      setActiveGiftAlert((prev) => (prev?.timestamp === alertTime ? null : prev));
+    }, 5000);
 
+    const recipientText = isAll ? "All on Mic" : `@${selectedRecipient.username}`;
     // Message
     const giftMessage: ChatMessage = {
       id: `usr-gift-${Date.now()}-${Math.random()}`,
       username: `${currentUser.username} (You)`,
-      text: `sent ${gift.name} ${gift.icon} to @${selectedRecipient.username}!`,
+      text: `sent ${gift.name} ${gift.icon} x${multiplier} to ${recipientText}!`,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       gift: {
         name: gift.name,
@@ -649,7 +750,7 @@ export default function LiveStreamSimulator({
     setChatMessages((prev) => [...prev, giftMessage]);
 
     // Send XP rewards
-    const viewReward = Math.floor(gift.cost / 2) || 5;
+    const viewReward = Math.floor(totalCost * 1.5) || 5;
     let nextXp = currentXp + viewReward;
     let nextLevel = currentLevel;
     let xpTarget = currentUser.xpToNextLevel;
@@ -674,13 +775,21 @@ export default function LiveStreamSimulator({
       ];
       const selectedResp = resp[Math.floor(Math.random() * resp.length)];
 
+      const responderName = isAll 
+        ? (targetSlots.length > 0 ? targetSlots[Math.floor(Math.random() * targetSlots.length)].username : "CoHost")
+        : selectedRecipient.username;
+
+      const responderAvatar = isAll
+        ? (targetSlots.length > 0 ? targetSlots[Math.floor(Math.random() * targetSlots.length)].avatarUrl : "👥")
+        : selectedRecipient.avatarUrl;
+
       setChatMessages((prev) => [
         ...prev,
         {
           id: `chat-streamer-rc-${Date.now()}-${Math.random()}`,
-          username: selectedRecipient.username,
+          username: responderName,
           text: selectedResp,
-          avatarUrl: selectedRecipient.avatarUrl,
+          avatarUrl: responderAvatar,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -931,7 +1040,7 @@ export default function LiveStreamSimulator({
           {/* Simulated Backdrop live video layer */}
           <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden h-full w-full">
             {(() => {
-              const theme = activeStreamer?.videoFeedType || "Cosmic Nebula Loop 🌌";
+              const theme = overrideVideoFeedTheme || activeStreamer?.videoFeedType || "Cosmic Nebula Loop 🌌";
               if (theme.includes("Neon Cybercity")) {
                 return (
                   <div className="w-full h-full bg-gradient-to-b from-[#ff2e93]/35 via-[#260e52] to-[#040114] flex flex-col items-center justify-center relative">
@@ -983,6 +1092,15 @@ export default function LiveStreamSimulator({
                     <span className="text-green-500 text-[10px] font-bold uppercase tracking-wider block border border-green-500/30 px-3 py-1 rounded bg-black/60 z-10 font-mono scale-95">
                       CODE_STREAM_ONLINE
                     </span>
+                  </div>
+                );
+              } else if (theme.includes("Golden") || theme.includes("Wave") || theme.includes("✨") || theme.includes("Royal")) {
+                return (
+                  <div className="w-full h-full bg-gradient-to-b from-amber-950/40 via-yellow-950/30 to-stone-950 flex flex-col items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-yellow-500/20 via-transparent to-transparent animate-pulse" />
+                    <div className="absolute -top-10 w-96 h-96 rounded-full bg-amber-400/10 blur-3xl opacity-80" />
+                    <span className="text-4xl animate-pulse filter drop-shadow">✨👑🌟</span>
+                    <span className="text-[9px] font-black font-mono tracking-wider text-[#FCD34D] mt-2 uppercase">GOLDEN_ROYALTY_WAVE_ACTIVE</span>
                   </div>
                 );
               } else {
@@ -1106,14 +1224,18 @@ export default function LiveStreamSimulator({
                   </p>
                 </div>
                 {/* 3. Small Animated Gift Logo/icon */}
-                <span className="text-xl animate-bounce shrink-0 filter drop-shadow">
-                  {activeGiftAlert.gift.icon}
+                <span className="text-xl animate-bounce shrink-0 filter drop-shadow flex items-center justify-center">
+                  {activeGiftAlert.gift.icon && (activeGiftAlert.gift.icon.startsWith("blob:") || activeGiftAlert.gift.icon.startsWith("data:") || activeGiftAlert.gift.icon.startsWith("http")) ? (
+                    <img src={activeGiftAlert.gift.icon} alt="" className="w-6 h-6 object-contain rounded" />
+                  ) : (
+                    activeGiftAlert.gift.icon
+                  )}
                 </span>
               </div>
 
-              {/* 4. Live x1 animated multiplier indicator on the right */}
+              {/* 4. Live xMultiplier animated multiplier indicator on the right */}
               <span className="text-2xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-500 tracking-tighter drop-shadow-md pr-1 pl-1.5 animate-pulse shrink-0 font-sans">
-                x1
+                x{activeGiftAlert.multiplier || 1}
               </span>
             </div>
           )}
@@ -1387,19 +1509,19 @@ export default function LiveStreamSimulator({
                 <button
                   type="button"
                   onClick={() => setIsGiftDrawerOpen(false)}
-                  className="p-1.5 bg-stone-900 border border-stone-800 rounded-full text-stone-400 hover:text-white hover:scale-105 active:scale-95 transition"
-                  title="Close Selection"
+                  className="p-1.5 bg-stone-900 border border-stone-800 rounded-full text-stone-400 hover:text-white hover:scale-105 active:scale-95 transition cursor-pointer"
+                  title="Close Selector"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Target recipient list selector widget (live gift add list user mic tap sent gift) */}
-              <div className="mb-3 bg-stone-950 p-2.5 rounded-2xl border border-stone-900 shrink-0 select-none">
-                <div className="text-[10px] text-stone-400 font-extrabold uppercase tracking-wide mb-2 text-left flex items-center justify-between">
+              <div className="mb-3 bg-stone-950 p-2.5 rounded-2xl border border-stone-900 shrink-0 select-none text-left">
+                <div className="text-[10px] text-stone-400 font-extrabold uppercase tracking-wide mb-1.5 text-left flex items-center justify-between">
                   <span>Send Gift To:</span>
                   <span className="text-[9px] text-amber-400 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded tracking-normal">
-                    @{selectedRecipient?.username} ({selectedRecipient?.slotLabel})
+                    @{selectedRecipient?.username} ({selectedRecipient?.slotLabel || "In Live"})
                   </span>
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -1417,6 +1539,20 @@ export default function LiveStreamSimulator({
                     <span>{hostRecipient.username} (Host)</span>
                   </button>
 
+                  {/* All on Mic Option (live sent gift to add all) */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRecipient(allRecipient)}
+                    className={`px-3 py-1 bg-stone-900 border text-[10px] font-bold rounded-full flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      selectedRecipient?.username === "all_recipients"
+                        ? "bg-gradient-to-r from-purple-600 to-indigo-600 border-purple-500 text-white shadow-lg"
+                        : "border-stone-800 text-stone-400 hover:text-stone-200"
+                    }`}
+                  >
+                    <span className="text-xs">👥</span>
+                    <span>All on Mic (Host + Guests)</span>
+                  </button>
+
                   {/* Occupied guests */}
                   {coHostSlots.slice(1).filter((s) => s.isOccupied).map((slot) => (
                     <button
@@ -1430,13 +1566,70 @@ export default function LiveStreamSimulator({
                       className={`px-3 py-1 bg-stone-900 border text-[10px] font-bold rounded-full flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                         selectedRecipient?.username === slot.username
                           ? "bg-gradient-to-r from-purple-600 to-indigo-600 border-purple-500 text-white shadow-lg"
-                          : "border-stone-800 text-stone-400 hover:text-stone-200"
+                          : "border-stone-800 text-stone-400 hover:text-stone-250"
                     }`}
                     >
                       <img src={slot.avatarUrl} alt="" className="w-4 h-4 rounded-full bg-stone-950 object-cover" />
                       <span>{slot.username} (Guest {slot.id - 1})</span>
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Multiplier Select widget (sent gift tap x1 2 3 4 invente) */}
+              <div id="gift-multiplier-controls" className="mb-3 bg-stone-950/80 p-2.5 rounded-2xl border border-stone-900 text-left select-none shrink-0">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-mono text-stone-400 uppercase tracking-wide font-extrabold text-stone-400">🚀 Select Multiplier:</span>
+                  <span className="text-[9px] text-[#A855F7] font-black bg-purple-500/10 px-2 py-0.5 rounded">
+                    x{isCustomMultiplier ? (parseInt(customMultiplier) || 1) : giftMultiplier} Multiplier Active
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {[1, 2, 3, 4].map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => {
+                        setIsCustomMultiplier(false);
+                        setGiftMultiplier(num);
+                      }}
+                      className={`px-3 py-1 text-[10px] font-black rounded-xl transition-all border select-none cursor-pointer ${
+                        !isCustomMultiplier && giftMultiplier === num
+                          ? "bg-[#632890] text-white border-purple-500 shadow-lg scale-95"
+                          : "bg-stone-900 text-stone-400 border-stone-850 hover:text-stone-200"
+                      }`}
+                    >
+                      x{num}
+                    </button>
+                  ))}
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomMultiplier(true);
+                    }}
+                    className={`px-3 py-1 text-[10px] font-black rounded-xl transition-all border select-none cursor-pointer ${
+                      isCustomMultiplier
+                        ? "bg-[#632890] text-white border-purple-500 shadow-lg"
+                        : "bg-stone-900 text-stone-400 border-stone-850 hover:text-stone-305"
+                    }`}
+                  >
+                    Custom / Invente ✍️
+                  </button>
+                  
+                  {isCustomMultiplier && (
+                    <div className="relative flex items-center bg-stone-900/60 border border-purple-500/40 rounded-xl px-2 py-0.5">
+                      <input
+                        type="number"
+                        min="1"
+                        max="99"
+                        placeholder="Qty"
+                        value={customMultiplier}
+                        onChange={(e) => setCustomMultiplier(e.target.value)}
+                        className="w-14 bg-transparent text-white text-[10px] font-bold focus:outline-none placeholder-stone-600 font-mono text-center"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1451,11 +1644,25 @@ export default function LiveStreamSimulator({
               <div className="relative border border-stone-900 bg-[#0c0a12]/80 rounded-2xl p-2 mb-2 shrink-0">
                 <div className="text-[10px] uppercase tracking-wider text-purple-400 font-extrabold mb-1.5 flex items-center justify-between px-1">
                   <span>✨ Gift Collection</span>
-                  <span className="text-[9px] text-stone-500 font-medium animate-bounce">Scroll Down for More 👇</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddGiftStep("password");
+                        setAddGiftPassword("");
+                        setAddGiftError("");
+                        setShowAddGiftPrompt(true);
+                      }}
+                      className="text-[9px] text-amber-400 border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 rounded-md font-black hover:bg-amber-500/20 transition-all select-none cursor-pointer"
+                    >
+                      🧬 Add Gift
+                    </button>
+                    <span className="text-[9px] text-stone-500 font-medium font-mono">Scroll👇</span>
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-4 gap-2 h-[180px] overflow-y-auto p-0.5 scrollbar-thin scrollbar-thumb-purple-900/40">
-                  {VIRTUAL_GIFTS.map((gift) => {
+                  {giftsList.map((gift) => {
                     const isSelected = selectedGiftId === gift.id;
                     return (
                       <div
@@ -1468,8 +1675,12 @@ export default function LiveStreamSimulator({
                         }`}
                       >
                         {/* Animated Floating preview for high fidelity */}
-                        <span className="text-2xl mb-1 drop-shadow">
-                          {gift.icon}
+                        <span className="text-2xl mb-1 drop-shadow flex items-center justify-center h-8 w-8">
+                          {gift.icon && (gift.icon.startsWith("blob:") || gift.icon.startsWith("data:") || gift.icon.startsWith("http")) ? (
+                            <img src={gift.icon} alt="" className="w-8 h-8 object-contain rounded" />
+                          ) : (
+                            gift.icon
+                          )}
                         </span>
                         <span className="text-[9px] font-black text-white text-center truncate w-full mb-0.5 leading-none">
                           {gift.name}
@@ -1516,6 +1727,222 @@ export default function LiveStreamSimulator({
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {/* ==========================================================
+              ADMIN PASSWORD PORTAL & ADD CUSTOM GIFT DIALOG SCREEN
+              ========================================================== */}
+          {showAddGiftPrompt && (
+            <div className="absolute inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-6 animate-fadeIn">
+              <div className="w-full bg-stone-900 border border-stone-800 rounded-3xl p-5 shadow-2xl relative max-w-[340px]">
+                
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowAddGiftPrompt(false)}
+                  className="absolute top-3 right-3 p-1.5 bg-stone-950 border border-stone-850 rounded-full text-stone-400 hover:text-white cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+
+                {/* --- step 1: Enter Password "EMAD8912" --- */}
+                {addGiftStep === "password" ? (
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <span className="text-2xl">🔐</span>
+                      <h4 className="text-sm font-black text-stone-100 uppercase tracking-widest mt-2">
+                        Admin Creator Portal
+                      </h4>
+                      <p className="text-[9px] text-stone-400">Unlock password protection to customize gift configurations.</p>
+                    </div>
+
+                    <div className="space-y-2 text-left">
+                      <label className="block text-[9px] font-mono uppercase text-stone-400 font-extrabold">Enter Password</label>
+                      <div className="relative flex items-center bg-stone-950 rounded-xl px-3 py-2 border border-stone-850">
+                        <input
+                          type={showPasswordText ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={addGiftPassword}
+                          onChange={(e) => setAddGiftPassword(e.target.value)}
+                          className="w-full bg-transparent text-white text-xs focus:outline-none min-w-0 font-mono tracking-widest"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPasswordText(!showPasswordText)}
+                          className="text-stone-400 hover:text-stone-200 text-xs shrink-0 pl-1 select-none cursor-pointer font-bold font-mono"
+                        >
+                          {showPasswordText ? "HIDE" : "SHOW"}
+                        </button>
+                      </div>
+                      {addGiftError && (
+                        <p className="text-[9px] text-red-500 font-bold font-mono animate-pulse">❌ {addGiftError}</p>
+                      )}
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (addGiftPassword === "EMAD8912") {
+                            setAddGiftStep("form");
+                            setAddGiftError("");
+                          } else {
+                            setAddGiftError("Invalid password! Retry or Close.");
+                          }
+                        }}
+                        className="w-full py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-black uppercase rounded-xl shadow-lg border border-white/5 active:scale-95 transition-all text-center cursor-pointer"
+                      >
+                        Verify & Unlock
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* --- step 2: Custom Gift Form --- */
+                  <div className="space-y-3.5 text-left">
+                    <div className="text-center">
+                      <span className="text-2xl">🎨</span>
+                      <h4 className="text-sm font-black text-stone-200 uppercase tracking-wide mt-1">Add Premium Gift Custom</h4>
+                    </div>
+
+                    <div className="space-y-3 max-h-[290px] overflow-y-auto pr-1">
+                      {/* Name input */}
+                      <div>
+                        <label className="block text-[8px] font-mono text-stone-400 uppercase tracking-widest mb-1">Gift Title</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Diamond Sword"
+                          value={newGiftName}
+                          onChange={(e) => setNewGiftName(e.target.value)}
+                          className="w-full px-2.5 py-1.5 bg-stone-950 border border-stone-850 rounded-lg text-white text-xs focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Icon Emojis or SIMULATED IMAGE FILE UPLOAD */}
+                      <div>
+                        <label className="block text-[8px] font-mono text-stone-400 uppercase tracking-widest mb-1">Gift Image File or Emoji</label>
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder="Emoji e.g. ⚔️"
+                            value={newGiftIcon}
+                            onChange={(e) => setNewGiftIcon(e.target.value)}
+                            className="w-full px-2.5 py-1.5 bg-stone-950 border border-stone-850 rounded-lg text-white text-xs focus:outline-none"
+                          />
+                          
+                          {/* File input (add gift image file) */}
+                          <div className="border border-stone-800 hover:border-purple-500/50 bg-stone-950/40 p-2 rounded-lg relative flex flex-col items-center cursor-pointer">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  setSimulatedFileName(file.name);
+                                  const localUrl = URL.createObjectURL(file);
+                                  setNewGiftIcon(localUrl); // Sets image preview URL safely
+                                }
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                            />
+                            <div className="text-center">
+                              <span className="text-xs text-purple-400 font-bold block">📂 Select image file</span>
+                              <span className="text-[7px] text-stone-500 block leading-normal mt-0.5">Loads PNG, JPG or GIF</span>
+                              {simulatedFileName && (
+                                <span className="text-[8px] text-green-400 font-mono font-bold mt-1 block truncate">
+                                  ✔️ {simulatedFileName} Loaded
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Coin cost input */}
+                      <div>
+                        <label className="block text-[8px] font-mono text-stone-400 uppercase tracking-widest mb-1">Gold Coins Cost</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="99999"
+                          placeholder="Coin amount"
+                          value={newGiftCost}
+                          onChange={(e) => setNewGiftCost(parseInt(e.target.value) || 0)}
+                          className="w-full px-2.5 py-1.5 bg-stone-950 border border-stone-850 rounded-lg text-white text-xs focus:outline-none font-mono"
+                        />
+                      </div>
+
+                      {/* Video feedback screen setting selection */}
+                      <div>
+                        <label className="block text-[8px] font-mono text-stone-400 uppercase tracking-widest mb-1">Video Gift Screen Override</label>
+                        <select
+                          value={newGiftVideoTheme}
+                          onChange={(e) => setNewGiftVideoTheme(e.target.value)}
+                          className="w-full px-2 py-1.5 bg-stone-950 border border-stone-850 rounded-lg text-stone-300 text-xs focus:outline-none focus:border-purple-500 outline-none cursor-pointer"
+                        >
+                          <option value="Cosmic Nebula Loop 🌌">Cosmic Nebula Loop 🌌</option>
+                          <option value="Neon Cybercity 🌆">Neon Cybercity Sunset 🌆</option>
+                          <option value="Techno Beats 🎵">Techno Stage Pulsing 🎵</option>
+                          <option value="Retro Cozy 🏮">Retro Cozy Lantern corner 🏮</option>
+                          <option value="Matrix Grid 📟">Digital Hacker Matrix Grid 📟</option>
+                          <option value="Golden Wave ✨">Golden Royalty Sparkle ✨</option>
+                        </select>
+                        <span className="text-[8px] text-purple-400/90 leading-tight block mt-1">Sends golden overlays and temporarily replaces host stream template.</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAddGiftStep("password")}
+                        className="flex-1 py-2 border border-stone-800 text-stone-405 text-xs font-bold rounded-xl cursor-pointer"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!newGiftName.trim()) return;
+                          
+                          const customObj: Gift = {
+                            id: `gift-custom-${Date.now()}`,
+                            name: newGiftName.trim(),
+                            icon: newGiftIcon.trim() || "🎁",
+                            cost: newGiftCost,
+                            category: "premium",
+                            animationStyle: "sparkle",
+                          };
+
+                          // Attach video theme override properties safely
+                          (customObj as any).videoFeedTheme = newGiftVideoTheme;
+
+                          // Save to local hooks
+                          const updated = [...giftsList.filter(g => g.category === "custom" || g.id.startsWith("gift-custom-")), customObj];
+                          try {
+                            localStorage.setItem(`custom_virtual_gifts`, JSON.stringify(updated));
+                          } catch (e) {
+                            console.warn("Could not save to localStorage:", e);
+                          }
+
+                          setGiftsList((prev) => [...prev, customObj]);
+                          setSelectedGiftId(customObj.id);
+
+                          // Reset states and exit
+                          setShowAddGiftPrompt(false);
+                          setNewGiftName("");
+                          setSimulatedFileName("");
+                          setNewGiftIcon("👑");
+                        }}
+                        className="flex-1 py-2 bg-gradient-to-r from-amber-500 to-yellow-550 hover:from-amber-400 text-stone-950 text-xs font-black uppercase rounded-xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                      >
+                        Create Gift
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+              </div>
             </div>
           )}
 
