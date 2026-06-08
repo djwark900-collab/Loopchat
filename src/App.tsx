@@ -29,7 +29,11 @@ import {
   Tv,
   Plus,
   X,
-  Trash2
+  Trash2,
+  Search,
+  QrCode,
+  MessageSquare,
+  Play
 } from "lucide-react";
 
 export default function App() {
@@ -38,6 +42,10 @@ export default function App() {
   const [selectedStreamer, setSelectedStreamer] = useState<Streamer | null>(null);
   const [isCoinsModalOpen, setIsCoinsModalOpen] = useState(false);
   const [streamersList, setStreamersList] = useState<Streamer[]>(MOCK_STREAMERS);
+
+  const [isAppLoading, setIsAppLoading] = useState(true);
+  const [isJoiningLive, setIsJoiningLive] = useState(false);
+  const [joiningTarget, setJoiningTarget] = useState<Streamer | null>(null);
 
   // Dynamic customization for "add creator live" state
   const [isAddCreatorLiveOpen, setIsAddCreatorLiveOpen] = useState(false);

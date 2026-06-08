@@ -111,10 +111,13 @@ export default function LiveStreamSimulator({
   const [newGiftCost, setNewGiftCost] = useState(150);
   const [newGiftEffect, setNewGiftEffect] = useState("animate-bounce");
   const [newGiftVideoTheme, setNewGiftVideoTheme] = useState("Cosmic Nebula Loop 🌌");
+  const [newGiftVideoUrl, setNewGiftVideoUrl] = useState("");
   const [simulatedFileName, setSimulatedFileName] = useState("");
+  const [simulatedGiftVideoFileName, setSimulatedGiftVideoFileName] = useState("");
 
   // Temporary video background feed override based on sent gift setting
   const [overrideVideoFeedTheme, setOverrideVideoFeedTheme] = useState<string | null>(null);
+  const [overrideVideoUrl, setOverrideVideoUrl] = useState<string | null>(null);
 
   // States for tracking Stream Session Statistics (Session Overview)
   const [showSessionOverview, setShowSessionOverview] = useState(false);
@@ -695,7 +698,12 @@ export default function LiveStreamSimulator({
     spawnGiftBurst(gift.icon, Math.min(65, 20 * multiplier));
 
     // Support screen overriding (add video gift screen)
-    if ((gift as any).videoFeedTheme) {
+    if ((gift as any).customVideoUrl) {
+      setOverrideVideoUrl((gift as any).customVideoUrl);
+      setTimeout(() => {
+        setOverrideVideoUrl(null);
+      }, 8000);
+    } else if ((gift as any).videoFeedTheme) {
       setOverrideVideoFeedTheme((gift as any).videoFeedTheme);
       setTimeout(() => {
         setOverrideVideoFeedTheme(null);
@@ -1039,7 +1047,23 @@ export default function LiveStreamSimulator({
         >
           {/* Simulated Backdrop live video layer */}
           <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden h-full w-full">
-            {(() => {
+            {overrideVideoUrl ? (
+              <div className="relative w-full h-full flex items-center justify-center bg-black">
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  src={overrideVideoUrl}
+                  className="w-full h-full object-cover animate-fadeIn"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+                <div className="absolute top-4 right-4 flex items-center gap-1.5 px-2 py-1 bg-amber-500/80 backdrop-blur rounded-lg shadow-lg animate-bounce">
+                  <Video className="w-3 h-3 text-white" />
+                  <span className="text-[10px] text-white font-black uppercase tracking-tighter">Premium Video Active</span>
+                </div>
+              </div>
+            ) : (() => {
               const theme = overrideVideoFeedTheme || activeStreamer?.videoFeedType || "Cosmic Nebula Loop 🌌";
               if (theme.includes("Neon Cybercity")) {
                 return (
@@ -1873,23 +1897,51 @@ export default function LiveStreamSimulator({
                         />
                       </div>
 
-                      {/* Video feedback screen setting selection */}
-                      <div>
-                        <label className="block text-[8px] font-mono text-stone-400 uppercase tracking-widest mb-1">Video Gift Screen Override</label>
-                        <select
-                          value={newGiftVideoTheme}
-                          onChange={(e) => setNewGiftVideoTheme(e.target.value)}
-                          className="w-full px-2 py-1.5 bg-stone-950 border border-stone-850 rounded-lg text-stone-300 text-xs focus:outline-none focus:border-purple-500 outline-none cursor-pointer"
-                        >
-                          <option value="Cosmic Nebula Loop 🌌">Cosmic Nebula Loop 🌌</option>
-                          <option value="Neon Cybercity 🌆">Neon Cybercity Sunset 🌆</option>
-                          <option value="Techno Beats 🎵">Techno Stage Pulsing 🎵</option>
-                          <option value="Retro Cozy 🏮">Retro Cozy Lantern corner 🏮</option>
-                          <option value="Matrix Grid 📟">Digital Hacker Matrix Grid 📟</option>
-                          <option value="Golden Wave ✨">Golden Royalty Sparkle ✨</option>
-                        </select>
-                        <span className="text-[8px] text-purple-400/90 leading-tight block mt-1">Sends golden overlays and temporarily replaces host stream template.</span>
-                      </div>
+                        {/* Video feedback screen setting selection */}
+                        <div>
+                          <label className="block text-[8px] font-mono text-stone-400 uppercase tracking-widest mb-1">Video Gift Screen Override</label>
+                          <div className="space-y-2">
+                            <select
+                              value={newGiftVideoTheme}
+                              onChange={(e) => setNewGiftVideoTheme(e.target.value)}
+                              className="w-full px-2 py-1.5 bg-stone-950 border border-stone-850 rounded-lg text-stone-300 text-xs focus:outline-none focus:border-purple-500 outline-none cursor-pointer"
+                            >
+                              <option value="Cosmic Nebula Loop 🌌">Cosmic Nebula Loop 🌌</option>
+                              <option value="Neon Cybercity 🌆">Neon Cybercity Sunset 🌆</option>
+                              <option value="Techno Beats 🎵">Techno Stage Pulsing 🎵</option>
+                              <option value="Retro Cozy 🏮">Retro Cozy Lantern corner 🏮</option>
+                              <option value="Matrix Grid 📟">Digital Hacker Matrix Grid 📟</option>
+                              <option value="Golden Wave ✨">Golden Royalty Sparkle ✨</option>
+                            </select>
+
+                            {/* File input (add gift video file override) */}
+                            <div className="border border-stone-800 hover:border-blue-500/50 bg-stone-950/40 p-2 rounded-lg relative flex flex-col items-center cursor-pointer group">
+                              <input
+                                type="file"
+                                accept="video/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    setSimulatedGiftVideoFileName(file.name);
+                                    const localUrl = URL.createObjectURL(file);
+                                    setNewGiftVideoUrl(localUrl);
+                                  }
+                                }}
+                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                              />
+                              <div className="text-center">
+                                <span className="text-[9px] text-blue-400 font-bold block group-hover:text-blue-300 transition-colors">🎞️ ADD GIFT VIDEO FILE</span>
+                                <span className="text-[7px] text-stone-500 block leading-normal mt-0.5 uppercase tracking-tighter">Overrides host background screen</span>
+                                {simulatedGiftVideoFileName && (
+                                  <span className="text-[8px] text-blue-400 font-mono font-bold mt-1 block truncate">
+                                    ✔️ VIDEO: {simulatedGiftVideoFileName}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-[8px] text-purple-400/90 leading-tight block mt-1">Sends golden overlays and temporarily replaces host stream template.</span>
+                        </div>
                     </div>
 
                     <div className="pt-2 flex gap-2">
@@ -1915,7 +1967,11 @@ export default function LiveStreamSimulator({
                           };
 
                           // Attach video theme override properties safely
-                          (customObj as any).videoFeedTheme = newGiftVideoTheme;
+                          if (newGiftVideoUrl) {
+                            (customObj as any).customVideoUrl = newGiftVideoUrl;
+                          } else {
+                            (customObj as any).videoFeedTheme = newGiftVideoTheme;
+                          }
 
                           // Save to local hooks
                           const updated = [...giftsList.filter(g => g.category === "custom" || g.id.startsWith("gift-custom-")), customObj];
@@ -1932,6 +1988,8 @@ export default function LiveStreamSimulator({
                           setShowAddGiftPrompt(false);
                           setNewGiftName("");
                           setSimulatedFileName("");
+                          setSimulatedGiftVideoFileName("");
+                          setNewGiftVideoUrl("");
                           setNewGiftIcon("👑");
                         }}
                         className="flex-1 py-2 bg-gradient-to-r from-amber-500 to-yellow-550 hover:from-amber-400 text-stone-950 text-xs font-black uppercase rounded-xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"

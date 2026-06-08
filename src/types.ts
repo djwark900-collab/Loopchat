@@ -51,8 +51,10 @@ export interface Gift {
   name: string;
   icon: string;
   cost: number;
-  category: "starter" | "premium" | "legendary";
+  category: "starter" | "premium" | "legendary" | "custom" | string;
   animationStyle: string; // Tailwind animation styling
+  videoFeedTheme?: string;
+  customVideoUrl?: string;
 }
 
 export interface ChatMessage {
