@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { db, handleFirestoreError, OperationType, firestoreStatus } from "../lib/firebase";
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "firebase/firestore";
+import { getXpNeededForLevel, LEVEL_REQUIREMENTS } from "../utils/levelUtils";
 
 interface ProfilePanelProps {
   currentUser: User;
@@ -237,6 +238,8 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
   const [newCodeName, setNewCodeName] = useState("");
   const [newCodeCoins, setNewCodeCoins] = useState(5000);
   const [isAddingCode, setIsAddingCode] = useState(false);
+  const [showLevelModal, setShowLevelModal] = useState(false);
+  const [customLevelInput, setCustomLevelInput] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -753,15 +756,21 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
             <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full border border-white/5 translate-x-1/4 -translate-y-1/4 pointer-events-none"></div>
             <div className="absolute top-0 right-0 w-120 h-120 bg-white/5 rounded-full border border-white/5 translate-x-1/5 -translate-y-1/5 pointer-events-none animate-spin-slow"></div>
             
-            {/* Header Banner Content Overlays: Level Badge and XP info */}
-            <div className="absolute top-3 right-3 flex items-center gap-1.5">
-              <span className="px-2 py-0.5 bg-white/20 border border-white/30 text-white backdrop-blur-md text-[8px] sm:text-[10px] font-bold uppercase tracking-wider rounded-lg font-mono">
-                LV {currentUser.level || 1}
+            {/* Header Banner Content Overlays: Clickable Level Badge and XP info (tap level) */}
+            <button
+              type="button"
+              onClick={() => setShowLevelModal(true)}
+              className="absolute top-3 right-3 flex items-center gap-1.5 p-1 bg-black/40 hover:bg-black/60 border border-white/20 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg z-25 group"
+              title="Tap to view Level & XP Targets!"
+            >
+              <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-[#923FEF] border border-white/20 text-white text-[8px] sm:text-[10px] font-extrabold uppercase tracking-wider rounded-lg font-mono flex items-center gap-1">
+                ⭐ LV {currentUser.level || 1}
               </span>
-              <span className="px-2 py-0.5 bg-amber-500 text-stone-950 text-[8px] sm:text-[10px] font-black uppercase tracking-wider rounded-lg font-mono shadow-sm">
+              <span className="px-2 py-0.5 bg-amber-500 text-stone-950 text-[8px] sm:text-[10px] font-black uppercase tracking-wider rounded-lg font-mono shadow-sm flex items-center gap-1">
                 XP {currentUser.xp || 0} / {currentUser.xpToNextLevel || 100}
+                <span className="text-[7px] text-stone-900 group-hover:animate-bounce">ℹ️</span>
               </span>
-            </div>
+            </button>
           </div>
 
           {/* Profile Info Overlay Row */}
@@ -1491,6 +1500,218 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
         </div>
 
       </div>
+
+      {/* ====================================================================================
+          LEVEL & XP SYSTEM HIGH-FIDELITY DETAILED MODAL - IMPLEMENTS "tap level" & THE LEVEL CHART
+          ==================================================================================== */}
+      {showLevelModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[90] animate-fadeIn">
+          <div className="bg-[#120E21] border-2 border-purple-500/40 rounded-3xl w-full max-w-md overflow-hidden shadow-[0_0_50px_rgba(139,92,246,0.3)]">
+            
+            {/* Modal Header */}
+            <div className="p-5 bg-gradient-to-r from-purple-900/40 via-indigo-950/40 to-purple-950/50 border-b border-purple-500/20 flex justify-between items-center relative">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🏆</span>
+                <div>
+                  <h4 className="text-sm font-black uppercase tracking-wider text-stone-200">
+                    My Creator Level Card
+                  </h4>
+                  <p className="text-[9px] text-[#A855F7] font-semibold uppercase tracking-widest leading-none mt-0.5">
+                    Tap level / Milestone testing
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowLevelModal(false)}
+                className="w-7 h-7 rounded-full bg-stone-900/60 hover:bg-stone-800 text-stone-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto scrollbar-thin">
+              
+              {/* CURRENT LEVEL STATUS CARD */}
+              <div className="bg-[#1c1833] border border-purple-500/10 rounded-2xl p-4 text-center space-y-3 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-yellow-400 via-amber-400 to-yellow-500 p-0.5 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.25)] animate-bounce-slow">
+                    <div className="w-full h-full rounded-full bg-stone-950 flex flex-col items-center justify-center">
+                      <span className="text-[9px] text-amber-500 font-bold uppercase leading-none font-mono">LV</span>
+                      <span className="text-lg font-black text-amber-300 leading-none">{currentUser.level}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="text-left">
+                    <span className="text-[10px] text-purple-300 font-extrabold uppercase tracking-wider block">XP Progression</span>
+                    <span className="text-xs font-mono font-black text-stone-200 block">
+                      {currentUser.xp.toLocaleString()} / {currentUser.xpToNextLevel.toLocaleString()} XP
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="space-y-1 text-left">
+                  <div className="w-full h-2.5 bg-stone-950 rounded-full overflow-hidden border border-purple-500/10">
+                    <div 
+                      className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-amber-400 transition-all duration-500 ease-out rounded-full shadow-[0_0_10px_radial]"
+                      style={{ width: `${Math.min(100, Math.max(3, (currentUser.xp / (currentUser.xpToNextLevel || 100)) * 100))}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[8px] font-bold text-stone-400 uppercase tracking-widest pt-0.5">
+                    <span>{Math.round((currentUser.xp / (currentUser.xpToNextLevel || 100)) * 100)}% Complete</span>
+                    <span className="text-amber-400">Next LV: {(currentUser.level || 0) + 1}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* LEVEL CHEAT SHEET / SYSTEM THRESHOLDS */}
+              <div className="space-y-2 text-left">
+                <span className="text-[9px] font-black uppercase text-purple-400 tracking-widest block pl-1">Level Targets Config (Requested)</span>
+                
+                <div className="bg-stone-950 border border-stone-900 rounded-xl divide-y divide-stone-900/60 font-mono text-[9.5px]">
+                  {LEVEL_REQUIREMENTS.map((rule, idx) => {
+                    const isActive = currentUser.level.toString() === rule.level.toString() || 
+                      (rule.level === "8-50" && currentUser.level >= 8 && currentUser.level <= 50);
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`p-2.5 flex items-center justify-between transition-colors ${
+                          isActive 
+                            ? "bg-purple-950/20 text-[#A855F7] border-l-2 border-purple-500" 
+                            : "text-stone-400"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-bold">
+                          <span className={isActive ? "text-amber-400" : "text-stone-600"}>👑</span>
+                          <span>Level {rule.level}:</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-extrabold text-stone-300 font-mono text-[10px] block">
+                            {rule.xp.toLocaleString()} XP
+                          </span>
+                          <span className="text-[8px] text-stone-500 block uppercase tracking-tight">{rule.label}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* INTERACTIVE LEVEL UP DESIGN LAB ACTIONS */}
+              <div className="space-y-3 pt-1 border-t border-purple-950 text-left">
+                <span className="text-[9px] font-black uppercase text-purple-400 tracking-widest block pl-1">Interactive Sandbox Controls</span>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      let nextXp = currentUser.xp + 500;
+                      let nextLevel = currentUser.level;
+                      let nextTarget = getXpNeededForLevel(nextLevel);
+                      
+                      while (nextXp >= nextTarget) {
+                        nextXp -= nextTarget;
+                        nextLevel += 1;
+                        nextTarget = getXpNeededForLevel(nextLevel);
+                      }
+
+                      onProfileUpdate({
+                        ...currentUser,
+                        level: nextLevel,
+                        xp: nextXp,
+                        xpToNextLevel: nextTarget
+                      });
+                    }}
+                    className="p-2 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-200 text-[10px] font-black uppercase rounded-xl tracking-wider transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm text-center flex flex-col justify-center items-center gap-0.5"
+                  >
+                    <span>⚡ Gain XP</span>
+                    <span className="text-[8px] text-purple-400 font-bold font-mono">+500 XP</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      let nextXp = currentUser.xp + 2500;
+                      let nextLevel = currentUser.level;
+                      let nextTarget = getXpNeededForLevel(nextLevel);
+                      
+                      while (nextXp >= nextTarget) {
+                        nextXp -= nextTarget;
+                        nextLevel += 1;
+                        nextTarget = getXpNeededForLevel(nextLevel);
+                      }
+
+                      onProfileUpdate({
+                        ...currentUser,
+                        level: nextLevel,
+                        xp: nextXp,
+                        xpToNextLevel: nextTarget
+                      });
+                    }}
+                    className="p-2 bg-gradient-to-r from-amber-500/10 to-yellow-400/10 hover:from-amber-500/20 border border-amber-500/30 text-amber-300 text-[10px] font-black uppercase rounded-xl tracking-wider transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm text-center flex flex-col justify-center items-center gap-0.5"
+                  >
+                    <span>🌟 Extreme XP</span>
+                    <span className="text-[8px] text-amber-400 font-bold font-mono">+2,500 XP</span>
+                  </button>
+                </div>
+
+                {/* Direct level setting tool */}
+                <div className="bg-[#1c1833]/40 border border-[#2d2254]/40 rounded-xl p-2.5 flex items-center justify-between gap-3">
+                  <div className="text-left shrink-0">
+                    <label className="text-[8.5px] font-black uppercase text-stone-400 tracking-wider block">Set Specific Level</label>
+                    <span className="text-[7.5px] text-purple-400 leading-none">Jump to Level 1 - 50</span>
+                  </div>
+                  
+                  <div className="flex gap-1.5 items-center">
+                    <input
+                      type="number"
+                      placeholder="e.g. 5"
+                      min={1}
+                      max={50}
+                      value={customLevelInput}
+                      onChange={(e) => setCustomLevelInput(e.target.value)}
+                      className="w-14 bg-stone-950 border border-purple-500/20 rounded-lg p-1 text-center text-xs font-mono font-black text-stone-200 focus:outline-none focus:border-purple-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const lvl = parseInt(customLevelInput, 10);
+                        if (!lvl || lvl < 1 || lvl > 50) return;
+                        const nextTarget = getXpNeededForLevel(lvl);
+                        
+                        onProfileUpdate({
+                          ...currentUser,
+                          level: lvl,
+                          xp: 0,
+                          xpToNextLevel: nextTarget
+                        });
+                        setCustomLevelInput("");
+                      }}
+                      className="px-2.5 py-1.5 bg-gradient-to-r from-purple-600 to-[#923FEF] hover:from-[#A855F7] text-white text-[9px] font-black uppercase rounded-lg tracking-wider active:scale-95 transition-all cursor-pointer shadow"
+                    >
+                      GO
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-stone-950 border-t border-purple-950 text-center">
+              <span className="text-[8px] font-bold text-stone-500 uppercase tracking-widest">
+                Level system values synced database-wide!
+              </span>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

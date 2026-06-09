@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { User, Streamer, ChatMessage, Gift } from "../types";
 import { VIRTUAL_GIFTS, SIMULATED_CHAT_MESSAGES, CHATTER_USERNAMES } from "../utils/mockData";
+import { getXpNeededForLevel, LEVEL_REQUIREMENTS } from "../utils/levelUtils";
 import { doc, setDoc, collection, onSnapshot, query, serverTimestamp, deleteDoc, updateDoc, increment, getDoc } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType, auth, firestoreStatus } from "../lib/firebase";
 import {
@@ -206,6 +207,25 @@ export default function LiveStreamSimulator({
   const [inputMessage, setInputMessage] = useState("");
   const [currentLevel, setCurrentLevel] = useState(currentUser.level);
   const [currentXp, setCurrentXp] = useState(currentUser.xp);
+  
+  // Custom Live-Stream settings requested
+  const [isMicSmall, setIsMicSmall] = useState(true); // default to true to implement "live mic small"
+  const [isLevelModalOpen, setIsLevelModalOpen] = useState(false); // under "tap level"
+  const [customLevelInput, setCustomLevelInput] = useState("");
+  const commentsEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto scroll to bottom of comments
+  useEffect(() => {
+    if (commentsEndRef.current) {
+      commentsEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages]);
+
+  // Sync profile level updates
+  useEffect(() => {
+    setCurrentLevel(currentUser.level);
+    setCurrentXp(currentUser.xp);
+  }, [currentUser.level, currentUser.xp]);
 
   // Bottom "Send Gift" drawer states
   const [isGiftDrawerOpen, setIsGiftDrawerOpen] = useState(false);
@@ -748,15 +768,16 @@ export default function LiveStreamSimulator({
     };
     setChatMessages((prev) => [...prev, systemGiftMsg]);
 
-    // Apply XP to current user
-    const xpReward = Math.floor(gift.cost * quantity * 1.5);
+    // Apply XP to current user (level gift)
+    const xpReward = Math.floor(gift.cost * quantity * 1.5) || 5;
     let nextXp = currentXp + xpReward;
     let nextLevel = currentLevel;
-    let xpTarget = currentUser.xpToNextLevel;
+    let xpTarget = getXpNeededForLevel(nextLevel);
 
-    if (nextXp >= xpTarget) {
+    while (nextXp >= xpTarget) {
       nextXp -= xpTarget;
       nextLevel += 1;
+      xpTarget = getXpNeededForLevel(nextLevel);
       setTimeout(() => {
         spawnGiftBurst("⭐", 25);
       }, 300);
@@ -988,11 +1009,12 @@ export default function LiveStreamSimulator({
     const viewReward = Math.floor(totalCost * 1.5) || 5;
     let nextXp = currentXp + viewReward;
     let nextLevel = currentLevel;
-    let xpTarget = currentUser.xpToNextLevel;
+    let xpTarget = getXpNeededForLevel(nextLevel);
 
-    if (nextXp >= xpTarget) {
+    while (nextXp >= xpTarget) {
       nextXp -= xpTarget;
       nextLevel += 1;
+      xpTarget = getXpNeededForLevel(nextLevel);
       spawnGiftBurst("⭐", 15);
     }
 
@@ -1756,17 +1778,19 @@ export default function LiveStreamSimulator({
                 referrerPolicy="no-referrer"
                 className="w-7 h-7 rounded-full border border-purple-500 object-cover bg-stone-900"
               />
-              <div className="text-left shrink-0 max-w-[70px]">
+              <div className="text-left shrink-0 max-w-[80px]">
                 <h5 className="text-[10px] font-black text-white truncate leading-none">
                   {isBroadcasting ? currentUser.username : activeStreamer?.username || "ndnd"}
                 </h5>
-                <div className="flex items-center gap-0.5 mt-0.5">
-                  <span className="flex gap-0.5 items-end justify-center h-2 overflow-hidden shrink-0">
-                    <span className="w-0.5 bg-green-400 rounded-full animate-soundBar1 h-1.5" />
-                    <span className="w-0.5 bg-green-400 rounded-full animate-soundBar2 h-2" />
-                    <span className="w-0.5 bg-green-400 rounded-full animate-soundBar3 h-1" />
-                  </span>
-                  <span className="text-[7px] text-stone-300 leading-none scale-90 origin-left">dnsn</span>
+                <div className="flex items-center gap-1 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsLevelModalOpen(true)}
+                    className="px-2 py-0.5 bg-gradient-to-r from-[#8B5CF6] via-[#EC4899] to-[#F59E0B] border border-white/20 text-white text-[7px] font-black uppercase rounded-lg font-mono pointer-events-auto hover:scale-105 active:scale-95 transition-all shadow-md flex items-center gap-0.5 select-none"
+                    title="Tap Level config targets!"
+                  >
+                    ⭐ LV {isBroadcasting ? currentLevel : activeStreamer?.level || 1}
+                  </button>
                 </div>
               </div>
 
@@ -1923,14 +1947,30 @@ export default function LiveStreamSimulator({
 
           {/* ================= CO-HOST PODIUMS BOX grid (Screenshot 1 aspect) ================= */}
           <div id="co-hosting-video-arena" className="px-3 flex-1 flex flex-col justify-center select-none pt-4">
-            <div className="grid grid-cols-3 gap-2 w-full">
+            
+            {/* Header with size toggle button for live mic small request */}
+            <div className="flex items-center justify-between gap-1 mb-2 px-1">
+              <span className="text-[9px] font-black uppercase text-purple-400 tracking-wider flex items-center gap-1">
+                🎤 Co-Host Mics ({coHostSlots.filter(s=>s.isOccupied).length}/9)
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsMicSmall(!isMicSmall)}
+                className="py-1 px-2.5 bg-purple-950/55 hover:bg-purple-900/40 border border-purple-500/30 rounded-full text-[8.5px] text-purple-300 font-extrabold uppercase transition-all tracking-wide cursor-pointer flex items-center gap-1 hover:scale-105 active:scale-95"
+                title="Toggle Mic Grid Size"
+              >
+                <span>{isMicSmall ? "🔍 Compact Mode" : "🔎 Normal Mode"}</span>
+              </button>
+            </div>
+
+            <div className={`grid grid-cols-3 ${isMicSmall ? 'gap-1.5' : 'gap-2'} w-full transition-all`}>
               
               {/* Host / Slot 1 podium box */}
-              <div className="aspect-square bg-stone-950 border border-stone-800/80 rounded-xl relative overflow-hidden flex flex-col justify-between p-1.5">
+              <div className={`${isMicSmall ? 'aspect-[1.3/1]' : 'aspect-square'} bg-stone-950 border border-stone-800/80 rounded-xl relative overflow-hidden flex flex-col justify-between p-1 transition-all duration-300`}>
                 {/* Audio room host container */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-2 bg-gradient-to-b from-[#18122B] to-[#0A0712] z-0">
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-1.5 bg-gradient-to-b from-[#18122B] to-[#0A0712] z-0">
                   {/* Glowing dynamic ring */}
-                  <div className="relative w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-purple-500 via-pink-400 to-amber-300 animate-spin-slow">
+                  <div className={`relative ${isMicSmall ? 'w-8 h-8' : 'w-12 h-12'} rounded-full p-[2px] bg-gradient-to-tr from-purple-500 via-pink-400 to-amber-300 animate-spin-slow transition-all`}>
                     <div className="w-full h-full rounded-full bg-stone-900 p-[1.5px]">
                       <img 
                         src={isBroadcasting ? currentUser.avatarUrl : activeStreamer?.avatarUrl || "https://picsum.photos/seed/ndnd/120/120"} 
@@ -1941,19 +1981,19 @@ export default function LiveStreamSimulator({
                   </div>
                   
                   {/* Score badge (live mic add score gift) */}
-                  <div className="mt-1.5 flex items-center gap-1 px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/20 rounded-full scale-90 leading-none">
-                    <span className="text-[9px]">⭐</span>
-                    <span className="text-[10px] font-mono font-black text-amber-300">
+                  <div className={`mt-1 flex items-center gap-1 px-1.5 py-0.5 bg-yellow-500/10 border border-yellow-500/20 rounded-full ${isMicSmall ? 'scale-75' : 'scale-90'} leading-none`}>
+                    <span className="text-[7.5px]">⭐</span>
+                    <span className="text-[8.5px] font-mono font-black text-amber-300">
                       {coHostSlots.find(s => s.id === 1)?.score || 0}
                     </span>
                   </div>
                 </div>
 
-                <span className="text-[8px] text-stone-300 font-extrabold tracking-wide uppercase px-1 py-0.5 bg-purple-950/80 rounded border border-purple-500/30 z-10 w-fit">
+                <span className="text-[7px] text-stone-300 font-extrabold tracking-wide uppercase px-1 py-0.5 bg-purple-950/80 rounded border border-purple-500/30 z-10 w-fit">
                   Host
                 </span>
 
-                <span className="text-[10px] text-stone-200 font-bold truncate z-10 text-left pl-1">
+                <span className="text-[8.5px] text-stone-200 font-bold truncate z-10 text-left pl-1">
                   {isBroadcasting ? currentUser.username : activeStreamer?.username || "ndnd"}
                 </span>
               </div>
@@ -1963,7 +2003,7 @@ export default function LiveStreamSimulator({
                 <button
                   key={slot.id}
                   onClick={() => handleInteractSlot(slot.id)}
-                  className={`aspect-square border rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-1 cursor-pointer transition-all ${
+                  className={`${isMicSmall ? 'aspect-[1.3/1]' : 'aspect-square'} border rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-1 cursor-pointer transition-all duration-300 ${
                     slot.isOccupied
                       ? "bg-purple-950/15 border-purple-500/40"
                       : slot.isRequesting
@@ -1974,7 +2014,7 @@ export default function LiveStreamSimulator({
                   {slot.isOccupied ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-1 bg-gradient-to-b from-[#110e1f] to-[#06040d] z-0">
                       {/* Guest avatar pulsing ring */}
-                      <div className="relative w-10 h-10 rounded-full p-[1.5px] bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-500">
+                      <div className={`relative ${isMicSmall ? 'w-7 h-7' : 'w-10 h-10'} rounded-full p-[1.5px] bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-500 transition-all`}>
                         <div className="w-full h-full rounded-full bg-stone-900 p-[1px]">
                           <img 
                             src={slot.avatarUrl} 
@@ -1985,14 +2025,14 @@ export default function LiveStreamSimulator({
                       </div>
                       
                       {/* Live mic score badge (live mic add score gift) */}
-                      <div className="mt-1 flex items-center gap-0.5 px-1.5 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full scale-75 leading-none">
-                        <span className="text-[7.5px]">⭐</span>
-                        <span className="text-[8.5px] font-mono font-bold text-cyan-300">
+                      <div className={`mt-0.5 flex items-center gap-0.5 px-1 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full ${isMicSmall ? 'scale-[0.65]' : 'scale-75'} leading-none`}>
+                        <span className="text-[6.5px]">⭐</span>
+                        <span className="text-[7.5px] font-mono font-bold text-cyan-300">
                           {slot.score || 0}
                         </span>
                       </div>
 
-                      <span className="text-[9px] text-stone-200 font-extrabold truncate w-[85px] text-center tracking-tight leading-none mt-1">
+                      <span className="text-[8px] text-stone-200 font-extrabold truncate w-[75px] text-center tracking-tight leading-none mt-0.5">
                         {slot.username}
                       </span>
 
@@ -2026,42 +2066,42 @@ export default function LiveStreamSimulator({
                             };
                             setChatMessages((prev) => [...prev, leaveMsg]);
                           }}
-                          className="absolute top-1 right-1 w-4 h-4 bg-red-600 hover:bg-red-500 text-white rounded-full flex items-center justify-center text-[7px] font-black cursor-pointer shadow z-30 transition-transform active:scale-95"
+                          className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-red-600 hover:bg-red-500 text-white rounded-full flex items-center justify-center text-[7px] font-black cursor-pointer shadow z-30 transition-transform active:scale-95"
                           title="Disconnect Cohost"
                         >
                           ✕
                         </button>
                       ) : (
-                        <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-green-500 z-10 shadow-lg animate-pulse" />
+                        <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-green-500 z-10 shadow-lg animate-pulse" />
                       )}
                     </div>
                   ) : slot.isRequesting ? (
                     <div className="flex flex-col items-center justify-center space-y-1">
-                      <span className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></span>
-                      <span className="text-[8px] font-black text-amber-400 font-mono tracking-wider uppercase scale-90">
+                      <span className="w-3.5 h-3.5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></span>
+                      <span className="text-[7px] font-black text-amber-400 font-mono tracking-wider uppercase scale-90">
                         Pending
                       </span>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center gap-1.5 p-1 select-none text-center">
+                    <div className="flex flex-col items-center justify-center gap-1 select-none text-center">
                       {isBroadcasting ? (
                         <>
                           {/* "add icon uesr" state */}
-                          <span className="w-7 h-7 rounded-full bg-indigo-950/30 text-indigo-400 border border-indigo-900/40 flex items-center justify-center hover:bg-indigo-900/20 hover:scale-105 active:scale-95 transition-all">
-                            <UserPlus className="w-3.5 h-3.5" />
+                          <span className={`rounded-full bg-indigo-950/30 text-indigo-400 border border-indigo-900/40 flex items-center justify-center hover:bg-indigo-900/20 hover:scale-105 active:scale-95 transition-all ${isMicSmall ? 'w-5 h-5' : 'w-7 h-7'}`}>
+                            <UserPlus className={`${isMicSmall ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'}`} />
                           </span>
                           <div className="flex flex-col leading-none">
-                            <span className="text-[8.5px] text-indigo-300 font-black uppercase tracking-tight">Add User</span>
-                            <span className="text-[7px] text-stone-400 font-bold">Add Mic</span>
+                            <span className="text-[7.5px] text-indigo-300 font-black uppercase tracking-tight">Add User</span>
+                            <span className="text-[6.5px] text-stone-400 font-bold">Add Mic</span>
                           </div>
                         </>
                       ) : (
                         // Standard viewer style:
                         <>
-                          <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
-                            <Plus className="w-4 h-4" />
+                          <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+                            <Plus className="w-3.5 h-3.5" />
                           </span>
-                          <span className="text-[10px] text-stone-300 font-bold tracking-tight">
+                          <span className="text-[8px] text-stone-300 font-bold tracking-tight">
                             Request
                           </span>
                         </>
@@ -2115,21 +2155,49 @@ export default function LiveStreamSimulator({
           )}
 
           {/* ================= COMMENTS STREAM FLOATING (Middle Overlap) ================= */}
-          <div id="stream-comments-dock" className="px-3 max-h-[110px] overflow-y-auto space-y-1.5 pointer-events-none text-left select-none relative z-10 w-[85%] mb-2">
-            {chatMessages.slice(-3).map((item) => (
+          <div 
+            id="stream-comments-dock" 
+            className="px-3 max-h-[135px] overflow-y-auto space-y-1.5 text-left select-none relative z-10 w-[85%] mb-2 scrollbar-none scroll-smooth"
+            style={{ scrollbarWidth: "none" }}
+          >
+            {chatMessages.slice(-15).map((item) => (
               <div 
                 key={item.id} 
                 className={`p-1.5 rounded-lg text-[10px] inline-block max-w-full backdrop-blur-md ${
                   item.isSystem 
-                    ? "bg-amber-600/20 border border-amber-500/10 text-amber-300 font-bold"
+                    ? "bg-amber-600/20 border border-amber-500/10 text-amber-300 font-bold animate-pulse"
                     : item.gift
                       ? "bg-gradient-to-r from-purple-500/30 to-purple-800/10 border border-purple-500/20 text-purple-200 font-medium"
-                      : "bg-black/45 text-stone-200 border border-stone-900/40"
+                      : "bg-black/55 text-stone-200 border border-stone-900/40"
                 }`}
               >
                 <span className="font-bold text-amber-400 mr-1 shrink-0">{item.username}:</span>
                 <span className="break-all">{item.text}</span>
               </div>
+            ))}
+            <div ref={commentsEndRef} />
+          </div>
+
+          {/* Quick preset live comments taps */}
+          <div className="px-3 mb-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 select-none relative z-10">
+            {["🔥 WoW!", "Nice Stream! 🎮", "Hype! 🎉", "Support! ❤️", "Go Streamer! 🚀", "Legendary! 👑", "Amazing! ✨"].map((text) => (
+              <button
+                key={text}
+                type="button"
+                onClick={() => {
+                  const newMsg: ChatMessage = {
+                    id: `chat-preset-${Date.now()}-${Math.random()}`,
+                    username: `${currentUser.username} (You)`,
+                    text: text,
+                    avatarUrl: currentUser.avatarUrl,
+                    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                  };
+                  setChatMessages((prev) => [...prev, newMsg]);
+                }}
+                className="py-1 px-2.5 bg-black/60 hover:bg-purple-950/80 backdrop-blur-sm border border-stone-800 hover:border-purple-500 text-stone-300 hover:text-white rounded-full text-[9px] font-extrabold tracking-tight shrink-0 transition-all active:scale-95 cursor-pointer leading-none"
+              >
+                {text}
+              </button>
             ))}
           </div>
 
@@ -2839,6 +2907,209 @@ export default function LiveStreamSimulator({
 
         </div>
       )}
+
+      {/* ====================================================================================
+          LEVEL & XP SYSTEM HIGH-FIDELITY ACTIVE ROOM MODAL - IMPLEMENTS "tap level" & THE LEVEL CHART
+          ==================================================================================== */}
+      {isLevelModalOpen && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-[95] animate-fadeIn pointer-events-auto">
+          <div className="bg-[#120E21] border-2 border-purple-500/40 rounded-3xl w-full max-w-sm overflow-hidden shadow-[0_0_50px_rgba(139,92,246,0.3)]">
+            
+            {/* Modal Header */}
+            <div className="p-4 bg-gradient-to-r from-purple-900/40 via-indigo-950/40 to-purple-950/50 border-b border-purple-500/20 flex justify-between items-center relative">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🏆</span>
+                <div className="text-left">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-stone-200">
+                    Live Stream Level Tracker
+                  </h4>
+                  <p className="text-[8px] text-[#A855F7] font-semibold uppercase tracking-widest leading-none mt-0.5">
+                    Tap level / Progression rules
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLevelModalOpen(false)}
+                className="w-6 h-6 rounded-full bg-stone-900/60 hover:bg-stone-800 text-stone-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-4 space-y-3.5 max-h-[70vh] overflow-y-auto scrollbar-thin">
+              
+              {/* CURRENT LEVEL STATUS CARD */}
+              <div className="bg-[#1c1833] border border-purple-500/10 rounded-2xl p-3 text-center space-y-2 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/5 rounded-full blur-xl pointer-events-none"></div>
+                
+                <div className="flex items-center justify-center gap-2.5">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-yellow-400 via-amber-400 to-yellow-500 p-0.5 flex items-center justify-center shadow-[0_0_10px_rgba(245,158,11,0.25)] animate-bounce-slow">
+                    <div className="w-full h-full rounded-full bg-stone-950 flex flex-col items-center justify-center">
+                      <span className="text-[8px] text-amber-500 font-bold uppercase leading-none font-mono">LV</span>
+                      <span className="text-base font-black text-amber-300 leading-none">{currentLevel}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="text-left">
+                    <span className="text-[9px] text-purple-300 font-extrabold uppercase tracking-wider block">XP Progression</span>
+                    <span className="text-xs font-mono font-black text-stone-200 block">
+                      {currentXp.toLocaleString()} / {getXpNeededForLevel(currentLevel).toLocaleString()} XP
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="space-y-1 text-left">
+                  <div className="w-full h-2 bg-stone-950 rounded-full overflow-hidden border border-purple-500/10">
+                    <div 
+                      className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-amber-400 transition-all duration-500 ease-out rounded-full shadow-[0_0_10px_radial]"
+                      style={{ width: `${Math.min(100, Math.max(3, (currentXp / (getXpNeededForLevel(currentLevel) || 100)) * 100))}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[7px] font-bold text-stone-400 uppercase tracking-widest pt-0.5">
+                    <span>{Math.round((currentXp / (getXpNeededForLevel(currentLevel) || 100)) * 100)}% Complete</span>
+                    <span className="text-amber-400">Next LV: {currentLevel + 1}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* LEVEL CHEAT SHEET / SYSTEM THRESHOLDS */}
+              <div className="space-y-1.5 text-left">
+                <span className="text-[8px] font-black uppercase text-purple-400 tracking-widest block pl-1">Level Targets Config (Requested)</span>
+                
+                <div className="bg-stone-950 border border-stone-900 rounded-xl divide-y divide-stone-900/60 font-mono text-[9px] max-h-48 overflow-y-auto">
+                  {LEVEL_REQUIREMENTS.map((rule, idx) => {
+                    const isActive = currentLevel.toString() === rule.level.toString() || 
+                      (rule.level === "8-50" && currentLevel >= 8 && currentLevel <= 50);
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`p-2 flex items-center justify-between transition-colors ${
+                          isActive 
+                            ? "bg-purple-950/20 text-[#A855F7] border-l-2 border-purple-500" 
+                            : "text-stone-400"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1 font-bold">
+                          <span className={isActive ? "text-amber-400" : "text-stone-600"}>👑</span>
+                          <span>Level {rule.level}:</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-extrabold text-stone-300 font-mono text-[9px] block">
+                            {rule.xp.toLocaleString()} XP
+                          </span>
+                          <span className="text-[7px] text-stone-500 block uppercase tracking-tight">{rule.label}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* INTERACTIVE LEVEL UP CONTROL ACTIONS */}
+              <div className="space-y-2 pt-1 border-t border-purple-950 text-left">
+                <span className="text-[8px] font-black uppercase text-purple-400 tracking-widest block pl-1">Milestone Simulator Controls</span>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      let nextXp = currentXp + 500;
+                      let nextLevel = currentLevel;
+                      let nextTarget = getXpNeededForLevel(nextLevel);
+                      
+                      while (nextXp >= nextTarget) {
+                        nextXp -= nextTarget;
+                        nextLevel += 1;
+                        nextTarget = getXpNeededForLevel(nextLevel);
+                      }
+
+                      setCurrentLevel(nextLevel);
+                      setCurrentXp(nextXp);
+                      onLevelXpUpdate(nextLevel, nextXp);
+                    }}
+                    className="p-1.5 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-200 text-[9px] font-black uppercase rounded-xl tracking-wider transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm text-center flex flex-col justify-center items-center gap-0.5"
+                  >
+                    <span>⚡ Gain XP</span>
+                    <span className="text-[7.5px] text-purple-400 font-bold font-mono">+500 XP</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      let nextXp = currentXp + 2500;
+                      let nextLevel = currentLevel;
+                      let nextTarget = getXpNeededForLevel(nextLevel);
+                      
+                      while (nextXp >= nextTarget) {
+                        nextXp -= nextTarget;
+                        nextLevel += 1;
+                        nextTarget = getXpNeededForLevel(nextLevel);
+                      }
+
+                      setCurrentLevel(nextLevel);
+                      setCurrentXp(nextXp);
+                      onLevelXpUpdate(nextLevel, nextXp);
+                    }}
+                    className="p-1.5 bg-gradient-to-r from-amber-500/10 to-yellow-400/10 hover:from-amber-500/20 border border-amber-500/30 text-amber-300 text-[9px] font-black uppercase rounded-xl tracking-wider transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm text-center flex flex-col justify-center items-center gap-0.5"
+                  >
+                    <span>🌟 Extreme XP</span>
+                    <span className="text-[7.5px] text-amber-400 font-bold font-mono">+2,500 XP</span>
+                  </button>
+                </div>
+
+                {/* Direct level setting tool */}
+                <div className="bg-[#1c1833]/40 border border-[#2d2254]/40 rounded-xl p-2 flex items-center justify-between gap-2">
+                  <div className="text-left shrink-0">
+                    <label className="text-[8px] font-black uppercase text-stone-400 tracking-wider block">Set Level</label>
+                  </div>
+                  
+                  <div className="flex gap-1 items-center">
+                    <input
+                      type="number"
+                      placeholder="e.g. 5"
+                      min={1}
+                      max={50}
+                      value={customLevelInput}
+                      onChange={(e) => setCustomLevelInput(e.target.value)}
+                      className="w-12 bg-stone-950 border border-purple-500/20 rounded-md p-0.5 text-center text-xs font-mono font-black text-stone-200 focus:outline-none focus:border-purple-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const lvl = parseInt(customLevelInput, 10);
+                        if (!lvl || lvl < 1 || lvl > 50) return;
+                        const nextTarget = getXpNeededForLevel(lvl);
+                        
+                        setCurrentLevel(lvl);
+                        setCurrentXp(0);
+                        onLevelXpUpdate(lvl, 0);
+                        setCustomLevelInput("");
+                      }}
+                      className="px-2 py-1 bg-gradient-to-r from-purple-600 to-[#923FEF] hover:from-[#A855F7] text-white text-[8px] font-black uppercase rounded shadow cursor-pointer active:scale-95 transition-all"
+                    >
+                      GO
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 bg-stone-950 border-t border-purple-950 text-center">
+              <span className="text-[7.5px] font-bold text-stone-500 uppercase tracking-widest">
+                Updates saved database-wide in real-time!
+              </span>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
