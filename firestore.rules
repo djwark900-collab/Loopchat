@@ -12,6 +12,7 @@ service cloud.firestore {
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function isNumeric(val) { return val is int || val is float; }
 
     // Catch-all deny
     match /{document=**} {
@@ -27,15 +28,15 @@ service cloud.firestore {
         && data.username is string && data.username.size() <= 100
         && data.fullName is string && data.fullName.size() <= 150
         && data.avatarUrl is string && data.avatarUrl.size() <= 2000
-        && data.coins is int
-        && data.level is int
-        && data.xp is int
+        && isNumeric(data.coins)
+        && isNumeric(data.level)
+        && isNumeric(data.xp)
         // Optional fields check
         && (!('bio' in data) || data.bio is string)
-        && (!('diamonds' in data) || data.diamonds is int)
-        && (!('xpToNextLevel' in data) || data.xpToNextLevel is int)
-        && (!('followers' in data) || data.followers is int)
-        && (!('following' in data) || data.following is int)
+        && (!('diamonds' in data) || isNumeric(data.diamonds))
+        && (!('xpToNextLevel' in data) || isNumeric(data.xpToNextLevel))
+        && (!('followers' in data) || isNumeric(data.followers))
+        && (!('following' in data) || isNumeric(data.following))
         && (!('createdAt' in data) || data.createdAt is string)
         && (!('identificationCode' in data) || data.identificationCode is string);
     }

@@ -32,7 +32,8 @@ import {
   Search,
   QrCode,
   MessageSquare,
-  Play
+  Play,
+  ArrowLeft
 } from "lucide-react";
 
 export default function App() {
@@ -567,6 +568,17 @@ export default function App() {
           {/* Immersive Header for Live Discovery - Styled exactly as Image 2 */}
           <div className="p-4 sm:p-5 flex items-center justify-between border-b border-[#2d2254]/40 bg-black/50 backdrop-blur-xl sticky top-0 z-30">
              <div className="flex items-center gap-2.5">
+               <button
+                 type="button"
+                 onClick={() => {
+                   setSelectedStreamer(null);
+                   setActiveTab("home");
+                 }}
+                 className="mr-1.5 p-2 bg-[#1e133c]/80 hover:bg-[#2d1e57] text-[#9366ff] hover:text-white rounded-full transition-all hover:scale-105 active:scale-95 border border-[#2d1c5a]/40 cursor-pointer flex items-center justify-center shadow"
+                 title="Back to Explore"
+               >
+                 <ArrowLeft className="w-4 h-4" />
+               </button>
                <div className="relative">
                  <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping absolute inset-0 opacity-75"></div>
                  <div className="w-2.5 h-2.5 rounded-full bg-red-600 relative"></div>
@@ -698,7 +710,22 @@ export default function App() {
                     >
                       {/* Live Badge for own content if applicable */}
                       {live.creatorId === auth.currentUser?.uid && (
-                        <div className="absolute top-2 right-2 z-10 px-2 py-0.5 bg-indigo-600 text-white text-[7px] font-black rounded uppercase">My Live</div>
+                        <div className="absolute top-2 right-2 z-20 flex items-center gap-1">
+                          <span className="px-2 py-0.5 bg-indigo-650 text-white text-[7px] font-black rounded uppercase tracking-wider backdrop-blur-sm shadow">My Live</span>
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (window.confirm("Are you sure you want to stop and delete your live stream?")) {
+                                await handleRemoveStreamer(live.id);
+                              }
+                            }}
+                            className="p-1.5 bg-red-650 hover:bg-rose-500 text-white rounded-md transition-all hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center shadow-md border border-red-500/20"
+                            title="Delete Live Stream"
+                          >
+                            <Trash2 className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
                       )}
 
                       <div className="relative aspect-video">
@@ -773,16 +800,7 @@ export default function App() {
 
           {/* BROADCAST STUDIO OVERLAY */}
           {isBroadcastingStudio && (
-            <div className="absolute inset-0 z-50 bg-[#0c0816] flex flex-col">
-               <div className="px-6 py-4 flex justify-between items-center border-b border-stone-850/40 bg-black/40">
-                  <div className="flex items-center gap-2">
-                     <Video className="w-5 h-5 text-red-500" />
-                     <h4 className="text-xs font-black text-white uppercase tracking-widest italic">Host Studio Selection</h4>
-                  </div>
-                  <button onClick={() => setIsBroadcastingStudio(false)} className="p-2 bg-stone-900/60 rounded-full text-stone-400 hover:text-white transition-colors border border-stone-800">
-                    <X className="w-5 h-5" />
-                  </button>
-               </div>
+            <div className="absolute inset-0 z-50 bg-[#0c0816] flex flex-col h-full w-full">
                <div className="flex-1 overflow-y-auto px-4 py-4">
                  <LiveStreamSimulator
                    currentUser={currentUser}
