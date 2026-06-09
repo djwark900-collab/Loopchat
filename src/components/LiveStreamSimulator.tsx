@@ -22,7 +22,10 @@ import {
   Plus,
   Wand2,
   Armchair,
-  Video
+  Video,
+  Lock,
+  UserPlus,
+  Home
 } from "lucide-react";
 
 interface LiveStreamSimulatorProps {
@@ -128,6 +131,16 @@ export default function LiveStreamSimulator({
   // Temporary video background feed override based on sent gift setting
   const [overrideVideoFeedTheme, setOverrideVideoFeedTheme] = useState<string | null>(null);
   const [overrideVideoUrl, setOverrideVideoUrl] = useState<string | null>(null);
+
+  // Combo and Animation states
+  const [comboCount, setComboCount] = useState<number>(0);
+  const [comboPulse, setComboPulse] = useState<boolean>(false);
+  const [comboCompletionMsg, setComboCompletionMsg] = useState<string>("");
+  const comboTimerRef = useRef<any>(null);
+  const [roseShowerActive, setRoseShowerActive] = useState<boolean>(false);
+  const [lionActive, setLionActive] = useState<boolean>(false);
+  const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
+  const [showSubscriptionAlert, setShowSubscriptionAlert] = useState<boolean>(false);
 
   // States for tracking Stream Session Statistics (Session Overview)
   const [showSessionOverview, setShowSessionOverview] = useState(false);
@@ -305,6 +318,18 @@ export default function LiveStreamSimulator({
   const particlesRef = useRef<Particle[]>([]);
   const animationFrameId = useRef<number | null>(null);
 
+  // Prevent any global body scrolling when the simulator is active
+  useEffect(() => {
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+    };
+  }, []);
+
   // Sync other lives for community list in setup
   const [otherLives, setOtherLives] = useState<Streamer[]>([]);
   useEffect(() => {
@@ -327,7 +352,7 @@ export default function LiveStreamSimulator({
     if ((isLiveActive && isBroadcasting) || (!isBroadcasting && activeStreamer)) {
       // "live my no bot view and no request bot"
       // If we are broadcasting ("live my"), starting viewers starts cleanly at 0 (no bot view), otherwise uses active category viewers count
-      const initialViewers = isBroadcasting ? 0 : activeStreamer?.viewersCount || 100;
+      const initialViewers = isBroadcasting ? 0 : activeStreamer?.viewersCount || 0;
       setViewersCount(initialViewers);
 
       // Persist viewer increment to Firestore only if user stays for at least 3 seconds
@@ -347,39 +372,21 @@ export default function LiveStreamSimulator({
           }
         }, 10000); // 10-second grace period for "stable" viewers only
 
-        // Pre-occupy some guest slots with active co-hosts only for other listed streams (viewer mode)
-        setCoHostSlots((prevSlots) => {
-          return prevSlots.map((slot) => {
-            if (slot.id === 2) {
-              return {
-                ...slot,
-                isOccupied: true,
-                username: "neon_rider",
-                avatarUrl: "https://picsum.photos/seed/neon_rider/150/150",
-                statusText: "On Mic 🎤",
-              };
-            }
-            if (slot.id === 4) {
-              return {
-                ...slot,
-                isOccupied: true,
-                username: "cyber_phantom",
-                avatarUrl: "https://picsum.photos/seed/cyber_phantom/150/150",
-                statusText: "On Mic 🎤",
-              };
-            }
-            if (slot.id === 7) {
-              return {
-                ...slot,
-                isOccupied: true,
-                username: "star_sailor",
-                avatarUrl: "https://picsum.photos/seed/star_sailor/150/150",
-                statusText: "On Mic 🎤",
-              };
-            }
-            return slot;
-          });
-        });
+        // Keep viewer slots cleanly empty to support real multi-user co-hosting loops
+        setCoHostSlots((prevSlots) =>
+          prevSlots.map((slot) =>
+            slot.id > 1
+              ? {
+                  ...slot,
+                  isOccupied: false,
+                  isRequesting: false,
+                  username: "",
+                  avatarUrl: "",
+                  statusText: "Request",
+                }
+              : slot
+          )
+        );
       } else {
         // Start live my with all mic guest slots completely empty of bots
         setCoHostSlots((prevSlots) =>
@@ -722,9 +729,11 @@ export default function LiveStreamSimulator({
   };
 
   // Handle active purchase / sending from Bottom Drawer Sheet
-  const handleSendGiftLocal = (gift: Gift) => {
-    // 1. Calculate Multiplier (x1, x2, x3, x4 or Custom inventive selector)
-    const multiplier = isCustomMultiplier ? (parseInt(customMultiplier) || 1) : giftMultiplier;
+  const handleSendGiftLocal = (gift: Gift, overrideMultiplier?: number) => {
+    // 1. Calculate Multiplier (defaults to 1 or uses active successive combo count)
+    const multiplier = overrideMultiplier !== undefined 
+      ? overrideMultiplier 
+      : 1;
     
     // 2. Determine Recipients
     const isAll = selectedRecipient.username === "all_recipients";
@@ -735,8 +744,9 @@ export default function LiveStreamSimulator({
       : coHostSlots.filter(s => s.username === selectedRecipient.username);
     
     const targetCount = targetSlots.length || 1;
-    const itemCost = gift.cost * multiplier;
-    const totalCost = itemCost * targetCount;
+    // For extreme combo-tapping, each tap represents a single gift (or multiple if multiplier selected). Let's use 1 * cost for single successive combo increments to be coin-friendly!
+    const effectiveCostPerInstance = overrideMultiplier !== undefined ? gift.cost : (gift.cost * multiplier);
+    const totalCost = effectiveCostPerInstance * targetCount;
 
     if (currentUser.coins < totalCost) {
       setNotEnoughCoinsMsg(true);
@@ -751,6 +761,16 @@ export default function LiveStreamSimulator({
 
     // Burst particles animation for high fidelity
     spawnGiftBurst(gift.icon, Math.min(65, 20 * multiplier));
+
+    // Special Gift Animations Trigger
+    if (gift.id === "gift-rose") {
+      setRoseShowerActive(true);
+      setTimeout(() => setRoseShowerActive(false), 4500);
+    }
+    if (gift.id === "gift-lion") {
+      setLionActive(true);
+      setTimeout(() => setLionActive(false), 7000);
+    }
 
     // Support screen overriding (add video gift screen)
     if ((gift as any).customVideoUrl) {
@@ -768,7 +788,7 @@ export default function LiveStreamSimulator({
     // Trigger visual floating gift alert bubble immediately with user's sent name
     const alertTime = Date.now();
     setActiveGiftAlert({
-      sender: `${currentUser.username} (You)`,
+      sender: currentUser.username,
       gift,
       timestamp: alertTime,
       avatarUrl: currentUser.avatarUrl,
@@ -778,6 +798,8 @@ export default function LiveStreamSimulator({
     // Track for Session Overview
     setTotalGiftsCount((p) => p + (multiplier * targetCount));
     setTotalCoinsEarned((p) => p + totalCost);
+
+    const itemCost = effectiveCostPerInstance;
 
     // Increment recipient slot scores (for all targets)
     setCoHostSlots((prevSlots) =>
@@ -801,7 +823,7 @@ export default function LiveStreamSimulator({
     // Message
     const giftMessage: ChatMessage = {
       id: `usr-gift-${Date.now()}-${Math.random()}`,
-      username: `${currentUser.username} (You)`,
+      username: currentUser.username,
       text: `sent ${gift.name} ${gift.icon} x${multiplier} to ${recipientText}!`,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       gift: {
@@ -1198,9 +1220,211 @@ export default function LiveStreamSimulator({
         /* 2. THE MAIN STREAMING WINDOW EMULATOR BEZEL SCREEN */
         <div 
           id="live-bezel-wrapper" 
-          className="relative w-full h-screen md:h-auto md:aspect-[9/16] max-w-md bg-black md:rounded-[36px] md:border-[5px] md:border-stone-800 shadow-2xl overflow-hidden flex flex-col justify-between mx-auto"
+          className="relative w-full h-[100dvh] md:h-auto md:aspect-[9/16] max-w-md bg-black md:rounded-[36px] md:border-[5px] md:border-stone-800 shadow-2xl overflow-hidden flex flex-col justify-between mx-auto"
           style={{ background: "#0c0816" }}
         >
+          {/* Custom style injection for high performance CSS animations */}
+          <style>{`
+            @keyframes fallAndSpin {
+              0% {
+                transform: translateY(0px) rotate(0deg);
+                opacity: 0;
+              }
+              10% {
+                opacity: 1;
+              }
+              90% {
+                opacity: 1;
+              }
+              100% {
+                transform: translateY(450px) rotate(720deg);
+                opacity: 0;
+              }
+            }
+            @keyframes walkLion {
+              0% {
+                transform: translateX(120%) scaleX(-1);
+              }
+              15% {
+                transform: translateX(70%) scaleX(-1);
+              }
+              45% {
+                transform: translateX(10%) scaleX(-1);
+              }
+              65% {
+                transform: translateX(-30%) scaleX(-1);
+              }
+              90% {
+                transform: translateX(-80%) scaleX(-1);
+              }
+              100% {
+                transform: translateX(-155%) scaleX(-1);
+              }
+            }
+            @keyframes wiggleTail {
+              0%, 100% { transform: rotate(0deg); }
+              50% { transform: rotate(22deg); }
+            }
+            @keyframes strideLegLeft {
+              0%, 100% { transform: rotate(-22deg); }
+              50% { transform: rotate(26deg); }
+            }
+            @keyframes strideLegRight {
+              0%, 100% { transform: rotate(26deg); }
+              50% { transform: rotate(-22deg); }
+            }
+            @keyframes bounceMane {
+              0%, 100% { transform: translateY(0px); }
+              50% { transform: translateY(-4px); }
+            }
+          `}</style>
+
+          {/* Rose Shower overlay */}
+          {roseShowerActive && (
+            <div className="absolute inset-x-0 top-0 bottom-24 z-[45] pointer-events-none overflow-hidden h-full w-full">
+              {[...Array(35)].map((_, i) => (
+                <div 
+                  key={i}
+                  className="absolute select-none text-2xl filter drop-shadow-md text-red-500"
+                  style={{
+                    top: `-10%`,
+                    left: `${Math.random() * 100}%`,
+                    animation: `fallAndSpin ${2.8 + Math.random() * 2.5}s linear infinite`,
+                    animationDelay: `${Math.random() * 2.2}s`,
+                    transform: `scale(${0.6 + Math.random() * 0.7})`
+                  }}
+                >
+                  🌹
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Subscribe star overlay bubble alert */}
+          {showSubscriptionAlert && (
+            <div className="absolute inset-x-4 top-20 z-[48] pointer-events-none flex justify-center animate-bounce">
+              <div className="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-stone-950 px-4 py-2 rounded-2xl border border-yellow-300 shadow-xl flex items-center gap-2">
+                <span className="text-xl">🌟</span>
+                <div className="flex flex-col text-left">
+                  <span className="text-[10px] font-black uppercase tracking-wider leading-none">VIP SUBSCRIBER GAINED!</span>
+                  <span className="text-[8px] font-bold text-stone-900 leading-none mt-1">Thank you for supporting this creator loop</span>
+                </div>
+                <span className="text-xl">🌟</span>
+              </div>
+            </div>
+          )}
+
+          {/* Majestic Walking Lion Graphic Overlay */}
+          {lionActive && (
+            <div className="absolute inset-0 z-50 pointer-events-none overflow-hidden select-none flex flex-col justify-between p-4 bg-gradient-to-t from-amber-650/10 via-transparent to-transparent">
+              {/* Top Banner announcing the summon */}
+              <div className="w-full flex justify-center mt-20 animate-[bounce_2s_infinite]">
+                <div className="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 border-2 border-yellow-300 text-stone-950 px-4 py-1.5 rounded-full shadow-lg shadow-yellow-900/50 flex items-center gap-2 animate-scaleUp">
+                  <span className="text-lg">👑</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider font-sans leading-none">
+                    PRESTIGIOUS KING LION GIFT SUMMONED!
+                  </span>
+                  <span className="text-lg">🦁</span>
+                </div>
+              </div>
+
+              {/* Glittering sparkles trailing */}
+              {[...Array(15)].map((_, i) => (
+                <div
+                  key={`sparkle-${i}`}
+                  className="absolute text-yellow-300 text-xs animate-ping"
+                  style={{
+                    top: `${30 + Math.random() * 50}%`,
+                    left: `${10 + Math.random() * 80}%`,
+                    animationDelay: `${i * 150}ms`,
+                    animationDuration: `${1.2 + Math.random() * 1.8}s`
+                  }}
+                >
+                  ✨
+                </div>
+              ))}
+
+              {/* Majestic Walking Lion Graphic (Animated via css keyframe walkLion) */}
+              <div 
+                className="absolute bottom-24 left-0 w-44 h-32 flex items-end justify-center"
+                style={{
+                  animation: "walkLion 7s linear forwards",
+                }}
+              >
+                <svg
+                  viewBox="0 0 100 80"
+                  className="w-full h-full filter drop-shadow-[0_4px_12px_rgba(217,119,6,0.6)]"
+                >
+                  {/* Main Body */}
+                  <path d="M 30,35 Q 45,30 65,37 L 72,40 L 72,52 L 28,48 Z" fill="#D97706" />
+                  
+                  {/* Back Mane or Neck */}
+                  <path d="M 22,25 Q 35,28 35,42 Q 22,48 18,35 Z" fill="#92400E" />
+
+                  {/* Under Belly */}
+                  <path d="M 32,48 L 65,51 L 62,55 L 35,53 Z" fill="#F59E0B" />
+
+                  {/* Head & Crown */}
+                  <g style={{ animation: "bounceMane 0.8s ease-in-out infinite" }}>
+                    {/* Majestic Crown */}
+                    <path d="M 12,8 L 14,14 L 18,10 L 22,14 L 24,8 L 22,18 L 14,18 Z" fill="#FBBF24" stroke="#FFF" strokeWidth="0.5" />
+                    <circle cx="12" cy="7" r="0.8" fill="#FFF" />
+                    <circle cx="18" cy="9" r="0.8" fill="#FFF" />
+                    <circle cx="24" cy="7" r="0.8" fill="#FFF" />
+
+                    {/* Thick Fluffy Mane */}
+                    <path d="M 10,22 Q 25,12 32,25 Q 34,42 22,46 Q 5,42 10,22 Z" fill="#78350F" />
+                    
+                    {/* Golden Face */}
+                    <path d="M 12,24 Q 18,20 22,25 L 20,34 L 14,34 Z" fill="#F59E0B" />
+                    
+                    {/* Proud snout */}
+                    <path d="M 12,30 L 8,32 L 12,36 Z" fill="#92400E" />
+                    <circle cx="11" cy="31" r="1.5" fill="#312E81" />
+                    
+                    {/* Focused white highlight Eye */}
+                    <circle cx="17" cy="27" r="1.2" fill="#FFFFFF" />
+                    <circle cx="17" cy="27" r="0.6" fill="#000000" />
+                    
+                    {/* Determined brow */}
+                    <path d="M 15,24 L 19,25" stroke="#451A03" strokeWidth="1" strokeLinecap="round" />
+                  </g>
+
+                  {/* Golden majestic tail */}
+                  <g style={{ transformOrigin: "68px 40px", animation: "wiggleTail 1.2s ease-in-out infinite" }}>
+                    <path d="M 70,40 Q 82,45 80,62" fill="none" stroke="#D97706" strokeWidth="3" strokeLinecap="round" />
+                    {/* Extra thick tuft clump at end */}
+                    <circle cx="80" cy="62" r="5" fill="#78350F" className="animate-pulse" />
+                  </g>
+
+                  {/* Front Left Leg */}
+                  <g style={{ transformOrigin: "35px 48px", animation: "strideLegLeft 0.8s ease-in-out infinite" }}>
+                    <rect x="32" y="47" width="6" height="15" rx="2" fill="#D97706" />
+                    <rect x="31" y="61" width="8" height="5" rx="1.5" fill="#78350F" />
+                  </g>
+
+                  {/* Rear Left Leg */}
+                  <g style={{ transformOrigin: "62px 48px", animation: "strideLegLeft 0.8s ease-in-out infinite" }}>
+                    <rect x="60" y="47" width="6" height="15" rx="2" fill="#D97706" />
+                    <rect x="59" y="61" width="8" height="5" rx="1.5" fill="#78350F" />
+                  </g>
+
+                  {/* Front Right Leg */}
+                  <g style={{ transformOrigin: "42px 48px", animation: "strideLegRight 0.8s ease-in-out infinite" }}>
+                    <rect x="39" y="47" width="5.5" height="15" rx="2" fill="#B45309" />
+                    <rect x="38" y="61" width="7.5" height="5" rx="1.5" fill="#451A03" />
+                  </g>
+
+                  {/* Rear Right Leg */}
+                  <g style={{ transformOrigin: "67px 48px", animation: "strideLegRight 0.8s ease-in-out infinite" }}>
+                    <rect x="65" y="47" width="5.5" height="15" rx="2" fill="#B45309" />
+                    <rect x="64" y="61" width="7.5" height="5" rx="1.5" fill="#451A03" />
+                  </g>
+                </svg>
+              </div>
+            </div>
+          )}
+
           {/* Video Takeover Overlay (Front & Sound) */}
           {overrideVideoUrl && (
             <div className="absolute inset-0 z-[60] pointer-events-none select-none overflow-hidden h-full w-full bg-black">
@@ -1414,11 +1638,11 @@ export default function LiveStreamSimulator({
               ) : (
                 <button 
                   type="button"
-                  onClick={() => setShowSessionOverview(true)}
-                  className="w-7 h-7 rounded-full bg-black/65 border border-stone-800 flex items-center justify-center text-stone-300 hover:text-white hover:bg-stone-900 hover:scale-105 active:scale-95 transition-all"
-                  title="Close Live Area"
+                  onClick={onClose}
+                  className="px-2.5 py-1.5 rounded-xl bg-black/65 border border-stone-800 flex items-center gap-1.5 text-stone-300 hover:text-white hover:bg-stone-900 hover:scale-105 active:scale-95 transition-all text-[10px] font-black uppercase tracking-wider cursor-pointer"
+                  title="Back Home"
                 >
-                  <X className="w-4 h-4" />
+                  <Home className="w-3.5 h-3.5 text-teal-400" /> Home
                 </button>
               )}
             </div>
@@ -1551,14 +1775,42 @@ export default function LiveStreamSimulator({
                       </span>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center gap-1">
-                      {/* Standard "+" inside circle */}
-                      <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
-                        <Plus className="w-4 h-4" />
-                      </span>
-                      <span className="text-[10px] text-stone-300 font-bold tracking-tight">
-                        Request
-                      </span>
+                    <div className="flex flex-col items-center justify-center gap-1.5 p-1 select-none text-center">
+                      {isBroadcasting ? (
+                        slot.id >= 6 ? (
+                          <>
+                            {/* "mic lock and locked" state */}
+                            <span className="w-7 h-7 rounded-full bg-red-950/40 text-rose-500/80 border border-rose-950 flex items-center justify-center shadow-inner">
+                              <Lock className="w-3.5 h-3.5" />
+                            </span>
+                            <div className="flex flex-col leading-none">
+                              <span className="text-[8.5px] text-rose-400 font-extrabold uppercase tracking-tight">Locked</span>
+                              <span className="text-[7px] text-stone-500 font-medium">Mic Lock</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {/* "add icon uesr" state */}
+                            <span className="w-7 h-7 rounded-full bg-indigo-950/30 text-indigo-400 border border-indigo-900/40 flex items-center justify-center hover:bg-indigo-900/20 hover:scale-105 active:scale-95 transition-all">
+                              <UserPlus className="w-3.5 h-3.5" />
+                            </span>
+                            <div className="flex flex-col leading-none">
+                              <span className="text-[8.5px] text-indigo-300 font-black uppercase tracking-tight">Add User</span>
+                              <span className="text-[7px] text-stone-400 font-bold">Add Mic</span>
+                            </div>
+                          </>
+                        )
+                      ) : (
+                        // Standard viewer style:
+                        <>
+                          <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+                            <Plus className="w-4 h-4" />
+                          </span>
+                          <span className="text-[10px] text-stone-300 font-bold tracking-tight">
+                            Request
+                          </span>
+                        </>
+                      )}
                     </div>
                   )}
                 </button>
@@ -1567,43 +1819,45 @@ export default function LiveStreamSimulator({
             </div>
           </div>
 
-          {/* USER MIC CONTROL PANEL (One-Tap Request, Back Mic, Voice Off/On) */}
-          <div className="px-3.5 py-1 z-20 shrink-0">
-            {!isJoinedOnMic ? (
-              <button
-                type="button"
-                onClick={handleOneTapJoinMic}
-                className="w-full py-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-green-500 hover:from-emerald-400 hover:to-green-400 text-stone-950 font-black tracking-tight text-[11px] uppercase rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 animate-pulse"
-              >
-                <Mic className="w-3.5 h-3.5" /> One-Tap Join Mic
-              </button>
-            ) : (
-              <div className="flex items-center gap-2 w-full bg-stone-900/90 border border-purple-500/30 p-1.5 rounded-xl shadow-lg">
-                {/* Voice On/Off toggle */}
+          {/* USER MIC CONTROL PANEL (One-Tap Request, Back Mic, Voice Off/On) - Hidden for active Host */}
+          {!isBroadcasting && (
+            <div className="px-3.5 py-1 z-20 shrink-0">
+              {!isJoinedOnMic ? (
                 <button
                   type="button"
-                  onClick={handleToggleMicVoice}
-                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    isMicVoiceOn 
-                      ? "bg-purple-600 text-white hover:bg-purple-500" 
-                      : "bg-red-950 text-red-400 border border-red-800/50"
-                  }`}
+                  onClick={handleOneTapJoinMic}
+                  className="w-full py-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-green-500 hover:from-emerald-400 hover:to-green-400 text-stone-950 font-black tracking-tight text-[11px] uppercase rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 animate-pulse"
                 >
-                  <span className="text-xs">{isMicVoiceOn ? "🎙️" : "🔇"}</span>
-                  Voice {isMicVoiceOn ? "On" : "Off"}
+                  <Mic className="w-3.5 h-3.5" /> One-Tap Join Mic
                 </button>
+              ) : (
+                <div className="flex items-center gap-2 w-full bg-stone-900/90 border border-purple-500/30 p-1.5 rounded-xl shadow-lg">
+                  {/* Voice On/Off toggle */}
+                  <button
+                    type="button"
+                    onClick={handleToggleMicVoice}
+                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      isMicVoiceOn 
+                        ? "bg-purple-600 text-white hover:bg-purple-500" 
+                        : "bg-red-950 text-red-400 border border-red-800/50"
+                    }`}
+                  >
+                    <span className="text-xs">{isMicVoiceOn ? "🎙️" : "🔇"}</span>
+                    Voice {isMicVoiceOn ? "On" : "Off"}
+                  </button>
 
-                {/* Back Mic button */}
-                <button
-                  type="button"
-                  onClick={handleLeaveMic}
-                  className="flex-1 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-stone-700"
-                >
-                  <span className="text-xs">↩️</span> Back Mic
-                </button>
-              </div>
-            )}
-          </div>
+                  {/* Back Mic button */}
+                  <button
+                    type="button"
+                    onClick={handleLeaveMic}
+                    className="flex-1 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-stone-700"
+                  >
+                    <span className="text-xs">↩️</span> Back Mic
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* ================= COMMENTS STREAM FLOATING (Middle Overlap) ================= */}
           <div id="stream-comments-dock" className="px-3 max-h-[110px] overflow-y-auto space-y-1.5 pointer-events-none text-left select-none relative z-10 w-[85%] mb-2">
@@ -1628,12 +1882,12 @@ export default function LiveStreamSimulator({
           <div id="stream-footer-pane" className="relative z-20 px-3 pb-4 pt-2 bg-black/60 border-t border-stone-850/60 backdrop-blur-md flex items-center justify-between gap-1.5">
             
             {/* Type Comments box (Rounded white styling with icons inside) */}
-            <form onSubmit={handleSendMessage} className="flex-1 max-w-[40%]">
+            <form onSubmit={handleSendMessage} className="flex-1 max-w-[42%]">
               <div className="relative flex items-center bg-white/10 border border-stone-800 rounded-full py-1.5 px-3">
                 <span className="text-[#A78BFA] shrink-0 pointer-events-none mr-1">💬</span>
                 <input
                   type="text"
-                  placeholder="Type C..."
+                  placeholder="Comentar..."
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   maxLength={60}
@@ -1652,6 +1906,73 @@ export default function LiveStreamSimulator({
             {/* Quick Action buttons */}
             <div className="flex items-center gap-2.5 shrink-0">
               
+              {/* Star / Subscribe Button with real stats alert */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (isSubscribed) {
+                    setIsSubscribed(false);
+                    // Add system message
+                    setChatMessages((prev) => [
+                      ...prev,
+                      {
+                        id: `sys-sub-${Date.now()}`,
+                        username: "System",
+                        text: `${currentUser.username} is no longer subscribed.`,
+                        isSystem: true,
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                      }
+                    ]);
+                  } else {
+                    setIsSubscribed(true);
+                    setShowSubscriptionAlert(true);
+                    setTimeout(() => setShowSubscriptionAlert(false), 3200);
+                    // Add system chat message of subscribe
+                    setChatMessages((prev) => [
+                      ...prev,
+                      {
+                        id: `sys-sub-${Date.now()}`,
+                        username: "System",
+                        text: `🌟 ${currentUser.username} SUBSCRIBED to this creator! 🌟`,
+                        isSystem: true,
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                      }
+                    ]);
+                  }
+                }}
+                className={`flex flex-col items-center gap-0.5 hover:scale-110 active:scale-95 transition-all cursor-pointer ${
+                  isSubscribed ? "text-amber-400 font-bold" : "text-stone-300"
+                }`}
+                title="Star Subscribe creator"
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs shadow border transition-all ${
+                  isSubscribed 
+                    ? "bg-amber-500/20 border-amber-500 text-amber-400 animate-pulse font-bold" 
+                    : "bg-amber-950/20 border-amber-600/30 text-amber-550"
+                }`}>
+                  ⭐
+                </div>
+                <span className="text-[8px] font-bold text-stone-400">{isSubscribed ? "Subbed" : "Star"}</span>
+              </button>
+
+              {/* Shortcut Rose button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const roseGift = giftsList.find((g) => g.id === "gift-rose");
+                  if (roseGift) {
+                    handleSendGiftLocal(roseGift);
+                  }
+                }}
+                className="flex flex-col items-center gap-0.5 hover:scale-110 active:scale-95 transition-all text-white cursor-pointer"
+                title="Send Quick Rose"
+              >
+                <div className="w-7 h-7 rounded-full bg-pink-500/20 border border-pink-500/40 flex items-center justify-center text-xs shadow hover:bg-pink-500/35">
+                  🌹
+                </div>
+                <span className="text-[8px] font-bold text-stone-400">Rose</span>
+              </button>
+
               {/* Present / Gift Box toggle */}
               <button
                 type="button"
@@ -1802,62 +2123,7 @@ export default function LiveStreamSimulator({
                 </div>
               </div>
 
-              {/* Multiplier Select widget (sent gift tap x1 2 3 4 invente) */}
-              <div id="gift-multiplier-controls" className="mb-3 bg-stone-950/80 p-2.5 rounded-2xl border border-stone-900 text-left select-none shrink-0">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-mono text-stone-400 uppercase tracking-wide font-extrabold text-stone-400">🚀 Select Multiplier:</span>
-                  <span className="text-[9px] text-[#A855F7] font-black bg-purple-500/10 px-2 py-0.5 rounded">
-                    x{isCustomMultiplier ? (parseInt(customMultiplier) || 1) : giftMultiplier} Multiplier Active
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {[1, 2, 3, 4].map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      onClick={() => {
-                        setIsCustomMultiplier(false);
-                        setGiftMultiplier(num);
-                      }}
-                      className={`px-3 py-1 text-[10px] font-black rounded-xl transition-all border select-none cursor-pointer ${
-                        !isCustomMultiplier && giftMultiplier === num
-                          ? "bg-[#632890] text-white border-purple-500 shadow-lg scale-95"
-                          : "bg-stone-900 text-stone-400 border-stone-850 hover:text-stone-200"
-                      }`}
-                    >
-                      x{num}
-                    </button>
-                  ))}
-                  
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCustomMultiplier(true);
-                    }}
-                    className={`px-3 py-1 text-[10px] font-black rounded-xl transition-all border select-none cursor-pointer ${
-                      isCustomMultiplier
-                        ? "bg-[#632890] text-white border-purple-500 shadow-lg"
-                        : "bg-stone-900 text-stone-400 border-stone-850 hover:text-stone-305"
-                    }`}
-                  >
-                    Custom / Invente ✍️
-                  </button>
-                  
-                  {isCustomMultiplier && (
-                    <div className="relative flex items-center bg-stone-900/60 border border-purple-500/40 rounded-xl px-2 py-0.5">
-                      <input
-                        type="number"
-                        min="1"
-                        max="99"
-                        placeholder="Qty"
-                        value={customMultiplier}
-                        onChange={(e) => setCustomMultiplier(e.target.value)}
-                        className="w-14 bg-transparent text-white text-[10px] font-bold focus:outline-none placeholder-stone-600 font-mono text-center"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
+
 
               {/* Warnings loop */}
               {notEnoughCoinsMsg && (
@@ -1934,23 +2200,88 @@ export default function LiveStreamSimulator({
                 </div>
               </div>
 
-              {/* Bottom footer bar: Golden buy coin pill indicator */}
-              <div className="mt-3.5 pt-3.5 border-t border-stone-900 flex items-center justify-between shrink-0">
-                <div className="text-[11px] text-stone-500 font-medium">
-                  Select a premium item and click Send
+              {/* Bottom footer bar: Golden buy coin pill indicator with Combo action */}
+              <div className="mt-3 py-3 border-t border-stone-900 flex items-center justify-between gap-4 shrink-0">
+                <div className="flex flex-col text-left">
+                  <span className="text-[10px] text-stone-500 font-medium uppercase tracking-wide">Wallet Balance</span>
+                  {/* Coin and Diamond balance static display */}
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <div className="py-1 px-2.5 bg-stone-950/65 border border-stone-850 rounded-full flex items-center gap-1 text-[10px] font-black text-amber-400 font-mono">
+                      <span>🪙</span>
+                      <span>{currentUser.coins}</span>
+                    </div>
+                    <div className="py-1 px-2.5 bg-stone-950/65 border border-stone-850 rounded-full flex items-center gap-1 text-[10px] font-black text-cyan-400 font-mono">
+                      <span>💎</span>
+                      <span>{currentUser.diamonds || 0}</span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Coin and Diamond balance static display */}
-                <div className="flex items-center gap-2">
-                  <div className="py-1.5 px-3 bg-stone-950/40 border border-stone-800 rounded-full flex items-center gap-1.5 text-[11px] font-black text-amber-400 font-mono">
-                    <span>🪙</span>
-                    <span>{currentUser.coins}</span>
+                {/* MAGNIFICENT COMBO BUTTON FOR TAP EXTREME EXPERIENCE - MATCHES SCREENSHOT 3 */}
+                {selectedGiftId && (
+                  <div className="relative flex items-center justify-center pr-2 shrink-0">
+                    {/* Combo completion floaty reward banner text */}
+                    {comboCompletionMsg && (
+                      <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[9px] font-black text-amber-400 animate-bounce bg-stone-950/90 border border-amber-500/20 px-2 py-0.5 rounded-full whitespace-nowrap shadow-md">
+                        {comboCompletionMsg}
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const activeGift = giftsList.find(g => g.id === selectedGiftId);
+                        if (activeGift) {
+                          setComboPulse(true);
+                          setTimeout(() => setComboPulse(false), 120);
+
+                          const nextCount = comboCount + 1;
+                          setComboCount(nextCount);
+
+                          // Instantly trigger gift billing/visuals with this combo count
+                          handleSendGiftLocal(activeGift, nextCount);
+
+                          // Manage combo timeout loop
+                          if (comboTimerRef.current) clearTimeout(comboTimerRef.current);
+                          comboTimerRef.current = setTimeout(() => {
+                            setComboCompletionMsg(`Combo x${nextCount} Sent! ✨`);
+                            setComboCount(0);
+                            setTimeout(() => setComboCompletionMsg(""), 2000);
+                          }, 2500);
+                        }
+                      }}
+                      className={`relative w-14 h-14 rounded-full bg-gradient-to-tr from-[#FF1E6D] via-[#f43f5e] to-[#ec4899] hover:brightness-110 active:scale-90 transition-all flex flex-col items-center justify-center border-2 border-white/20 shadow-lg shadow-pink-900/40 select-none cursor-pointer ${
+                        comboPulse ? "scale-110 rotate-3" : "scale-100"
+                      }`}
+                      style={{ touchAction: "manipulation" }}
+                      title="Tap repeatedly for custom Gift Combo hits!"
+                    >
+                      {/* Interactive timing circular border spin */}
+                      {comboCount > 0 && (
+                        <div className="absolute inset-0 rounded-full border border-dashed border-yellow-300 animate-[spin_8s_linear_infinite]" />
+                      )}
+                      
+                      <span className="text-white font-sans font-black italic text-[11px] uppercase tracking-wide">
+                        Combo
+                      </span>
+
+                      {/* Overlap active multiplier counter container - MATCHES SCREENSHOT 3 RED badge */}
+                      {comboCount > 0 && (
+                        <div className="absolute -top-1.5 -right-1.5 bg-[#FF1E6D] border border-white rounded-full min-w-5 h-5 px-1 py-0.5 flex items-center justify-center shadow-md animate-[bounce_0.3s_ease] leading-none">
+                          <span className="text-[9px] font-black font-sans italic text-white text-center">
+                            {comboCount}
+                          </span>
+                        </div>
+                      )}
+                    </button>
+                    {comboCount === 0 && (
+                      <span className="absolute -left-12 text-[8px] font-mono font-bold text-stone-500 uppercase tracking-widest pointer-events-none animate-pulse">
+                        Tap here 👉
+                      </span>
+                    )}
                   </div>
-                  <div className="py-1.5 px-3 bg-stone-950/40 border border-stone-800 rounded-full flex items-center gap-1.5 text-[11px] font-black text-cyan-400 font-mono">
-                    <span>💎</span>
-                    <span>{currentUser.diamonds || 0}</span>
-                  </div>
-                </div>
+                )}
               </div>
 
             </div>

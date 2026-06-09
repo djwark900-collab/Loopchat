@@ -39,9 +39,12 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<"home" | "live" | "profile">("home");
   const [selectedStreamer, setSelectedStreamer] = useState<Streamer | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [isCoinsModalOpen, setIsCoinsModalOpen] = useState(false);
   const [streamersList, setStreamersList] = useState<Streamer[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchBoxOpen, setIsSearchBoxOpen] = useState(false);
+  const [isQRCodeOpen, setIsQRCodeOpen] = useState(false);
 
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isJoiningLive, setIsJoiningLive] = useState(false);
@@ -123,6 +126,14 @@ export default function App() {
       handleFirestoreError(err, OperationType.LIST, "streamers");
     });
     return () => unsubscribe();
+  }, []);
+
+  // Trigger initial majestic loading screen
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsAppLoading(false);
+    }, 2200);
+    return () => clearTimeout(timer);
   }, []);
 
   // Sync with Firebase Auth state on mount/init
@@ -351,6 +362,92 @@ export default function App() {
     setSelectedStreamer(null);
   };
 
+  if (isAppLoading) {
+    return (
+      <main id="loader-screen" className="fixed inset-0 z-50 bg-[#0c0816] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#1d123a] via-[#090513] to-[#040209] flex flex-col justify-between items-center py-24 px-6 font-sans">
+        <div className="flex-1 flex flex-col justify-center items-center">
+          {/* Glowing Animated Outer Container */}
+          <div className="relative w-44 h-44 flex items-center justify-center">
+            {/* Outer neon glow loops */}
+            <div className="absolute inset-0 bg-[#FB52FF]/10 rounded-full filter blur-2xl animate-pulse duration-2000"></div>
+            <div className="absolute inset-2 bg-[#00F0FF]/15 rounded-full filter blur-xl"></div>
+            
+            {/* Metallic Circle Speech Bubble */}
+            <div className="relative w-36 h-36 rounded-full bg-gradient-to-tr from-[#0e0722] via-[#1a1336] to-[#25194f] border-4 border-[#382b6c]/60 shadow-[0_20px_40px_rgba(0,0,0,0.7)] flex items-center justify-center">
+              {/* Outer neon line border */}
+              <div className="absolute inset-0 rounded-full p-[3px] bg-gradient-to-tr from-[#FB52FF] via-[#7000FF] to-[#00F0FF] opacity-90">
+                <div className="w-full h-full rounded-full bg-[#0e0722] flex items-center justify-center">
+                  
+                  {/* Infinity Loop Symbol */}
+                  <svg className="w-20 h-20 text-white filter drop-shadow-[0_6px_12px_rgba(251,82,255,0.4)]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50">
+                    <defs>
+                      <linearGradient id="infinityGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#FB52FF" />
+                        <stop offset="50%" stopColor="#AD00FF" />
+                        <stop offset="100%" stopColor="#00F0FF" />
+                      </linearGradient>
+                    </defs>
+                    <path 
+                      d="M 50 25 C 25 -2, 5 10, 5 25 C 5 40, 25 52, 50 25 C 75 -2, 95 10, 95 25 C 95 40, 75 52, 50 25 Z" 
+                      fill="none" 
+                      stroke="url(#infinityGrad)" 
+                      strokeWidth="9" 
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path 
+                      d="M 50 25 C 25 -2, 5 10, 5 25 C 5 40, 25 52, 50 25 C 75 -2, 95 10, 95 25 C 95 40, 75 52, 50 25 Z" 
+                      fill="none" 
+                      stroke="#ffffff" 
+                      strokeWidth="2.5" 
+                      strokeOpacity="0.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  
+                </div>
+              </div>
+              
+              {/* Speech bubble tail */}
+              <div className="absolute -bottom-2.5 left-[38%] w-0 h-0 border-l-[12px] border-l-transparent border-t-[14px] border-t-[#7000FF] border-r-[12px] border-r-transparent transform rotate-[-8deg]"></div>
+            </div>
+          </div>
+
+          {/* Glowing brand text */}
+          <h2 className="text-4xl font-black tracking-widest mt-8 font-sans drop-shadow-[0_5px_15px_rgba(0,0,0,0.5)] animate-scaleUp">
+            <span className="text-[#FB52FF] relative">
+              Loop
+              <span className="absolute -inset-1 bg-[#FB52FF]/25 blur-lg opacity-40"></span>
+            </span>
+            <span className="text-[#00F0FF] relative ml-0.5">
+              Chat
+              <span className="absolute -inset-1 bg-[#00F0FF]/25 blur-lg opacity-40"></span>
+            </span>
+          </h2>
+        </div>
+
+        {/* 12 Dots Rotating Progress indicator matching Image 1 */}
+        <div className="relative w-12 h-12 flex items-center justify-center mt-auto">
+          <svg className="w-10 h-10 text-[#7c66ff] animate-spin" viewBox="0 0 100 100" style={{ animationDuration: "1.2s" }}>
+            <circle cx="50" cy="10" r="4.5" fill="currentColor" opacity="1" />
+            <circle cx="70" cy="15.4" r="4.5" fill="currentColor" opacity="0.9" />
+            <circle cx="84.6" cy="30" r="4.5" fill="currentColor" opacity="0.8" />
+            <circle cx="90" cy="50" r="4.5" fill="currentColor" opacity="0.75" />
+            <circle cx="84.6" cy="70" r="4.5" fill="currentColor" opacity="0.65" />
+            <circle cx="70" cy="84.6" r="4.5" fill="currentColor" opacity="0.55" />
+            <circle cx="50" cy="90" r="4.5" fill="currentColor" opacity="0.45" />
+            <circle cx="30" cy="84.6" r="4.5" fill="currentColor" opacity="0.35" />
+            <circle cx="15.4" cy="70" r="4.5" fill="currentColor" opacity="0.25" />
+            <circle cx="10" cy="50" r="4.5" fill="currentColor" opacity="0.2" />
+            <circle cx="15.4" cy="30" r="4.5" fill="currentColor" opacity="0.15" />
+            <circle cx="30" cy="15.4" r="4.5" fill="currentColor" opacity="0.1" />
+          </svg>
+        </div>
+      </main>
+    );
+  }
+
   if (!currentUser) {
     return (
       <main className="min-h-screen bg-stone-950 flex flex-col justify-center py-10">
@@ -467,68 +564,101 @@ export default function App() {
           Provides immersive "all user live" experience with trending and discovery sections.
         */
         <main className="flex-1 flex flex-col relative overflow-hidden bg-[#0c0816]">
-          {/* Immersive Header for Live Discovery */}
-          <div className="p-6 flex items-center justify-between border-b border-stone-850/50 bg-black/60 backdrop-blur-xl sticky top-0 z-30">
-             <div className="flex items-center gap-3">
+          {/* Immersive Header for Live Discovery - Styled exactly as Image 2 */}
+          <div className="p-4 sm:p-5 flex items-center justify-between border-b border-[#2d2254]/40 bg-black/50 backdrop-blur-xl sticky top-0 z-30">
+             <div className="flex items-center gap-2.5">
                <div className="relative">
-                 <div className="w-3 h-3 rounded-full bg-red-500 animate-ping absolute inset-0 opacity-75"></div>
-                 <div className="w-3 h-3 rounded-full bg-red-600 relative"></div>
+                 <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping absolute inset-0 opacity-75"></div>
+                 <div className="w-2.5 h-2.5 rounded-full bg-red-600 relative"></div>
                </div>
                <div>
-                  <h3 className="text-xl font-black text-white tracking-widest uppercase italic">Live Hub</h3>
-                  <p className="text-[10px] text-stone-500 font-mono font-bold uppercase tracking-tighter">Community Discovery</p>
+                  <h3 className="text-lg sm:text-xl font-extrabold bg-gradient-to-r from-violet-400 via-[#9366FF] to-fuchsia-400 bg-clip-text text-transparent font-sans tracking-wide">
+                     Live Streaming
+                  </h3>
                </div>
              </div>
-             <div className="flex items-center gap-3">
-                <div className="hidden sm:flex flex-col items-end mr-2">
-                   <span className="text-[10px] text-indigo-400 font-black tracking-widest uppercase">Global Lobby</span>
-                   <span className="text-[9px] text-stone-500 font-mono">{streamersList.length} Active Channels</span>
-                </div>
+
+             <div className="flex items-center gap-2">
+                {/* 1. Toggleable Search Field */}
+                {isSearchBoxOpen ? (
+                  <div className="flex items-center gap-1 bg-[#1e153a] border border-[#443180] rounded-full px-2.5 py-1 animate-scaleUp">
+                    <Search className="w-3.5 h-3.5 text-[#9366ff]" />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search live..."
+                      className="bg-transparent border-none text-[10px] text-white font-bold uppercase tracking-wider focus:outline-none w-20 sm:w-32"
+                      autoFocus
+                    />
+                    <button onClick={() => { setSearchTerm(""); setIsSearchBoxOpen(false); }} className="text-stone-400 hover:text-white">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsSearchBoxOpen(true)}
+                    className="p-2 bg-[#1e133c] hover:bg-[#2d1e57] text-[#9366ff] rounded-full transition-all hover:scale-105 active:scale-95"
+                    title="Search streamers"
+                  >
+                     <Search className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* 2. "Go Live" Toggle Capsule/Pill (matches screenshot radio switch) */}
                 <button
                   onClick={() => setIsBroadcastingStudio(true)}
-                  className="px-5 py-2.5 bg-gradient-to-r from-red-600 to-indigo-600 hover:from-red-500 hover:to-indigo-500 text-white font-black rounded-xl text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-900/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                  className="px-3 py-1.5 bg-[#4c31ab] hover:bg-[#5b3bc9] text-white font-extrabold rounded-full text-[11px] font-sans transition-all hover:scale-105 active:scale-95 flex items-center gap-2 border border-[#6b49eb]"
                 >
-                  <Video className="w-4 h-4" /> Go Live
+                  <span className="w-2.5 h-2.5 rounded-full bg-white shadow-sm block animate-pulse"></span>
+                  <span className="tracking-tight pr-1">Go Live</span>
+                </button>
+
+                {/* 3. QR Code scanner button (lavender/purple container) */}
+                <button
+                  onClick={() => setIsQRCodeOpen(true)}
+                  className="p-2 bg-[#1e133c] hover:bg-[#2d1e57] text-[#9366ff] rounded-xl transition-all border border-[#2d1c5a] hover:scale-105 active:scale-95"
+                  title="Share/Scan QR Code"
+                >
+                   <QrCode className="w-4 h-4" />
                 </button>
              </div>
           </div>
 
+          {/* Beautiful Horizontal Scrollable Tap Bar (Sub-tab Selector for Categories) */}
+          <div id="live-categories-tapbar" className="bg-[#0c0816]/90 border-b border-[#2d2254]/30 backdrop-blur-md px-4 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar sticky top-[72px] z-20 select-none">
+             {[
+               { name: "All", icon: "🌌" },
+               { name: "IRL Chatting", icon: "💬" },
+               { name: "Music & Beats", icon: "🎵" },
+               { name: "Gaming & Esports", icon: "🎮" },
+               { name: "Creative & Art", icon: "🎨" },
+               { name: "Tech & Coding", icon: "💻" }
+             ].map((cat) => {
+               const isActive = selectedCategory === cat.name;
+               return (
+                 <button
+                   key={cat.name}
+                   onClick={() => setSelectedCategory(cat.name)}
+                   className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-300 transform active:scale-95 cursor-pointer relative ${
+                     isActive 
+                       ? "text-white bg-gradient-to-r from-[#9366FF] to-fuchsia-500 shadow-md shadow-violet-950/50" 
+                       : "text-stone-400 hover:text-white bg-stone-900/40 hover:bg-stone-850/45 border border-stone-850/50"
+                   }`}
+                 >
+                   <span>{cat.icon}</span>
+                   <span>{cat.name}</span>
+                   {isActive && (
+                     <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-[2px] rounded-full bg-cyan-400 animate-pulse"></span>
+                   )}
+                 </button>
+               );
+             })}
+          </div>
+
           <div className="flex-1 overflow-y-auto px-5 py-6 space-y-10 pb-32">
              
-             {/* 1. FEATURED / TRENDING CREATORS */}
-             <section className="space-y-4">
-                <div className="flex items-center gap-2 px-1">
-                   <Flame className="w-5 h-5 text-amber-500" />
-                   <h4 className="text-sm font-black text-white uppercase tracking-wider">Trending Creators</h4>
-                </div>
-                <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-                   {streamersList.slice(0, 5).map((live) => (
-                      <div 
-                        key={`trending-${live.id}`}
-                        onClick={() => setSelectedStreamer(live)}
-                        className="flex-shrink-0 w-64 group cursor-pointer"
-                      >
-                         <div className="relative aspect-video rounded-3xl overflow-hidden border border-stone-850 group-hover:border-amber-500/50 transition-all duration-500">
-                            <img src={live.avatarUrl} className="w-full h-full object-cover group-hover:scale-110 duration-700" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
-                            <div className="absolute top-3 left-3 flex items-center gap-2">
-                               <div className="px-2 py-1 bg-red-600 text-white text-[8px] font-black rounded-lg uppercase tracking-tighter">Live</div>
-                               <div className="px-2 py-1 bg-black/40 backdrop-blur-md text-white text-[8px] font-bold rounded-lg flex items-center gap-1">
-                                  <Users className="w-2.5 h-2.5" /> {live.viewersCount}
-                               </div>
-                            </div>
-                            <div className="absolute bottom-4 left-4 right-4">
-                               <p className="text-xs font-black text-white truncate drop-shadow-md">{live.title}</p>
-                               <div className="flex items-center gap-2 mt-1">
-                                  <img src={live.avatarUrl} className="w-5 h-5 rounded-full border border-white/20" />
-                                  <span className="text-[10px] text-stone-300 font-bold">@{live.username}</span>
-                               </div>
-                            </div>
-                         </div>
-                      </div>
-                   ))}
-                </div>
-             </section>
+
 
              {/* 2. DISCOVERY DIRECTORY - ALL USER LIST */}
              <section className="space-y-5">
@@ -554,11 +684,13 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                  {streamersList.filter(live => 
-                    live.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                    live.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    live.title.toLowerCase().includes(searchTerm.toLowerCase())
-                  ).map((live) => (
+                  {streamersList.filter(live => {
+                    const matchesCategory = selectedCategory === "All" || live.category === selectedCategory;
+                    const matchesSearch = live.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                      live.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      live.title.toLowerCase().includes(searchTerm.toLowerCase());
+                    return matchesCategory && matchesSearch;
+                  }).map((live) => (
                     <div 
                       key={live.id} 
                       onClick={() => setSelectedStreamer(live)}
@@ -594,15 +726,47 @@ export default function App() {
                     </div>
                   ))}
 
-                  {streamersList.length === 0 && (
-                    <div className="col-span-full py-20 text-center border-2 border-dashed border-stone-850 rounded-[40px] bg-stone-900/20">
-                       <div className="w-16 h-16 bg-stone-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-stone-800">
-                          <Plus className="w-8 h-8 text-stone-600" />
-                       </div>
-                       <p className="text-sm text-stone-400 font-bold italic">No active loops found.</p>
-                       <p className="text-[10px] text-stone-600 uppercase tracking-widest mt-2">Start your studio session to appear here</p>
-                    </div>
-                  )}
+                    {streamersList.filter(live => {
+                      const matchesCategory = selectedCategory === "All" || live.category === selectedCategory;
+                      const matchesSearch = live.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        live.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        live.title.toLowerCase().includes(searchTerm.toLowerCase());
+                      return matchesCategory && matchesSearch;
+                    }).length === 0 && (
+                     <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+                        {/* Gorgeous vector-styled illustration of empty results from Image 2 */}
+                        <svg className="w-48 h-48 mx-auto mb-4 opacity-90 animate-pulse duration-4000" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                           {/* Skewed stack of document-like cards in soft lavender & purple */}
+                           <rect x="52" y="42" width="75" height="100" rx="10" fill="#1b1236" stroke="#362561" strokeWidth="2.5" transform="rotate(-6 52 42)" opacity="0.6" />
+                           <rect x="68" y="32" width="75" height="100" rx="10" fill="#24194a" stroke="#4a358c" strokeWidth="2.5" transform="rotate(3 68 32)" />
+                           
+                           {/* Decorative document grids */}
+                           <line x1="82" y1="52" x2="122" y2="52" stroke="#4a358c" strokeWidth="4.5" strokeLinecap="round" />
+                           <line x1="82" y1="67" x2="112" y2="67" stroke="#4a358c" strokeWidth="4.5" strokeLinecap="round" />
+                           <line x1="82" y1="82" x2="102" y2="82" stroke="#4a358c" strokeWidth="4.5" strokeLinecap="round" />
+                           
+                           {/* Secondary decorative elements */}
+                           <circle cx="128" cy="82" r="10" fill="#9366ff" opacity="0.15" />
+                           <circle cx="48" cy="112" r="6" fill="#9366ff" opacity="0.2" />
+                           <circle cx="158" cy="68" r="4.5" fill="#a78bfa" opacity="0.35" />
+                           <circle cx="148" cy="132" r="5" fill="#9366ff" opacity="0.1" />
+
+                           {/* Magnifying glass handle with white metallic highlight */}
+                           <path d="M 125,125 L 158,158" stroke="#8b5cf6" strokeWidth="8" strokeLinecap="round" />
+                           <path d="M 132,132 L 152,152" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
+                           
+                           {/* Magnifying glass circle frame */}
+                           <circle cx="108" cy="108" r="28" fill="#130b2e" stroke="#8b5cf6" strokeWidth="7" />
+                           <circle cx="108" cy="108" r="24" fill="#1d1245" />
+                           
+                           {/* Bold "X" inside magnifying glass */}
+                           <path d="M 96,96 L 120,120" stroke="#8b5cf6" strokeWidth="5" strokeLinecap="round" />
+                           <path d="M 120,96 L 96,120" stroke="#8b5cf6" strokeWidth="5" strokeLinecap="round" />
+                        </svg>
+                        <p className="text-base text-[#dcd7f5] font-extrabold tracking-wide mt-2">No live streaming found</p>
+                        <p className="text-xs text-stone-500 uppercase tracking-widest mt-1">Start your studio loop or modify search criteria</p>
+                     </div>
+                   )}
                 </div>
              </section>
           </div>
@@ -674,149 +838,6 @@ export default function App() {
                 onClaimReward={handleClaimReward}
               />
 
-               {/* Grid of streamers online */}
-              <div id="creators-directory-deck" className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-800 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-3 h-3 rounded-full bg-red-500 animate-ping shrink-0"></span>
-                    <h3 className="text-xl font-black tracking-tight text-white flex items-center gap-1.5 font-sans">
-                      <Tv className="w-5 h-5 text-red-500" />
-                      Creator Live List
-                    </h3>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {/* Add Creator Live Button Option */}
-                    <button
-                      onClick={() => setIsAddCreatorLiveOpen(true)}
-                      className="px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-550 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all hover:scale-[1.03] active:scale-[0.97] flex items-center gap-1.5 cursor-pointer shadow-md"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-white" /> Add Creator Live
-                    </button>
-
-                    <div className="flex items-center gap-1.5 text-xs text-amber-400 font-mono font-bold bg-amber-500/15 border border-amber-500/25 px-2.5 py-1 rounded-full">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                      SI-ROOM ACTIVE
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 animate-scaleUp">
-                  
-                  {/* DYNAMIC OWN LIVE CARD - "live my and standard user lives side-by-side" */}
-                  <div
-                    className="bg-gradient-to-br from-[#1c1236]/90 via-stone-900 to-[#0e0722] border-2 border-indigo-500/40 rounded-2xl overflow-hidden hover:border-[#FB52FF]/60 transition-all duration-300 shadow-xl flex flex-col justify-between group relative"
-                  >
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
-                    
-                    <div className="relative aspect-video w-full overflow-hidden bg-[#070412]">
-                      <img
-                        src={currentUser.avatarUrl}
-                        alt="My profile stream banner"
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover group-hover:scale-105 duration-500"
-                      />
-                      {/* Live broadcasting label */}
-                      <div className="absolute top-2.5 left-2.5 bg-gradient-to-r from-rose-500 via-purple-600 to-indigo-650 border border-purple-400/30 text-white font-mono text-[9px] px-2 py-0.5 rounded flex items-center gap-1 font-bold shadow-md animate-pulse">
-                        <Video className="w-3 h-3 text-red-100" />
-                        LIVE MY (Host)
-                      </div>
-                      
-                      <div className="absolute bottom-2.5 left-2.5 bg-indigo-950/90 text-indigo-300 font-mono text-[9px] px-2 py-0.5 rounded border border-indigo-500/20">
-                        My Own Broadcast
-                      </div>
-                    </div>
-
-                    {/* Description Details */}
-                    <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                      <div>
-                        <p className="text-xs text-indigo-400 font-mono flex items-center justify-between">
-                          {currentUser.username}
-                          <span className="text-[9px] bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded px-1 font-bold">
-                            LVL {currentUser.level}
-                          </span>
-                        </p>
-                        <h4 className="text-sm font-bold text-white mt-1 group-hover:text-amber-400 duration-200 truncate leading-snug">
-                          Launch My Live Broadcast Studio! 🎙️⚡
-                        </h4>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          setSelectedStreamer(null);
-                          setActiveTab("live");
-                        }}
-                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
-                      >
-                        Start Broadcast <ChevronRight className="w-3.5 h-3.5 text-indigo-200" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {streamersList.map((streamer) => (
-                    <div
-                      key={streamer.id}
-                      className="bg-stone-900 border border-stone-800 rounded-2xl overflow-hidden hover:border-amber-500/40 transition-all duration-300 shadow-lg flex flex-col justify-between group relative"
-                    >
-                      {/* Image header banner */}
-                      <div className="relative aspect-video w-full overflow-hidden bg-stone-950">
-                        <img
-                          src={streamer.avatarUrl}
-                          alt={streamer.fullName}
-                          referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover group-hover:scale-105 duration-500"
-                        />
-                        {/* Live viewer pill */}
-                        <div className="absolute top-2.5 left-2.5 bg-red-600/95 border border-red-500/40 text-white font-mono text-[9px] px-2 py-0.5 rounded flex items-center gap-1 font-bold shadow-md">
-                          <Users className="w-3 h-3" />
-                          {streamer.viewersCount.toLocaleString()}
-                        </div>
-
-                        {/* Elite Bot/Streamer Delete Option ("list live bot delete") */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveStreamer(streamer.id);
-                          }}
-                          className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-black/60 border border-stone-800 text-stone-300 hover:text-white hover:bg-red-650 hover:border-transparent transition-all cursor-pointer z-10 hover:scale-110 active:scale-90"
-                          title="Remove Streamer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                        
-                        {/* Stream tag indicator */}
-                        <div className="absolute bottom-2.5 left-2.5 bg-stone-950/80 text-stone-300 font-mono text-[9px] px-2 py-0.5 rounded">
-                          {streamer.category}
-                        </div>
-                      </div>
-
-                      {/* Bio Details */}
-                      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                        <div>
-                          <p className="text-xs text-stone-500 font-mono flex items-center justify-between">
-                            {streamer.username}
-                            <span className="text-[9px] bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded px-1 font-bold">
-                              LVL {streamer.level}
-                            </span>
-                          </p>
-                          <h4 className="text-sm font-bold text-white mt-1 group-hover:text-amber-400 duration-200 truncate truncate-3-dots font-sans">
-                            {streamer.title}
-                          </h4>
-                        </div>
-
-                        <button
-                          onClick={() => handleJoinStreamer(streamer)}
-                          className="w-full py-2 bg-stone-950/70 hover:bg-stone-950 group-hover:bg-amber-500 text-stone-300 group-hover:text-stone-950 border border-stone-850/80 group-hover:border-transparent rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                        >
-                          Join Live Loop <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
             </div>
           )}
 
@@ -886,6 +907,111 @@ export default function App() {
 
           </div>
         </footer>
+      )}
+
+      {/* DYNAMIC SHARING COMPANION QR CODE MODAL SIMULATOR */}
+      {isQRCodeOpen && (
+        <div id="qrcode-companion-modal" className="fixed inset-0 z-50 bg-[#070412]/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#120a2a] border border-[#43239a]/60 rounded-3xl w-full max-w-sm p-6 relative shadow-2xl animate-scaleUp text-center space-y-5">
+            
+            <button
+              onClick={() => setIsQRCodeOpen(false)}
+              className="absolute top-4 right-4 p-2 text-stone-400 hover:text-white rounded-full hover:bg-[#201446] transition-all select-none"
+              title="Close Sharing Console"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex flex-col items-center space-y-2 border-b border-[#2d1c5c]/40 pb-3">
+              <div className="p-2.5 bg-[#9366ff]/10 rounded-2xl text-[#9366ff] mb-1">
+                <QrCode className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-extrabold text-white leading-tight font-sans">
+                Stream Sharing Link
+              </h3>
+              <p className="text-[11px] text-[#9366ff] font-bold uppercase tracking-wider">
+                Companion Invite
+              </p>
+            </div>
+
+            {/* Premium QR Code Container Card */}
+            <div className="relative bg-white p-5 rounded-2xl shadow-inner max-w-[210px] mx-auto group overflow-hidden">
+               {/* Animated moving green laser line */}
+               <div className="absolute left-0 right-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-500 to-transparent shadow-[0_0_8px_cyan] animate-[bounce_2.5s_infinite] pointer-events-none z-10" />
+
+               {/* Custom SVG High-Fidelity App QR Grid */}
+               <svg className="w-full h-full text-stone-900" viewBox="0 0 100 100" fill="currentColor">
+                  {/* Position detection outer boxes */}
+                  <rect x="0" y="0" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="6" />
+                  <rect x="5" y="5" width="15" height="15" fill="currentColor" />
+                  
+                  <rect x="75" y="0" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="6" />
+                  <rect x="80" y="5" width="15" height="15" fill="currentColor" />
+                  
+                  <rect x="0" y="75" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="6" />
+                  <rect x="5" y="80" width="15" height="15" fill="currentColor" />
+
+                  {/* Simulated standard QR grid structures with high texture density */}
+                  <rect x="30" y="2" width="6" height="6" />
+                  <rect x="42" y="5" width="6" height="12" />
+                  <rect x="54" y="0" width="12" height="6" />
+                  <rect x="30" y="14" width="6" height="6" />
+                  <rect x="54" y="12" width="6" height="12" />
+                  <rect x="66" y="6" width="6" height="6" />
+
+                  <rect x="0" y="32" width="12" height="6" />
+                  <rect x="18" y="30" width="12" height="12" />
+                  <rect x="36" y="34" width="12" height="6" />
+                  <rect x="54" y="30" width="18" height="6" />
+                  <rect x="78" y="32" width="12" height="12" />
+
+                  <rect x="4" y="48" width="12" height="6" />
+                  <rect x="22" y="44" width="6" height="12" />
+                  <rect x="34" y="50" width="12" height="12" />
+                  <rect x="52" y="44" width="6" height="6" />
+                  <rect x="64" y="48" width="18" height="12" />
+
+                  <rect x="30" y="64" width="12" height="12" />
+                  <rect x="48" y="60" width="8" height="8" />
+                  <rect x="60" y="64" width="12" height="6" />
+                  <rect x="76" y="60" width="6" height="18" />
+
+                  <rect x="30" y="80" width="6" height="12" />
+                  <rect x="42" y="84" width="12" height="6" />
+                  <rect x="60" y="78" width="12" height="12" />
+                  <rect x="84" y="84" width="12" height="6" />
+
+                  {/* Beautiful customized App logo shield in the dead center */}
+                  <rect x="38" y="38" width="24" height="24" fill="white" rx="4" />
+                  {/* Glowing center speech bubble icon */}
+                  <circle cx="50" cy="50" r="9" fill="#9366ff" />
+                  {/* Symmetrical white infinity path inside badge */}
+                  <path 
+                     d="M 50 50 C 45 45, 42 47, 42 50 C 42 53, 45 55, 50 50 C 55 45, 58 47, 58 50 C 58 53, 55 55, 50 50 Z" 
+                     fill="none" 
+                     stroke="white" 
+                     strokeWidth="1.5" 
+                  />
+               </svg>
+            </div>
+
+            <div className="space-y-2">
+               <p className="text-[11px] text-stone-300 font-bold leading-normal px-2">
+                  Open your camera to scan and share this live lobby with your community instantly!
+               </p>
+               <p className="text-[9px] text-[#9366ff] uppercase tracking-widest font-mono font-bold">
+                  Secure Broadcast Access Key
+               </p>
+            </div>
+
+            <button
+              onClick={() => setIsQRCodeOpen(false)}
+              className="w-full py-2.5 bg-gradient-to-r from-[#9366ff] to-[#be2dfc] hover:from-[#8456f5] hover:to-[#ae22eb] text-white rounded-xl text-xs font-black tracking-wider uppercase transition-all shadow-lg shadow-indigo-950/40"
+            >
+              Done Sharing
+            </button>
+          </div>
+        </div>
       )}
 
       {/* GLOBAL COINS modal STORE FRONT */}

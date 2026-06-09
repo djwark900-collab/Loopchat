@@ -52,11 +52,11 @@ service cloud.firestore {
     // 3. Streamers (Live Sessions)
     function isValidStreamer(data) {
        return data.keys().hasAll(['username', 'title', 'isLive', 'creatorId', 'createdAt'])
-        && data.username is string
-        && data.title is string
+        && data.username is string && data.username.size() <= 200
+        && data.title is string && data.title.size() <= 500
         && data.isLive is bool
-        && data.creatorId is string
-        && data.createdAt is timestamp;
+        && data.creatorId is string && data.creatorId.size() <= 128
+        && (data.createdAt is timestamp || data.createdAt == request.time);
     }
 
     match /streamers/{streamerId} {

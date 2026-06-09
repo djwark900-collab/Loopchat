@@ -101,6 +101,14 @@ export const VIRTUAL_GIFTS: Gift[] = [
     cost: 3000,
     category: "legendary",
     animationStyle: "rotate-12"
+  },
+  {
+    id: "gift-lion",
+    name: "King Lion",
+    icon: "🦁",
+    cost: 5000,
+    category: "legendary",
+    animationStyle: "scale-125 duration-1000"
   }
 ];
 
