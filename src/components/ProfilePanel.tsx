@@ -723,23 +723,22 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
             accept="image/*"
             className="hidden"
           />
-
         </div>
       </div>
     );
   }
 
   return (
-    <div id="profile-management-panel" className="max-w-7xl mx-auto px-4 py-4 font-sans text-stone-100 space-y-6">
+    <div id="profile-management-panel" className="max-w-7xl mx-auto px-4 py-4 font-sans text-slate-800 space-y-6">
       
       {/* Dynamic Alerts Banner */}
       {errorMsg && (
-        <div id="alert-error-banner" className="p-4 bg-red-950/50 border border-red-800 text-red-300 text-xs rounded-xl animate-scaleUp">
+        <div id="alert-error-banner" className="p-4 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl animate-scaleUp font-semibold shadow-sm">
           {errorMsg}
         </div>
       )}
       {successMsg && (
-        <div id="alert-success-banner" className="p-4 bg-green-950/50 border border-green-800 text-green-300 text-xs rounded-xl animate-scaleUp">
+        <div id="alert-success-banner" className="p-4 bg-green-50 border border-green-200 text-green-600 text-xs rounded-xl animate-scaleUp font-semibold shadow-sm">
           {successMsg}
         </div>
       )}
@@ -747,46 +746,37 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
       {/* Main Grid: Gorgeous Full-Screen Profiling Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* ================= ROW 1: MAJESTIC FULL-WIDTH HEADER COVERS BANNER (COL 12) ================= */}
-        <div id="full-profile-banner" className="lg:col-span-12 bg-[#FAF9FC] text-[#1E192B] rounded-3xl overflow-hidden shadow-xl border border-stone-200/85">
+        {/* ================= COLUMN 1: THE PIXEL-PERFECT IMAGE 2 PROFILE VIEW MOCKUP (COL 6) ================= */}
+        <div id="col-profile-main" className="lg:col-span-6 space-y-6">
           
-          {/* Cover Photo / Header Banner Backdrop */}
-          <div className="h-44 sm:h-56 bg-gradient-to-r from-[#9F5FFE] via-[#7B3FFE] to-[#C884FE] relative overflow-hidden select-none">
-            {/* Elegant high-end background graphics vectors */}
-            <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full border border-white/5 translate-x-1/4 -translate-y-1/4 pointer-events-none"></div>
-            <div className="absolute top-0 right-0 w-120 h-120 bg-white/5 rounded-full border border-white/5 translate-x-1/5 -translate-y-1/5 pointer-events-none animate-spin-slow"></div>
+          <div className="bg-[#FAF9FC] text-[#1E192B] rounded-[36px] overflow-hidden shadow-[0_12px_44px_rgba(202,190,230,0.18)] border border-[#E2E1EC] relative p-6 space-y-6">
             
-            {/* Header Banner Content Overlays: Clickable Level Badge and XP info (tap level) */}
-            <button
-              type="button"
-              onClick={() => setShowLevelModal(true)}
-              className="absolute top-3 right-3 flex items-center gap-1.5 p-1 bg-black/40 hover:bg-black/60 border border-white/20 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg z-25 group"
-              title="Tap to view Level & XP Targets!"
-            >
-              <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-[#923FEF] border border-white/20 text-white text-[8px] sm:text-[10px] font-extrabold uppercase tracking-wider rounded-lg font-mono flex items-center gap-1">
+            {/* Top Row: Title & Action gear icon */}
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] bg-[#7B3FFE]/10 text-[#7B3FFE] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-[#7B3FFE]/20">
                 ⭐ LV {currentUser.level || 1}
               </span>
-              <span className="px-2 py-0.5 bg-amber-500 text-stone-950 text-[8px] sm:text-[10px] font-black uppercase tracking-wider rounded-lg font-mono shadow-sm flex items-center gap-1">
-                XP {currentUser.xp || 0} / {currentUser.xpToNextLevel || 100}
-                <span className="text-[7px] text-stone-900 group-hover:animate-bounce">ℹ️</span>
-              </span>
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => setIsEditing(!isEditing)}
+                className="p-2 bg-white text-[#7B3FFE] border border-stone-200/95 hover:bg-slate-50 transition-all rounded-full cursor-pointer shadow-sm active:scale-95"
+                title="Profile Editor & Settings"
+              >
+                <Settings className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
 
-          {/* Profile Info Overlay Row */}
-          <div className="px-6 pb-6 pt-0 relative flex flex-col md:flex-row md:items-end justify-between gap-6 -mt-14 sm:-mt-16">
-            
-            {/* Left: Avatar + Identity details side-by-side */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left">
-              {/* Glowing Premium framed avatar container */}
-              <div className="relative shrink-0 select-none group">
+            {/* Avatar & Info Segment */}
+            <div className="flex flex-col items-center text-center space-y-4">
+              {/* Premium framed avatar container */}
+              <div className="relative select-none">
                 {/* Circle base with active frame class decoration */}
-                <div className={`w-32 h-32 sm:w-36 sm:h-36 rounded-full flex items-center justify-center p-0.5 relative transition-all duration-300 ${activeFrame.frameStyleClass}`}>
+                <div className={`w-32 h-32 rounded-full flex items-center justify-center p-0.5 relative transition-all duration-300 ${activeFrame.frameStyleClass} shadow-md`}>
                   <img
                     src={avatarUrl}
                     alt="User Avatar"
                     referrerPolicy="no-referrer"
-                    className="w-[112px] h-[112px] sm:w-[126px] sm:h-[126px] rounded-full object-cover bg-stone-100"
+                    className="w-[112px] h-[112px] rounded-full object-cover bg-stone-100 border border-stone-200"
                   />
                 </div>
 
@@ -794,205 +784,182 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-2 right-2 p-2 bg-white text-[#9F5FFE] border-2 border-[#FAF9FC] shadow-md rounded-full transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                  className="absolute bottom-1 right-1 p-2 bg-white text-[#7B3FFE] border-2 border-[#FAF9FC] shadow-md rounded-full transition-all hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center"
                   title="Upload photo"
                 >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4.5 h-4.5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 9a3.75 3.75 0 1 0 0 7.5A3.75 3.75 0 0 0 12 9Z" />
                     <path fillRule="evenodd" d="M9.344 3.071a2.25 2.25 0 0 1 2.247-2.126h3c1.07 0 1.996.75 2.247 1.83l.23 1.05a2.25 2.25 0 0 0 1.139 1.488l3.111 1.556a3 3 0 0 1 1.683 2.683v8.7a3 3 0 0 1-3 3H3h.001c-1.657 0-3-1.343-3-3v-8.7A3 3 0 0 1 1.684 6.12l3.111-1.556a2.25 2.25 0 0 0 1.14-1.488l.23-1.05v-.012ZM12 7.5a5.25 5.25 0 1 0 0 10.5 5.25 5.25 0 0 0 0-10.5Z" clipRule="evenodd" />
                   </svg>
                 </button>
               </div>
 
-              {/* User details text labels */}
-              <div className="space-y-2 pb-1">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 items-center">
-                  <h3 className="text-2xl sm:text-3xl font-black text-stone-900 font-sans tracking-tight leading-tight">
-                    {fullName}
+              {/* User Identity Details */}
+              <div className="space-y-1.5 w-full">
+                <div className="flex items-center justify-center gap-2">
+                  <h3 className="text-2xl font-black text-stone-900 font-sans tracking-tight">
+                    {fullName || "ndnd"}
                   </h3>
-                  {/* BEAUTIFUL COMPACT CIRCULAR PENCIL EDIT ICON OR TRIGGER */}
                   <button
                     id="edit-profile-icon-btn"
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="p-1.5 bg-purple-100 hover:bg-purple-200 text-[#7B3FFE] rounded-full transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer ml-1 inline-flex items-center justify-center shadow-sm"
+                    className="p-1.5 bg-purple-50 hover:bg-purple-100 text-[#7B3FFE] rounded-full transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer inline-flex items-center justify-center shadow-inner"
                     title="Edit Profile"
                   >
                     <Edit2 className="w-3.5 h-3.5 stroke-[2.5]" />
                   </button>
-                  
-                  {/* Flags and Gender pills removed as requested */}
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2 text-stone-600">
-                  <p className="text-sm text-[#828291] font-semibold tracking-wide font-sans leading-none">
-                    {username.startsWith("@") ? username : `@${username}`}
-                  </p>
-                  <span className="hidden sm:inline text-stone-300">|</span>
-                  <div className="flex items-center gap-1 text-[#828291] font-sans text-xs font-semibold">
-                    <span>Unique ID: {displayId}</span>
+                <div className="flex flex-col items-center justify-center text-stone-600 space-y-1 text-xs">
+                  {bio && (
+                    <p className="max-w-md text-[#5B5072] font-semibold tracking-wide italic leading-relaxed text-[11px] mb-1">
+                      "{bio}"
+                    </p>
+                  )}
+                  <div className="flex items-center gap-1 text-[#828291] font-sans font-bold text-[11px] bg-stone-100/75 border border-stone-200/50 py-1 px-3.5 rounded-full shadow-sm">
+                    <span>Unique Id : {displayId || "87444055"}</span>
                     <button
                       onClick={handleCopyId}
-                      className="p-1 hover:bg-stone-200/55 rounded-md transition-colors"
+                      className="p-1 hover:bg-stone-200/55 rounded-md transition-colors ml-0.5 cursor-pointer"
                       title="Copy Unique Id"
                     >
-                      {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5 text-[#A4A3B1]" />}
+                      {copied ? <Check className="w-3.5 h-3.5 text-green-600 stroke-[3]" /> : <Copy className="w-3.5 h-3.5 text-[#A4A3B1] stroke-[2.5]" />}
                     </button>
                   </div>
                 </div>
-
-                {bio && (
-                  <p className="max-w-xl text-stone-700 text-xs sm:text-sm font-medium leading-relaxed italic mx-auto sm:mx-0">
-                    "{bio}"
-                  </p>
-                )}
               </div>
             </div>
 
-            {/* Right: Toggle configuration customizer panel button */}
-            <div className="flex justify-center md:justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => setIsEditing(!isEditing)}
-                className="p-2 sm:p-2.5 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 text-[#1E192B] transition-colors cursor-pointer flex items-center justify-center gap-1.5 text-xs font-extrabold shadow-sm border border-stone-200"
-              >
-                <Settings className="w-4 h-4 text-[#7B3FFE]" />
-                {isEditing ? "Hide Advanced Settings" : "Configure Custom Stats"}
-              </button>
+            {/* Horizontal Stats Grid: Following, Followers, Likes, Friends */}
+            <div className="bg-[#FAF9FC] border border-[#E2E1EC]/60 rounded-2xl py-3.5 px-2.5 shadow-sm">
+              <div className="flex items-center justify-between text-center select-none divide-x divide-[#E2E1EC]/70">
+                <div className="flex-1 leading-none">
+                  <span className="text-sm font-black text-stone-850 block">{statsLikes}</span>
+                  <span className="text-[9px] text-[#A4A3B1] font-black uppercase tracking-wider block mt-1">Likes</span>
+                </div>
+                <div className="flex-1 leading-none">
+                  <span className="text-sm font-black text-stone-850 block">{statsFollowing}</span>
+                  <span className="text-[9px] text-[#A4A3B1] font-black uppercase tracking-wider block mt-1">Following</span>
+                </div>
+                <div className="flex-1 leading-none">
+                  <span className="text-sm font-black text-stone-850 block">{statsFollowers}</span>
+                  <span className="text-[9px] text-[#A4A3B1] font-black uppercase tracking-wider block mt-1">Followers</span>
+                </div>
+                <div className="flex-1 leading-none">
+                  <span className="text-sm font-black text-stone-850 block">{statsFriends}</span>
+                  <span className="text-[9px] text-[#A4A3B1] font-black uppercase tracking-wider block mt-1">Friends</span>
+                </div>
+              </div>
             </div>
 
-          </div>
-
-        </div>
-
-        {/* ================= COLUMN 1: ANALYTICS + COIN DOCK + CONTENT SUBTABS (COL 6) ================= */}
-        <div id="col-profile-main" className="lg:col-span-6 space-y-6">
-          
-          {/* WALLET BALANCES GRID (LoopCoins & Diamonds) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            
-            {/* AVAILABLE COIN PURPLE WALLET CARD */}
+            {/* AVAILABLE COIN PURPLE WALLET CARD (Matches second screen exactly) */}
             <div 
               id="wallet-coin-gradient-card"
-              className="bg-gradient-to-tr from-[#9146FF] to-[#713FFD] p-3.5 sm:p-4 rounded-xl text-white relative overflow-hidden shadow-md flex items-center justify-between"
+              className="bg-gradient-to-r from-[#8b5cf6] to-[#ec4899] p-5 rounded-[24px] text-white relative overflow-hidden shadow-md flex items-center justify-between"
             >
-              {/* Fine design concentric loop background patterns */}
-              <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full border border-white/5 translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
+              {/* Concentric loop background patterns */}
+              <div className="absolute top-0 right-0 w-28 h-28 bg-white/5 rounded-full border border-white/5 translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
               
-              {/* Left layout with Coin metadata and triggers */}
-              <div className="space-y-1.5 z-10">
-                <span className="text-[9px] font-sans font-extrabold text-white/90 uppercase tracking-wider block leading-none">
-                  Available LoopCoins
+              <div className="space-y-2 z-10 text-left">
+                <span className="text-[10px] font-sans font-black text-white/95 uppercase tracking-wider block leading-none">
+                  Available Coin
                 </span>
                 
-                <span className="text-lg font-black font-sans tracking-tight block leading-none">
+                <span className="text-2xl font-black font-sans tracking-tight block leading-none">
                   {currentUser.coins.toLocaleString()}
                 </span>
 
                 <button
                   type="button"
                   onClick={onOpenCoinStore}
-                  className="px-2.5 py-1 bg-white text-[#9146FF] hover:bg-stone-50 font-black text-[8px] uppercase rounded-lg shadow-sm transition-all active:scale-95 flex items-center gap-0.5 cursor-pointer"
+                  className="px-3.5 py-1.5 bg-white text-[#FF6600] hover:bg-stone-50 font-black text-[9px] uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
                 >
-                  Buy Coins <span className="text-[8px] font-light font-mono">»</span>
+                  My Wallet <span className="text-[9px]">»</span>
                 </button>
               </div>
 
-              {/* Right side stellar star coin graphics */}
-              <div className="relative shrink-0 z-10 pr-0.5">
-                {/* Concentric rotating glowing ring */}
-                <div className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center p-1">
-                  <div className="w-full h-full bg-[#FFBC13]/25 rounded-full flex items-center justify-center p-0.5">
-                    <div className="w-full h-full bg-[#FFA300] rounded-full border border-white flex items-center justify-center">
-                      <Coins className="w-3.5 h-3.5 text-amber-100" />
+              {/* Right side stellar 3D gold coin graphics */}
+              <div className="relative shrink-0 z-10 pr-1">
+                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center p-1.5 animate-pulse duration-3000">
+                  <div className="w-full h-full bg-[#FFBC13]/25 rounded-full flex items-center justify-center p-1">
+                    <div className="w-full h-full bg-[#FFA300] rounded-full border border-white flex items-center justify-center shadow-lg">
+                      <Coins className="w-6.5 h-6.5 text-amber-100" />
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* AVAILABLE DIAMONDS CYAN WALLET CARD */}
-            <div 
-              id="wallet-diamonds-gradient-card"
-              className="bg-gradient-to-tr from-[#00A5FF] to-[#0070FF] p-3.5 sm:p-4 rounded-xl text-white relative overflow-hidden shadow-md flex items-center justify-between"
-            >
-              {/* Fine design concentric loop background patterns */}
-              <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full border border-white/5 translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
+            {/* Diamonds quick look pill bar */}
+            <div className="flex items-center justify-between text-xs px-4 py-3 bg-stone-50 border border-stone-200/60 rounded-xl font-sans text-[#5B5072]">
+              <span className="font-extrabold uppercase text-[10px] text-stone-500 tracking-wider">⚡ Available Diamonds (Livestream Tips)</span>
+              <span className="text-sm font-black text-stone-900 font-mono">💎 {currentUser.diamonds || 0}</span>
+            </div>
+
+            {/* DYNAMIC CONTENT SUBTABS WITH ICONS (Reels, Feeds, Collections) */}
+            <div className="bg-[#FAF9FC] text-[#1E192B] rounded-2xl p-6 shadow-md border border-stone-200/85 space-y-5">
               
-              {/* Left layout with Diamonds metadata */}
-              <div className="space-y-1.5 z-10">
-                <span className="text-[9px] font-sans font-extrabold text-white/90 uppercase tracking-wider block leading-none">
-                  My Diamonds
-                </span>
+              <div id="reels-tabs-nav" className="flex items-center justify-around border-b border-stone-200/60 font-sans select-none">
                 
-                <span className="text-lg font-black font-sans tracking-tight block leading-none font-mono">
-                  {(currentUser.diamonds || 0).toLocaleString()}
-                </span>
-
-                <span className="inline-block text-[8px] font-extrabold bg-black/25 text-cyan-200 border border-cyan-400/25 px-1.5 py-0.5 rounded-lg leading-none">
-                  ⚡ Livestream Tips
-                </span>
-              </div>
-
-              {/* Right side stellar anim diamond */}
-              <div className="relative shrink-0 z-10 pr-0.5">
-                <div className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center p-1">
-                  <div className="w-full h-full bg-cyan-400/25 rounded-full flex items-center justify-center text-center leading-none text-xs select-none animate-pulse">
-                    💎
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab("reels")}
+                  className={`pb-3 text-xs font-black uppercase tracking-wider relative transition-all flex flex-col items-center gap-1.5 cursor-pointer ${
+                    activeSubTab === "reels" ? "text-[#7B3FFE]" : "text-[#A4A3B1] hover:text-[#5F5A73]"
+                  }`}
+                >
+                  <div className={`p-1.5 rounded-xl ${activeSubTab === "reels" ? "bg-[#7B3FFE]/10 text-[#7B3FFE]" : "text-[#A4A3B1] bg-transparent"}`}>
+                    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.8">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
-                </div>
+                  Reels
+                  {activeSubTab === "reels" && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7B3FFE] rounded-full animate-scaleUp"></span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab("feeds")}
+                  className={`pb-3 text-xs font-black uppercase tracking-wider relative transition-all flex flex-col items-center gap-1.5 cursor-pointer ${
+                    activeSubTab === "feeds" ? "text-[#7B3FFE]" : "text-[#A4A3B1] hover:text-[#5F5A73]"
+                  }`}
+                >
+                  <div className={`p-1.5 rounded-xl ${activeSubTab === "feeds" ? "bg-[#7B3FFE]/10 text-[#7B3FFE]" : "text-[#A4A3B1] bg-transparent"}`}>
+                    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.8">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                  </div>
+                  Feeds
+                  {activeSubTab === "feeds" && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7B3FFE] rounded-full animate-scaleUp"></span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab("collections")}
+                  className={`pb-3 text-xs font-black uppercase tracking-wider relative transition-all flex flex-col items-center gap-1.5 cursor-pointer ${
+                    activeSubTab === "collections" ? "text-[#7B3FFE]" : "text-[#A4A3B1] hover:text-[#5F5A73]"
+                  }`}
+                >
+                  <div className={`p-1.5 rounded-xl ${activeSubTab === "collections" ? "bg-[#7B3FFE]/10 text-[#7B3FFE]" : "text-[#A4A3B1] bg-transparent"}`}>
+                    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.8">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                  </div>
+                  Collections
+                  {activeSubTab === "collections" && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7B3FFE] rounded-full animate-scaleUp"></span>
+                  )}
+                </button>
+
               </div>
-            </div>
 
-          </div>
-
-          {/* DYNAMIC CONTENT SUBTABS (Reels, Feeds, Collections) */}
-          <div className="bg-[#FAF9FC] text-[#1E192B] rounded-2xl p-6 shadow-md border border-stone-200/85 space-y-5">
-            
-            <div id="reels-tabs-nav" className="flex items-center justify-around border-b border-stone-200/60 font-sans select-none">
-              
-              <button
-                type="button"
-                onClick={() => setActiveSubTab("reels")}
-                className={`pb-3 text-xs font-black uppercase tracking-wider relative transition-all ${
-                  activeSubTab === "reels" ? "text-[#7B3FFE]" : "text-[#A4A3B1] hover:text-[#5F5A73]"
-                }`}
-              >
-                Reels
-                {activeSubTab === "reels" && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7B3FFE] rounded-full animate-scaleUp"></span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveSubTab("feeds")}
-                className={`pb-3 text-xs font-black uppercase tracking-wider relative transition-all ${
-                  activeSubTab === "feeds" ? "text-[#7B3FFE]" : "text-[#A4A3B1] hover:text-[#5F5A73]"
-                }`}
-              >
-                Feeds
-                {activeSubTab === "feeds" && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7B3FFE] rounded-full animate-scaleUp"></span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveSubTab("collections")}
-                className={`pb-3 text-xs font-black uppercase tracking-wider relative transition-all ${
-                  activeSubTab === "collections" ? "text-[#7B3FFE]" : "text-[#A4A3B1] hover:text-[#5F5A73]"
-                }`}
-              >
-                Collections
-                {activeSubTab === "collections" && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7B3FFE] rounded-full animate-scaleUp"></span>
-                )}
-              </button>
-
-            </div>
-
-            {/* Custom Tab Content Windows */}
+              {/* Custom Tab Content Windows */}
             <div className="py-3 text-center flex flex-col justify-center items-center space-y-4 w-full">
               
               {activeSubTab === "reels" ? (
@@ -1129,6 +1096,8 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
           </div>
 
         </div>
+
+      </div>
 
         {/* ================= COLUMN 2: CUSTOM BOUTIQUE & METADATA CONTROLLERS (COL 6) ================= */}
         <div id="col-customizer-dashboard" className="lg:col-span-6 space-y-6">
@@ -1500,218 +1469,6 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
         </div>
 
       </div>
-
-      {/* ====================================================================================
-          LEVEL & XP SYSTEM HIGH-FIDELITY DETAILED MODAL - IMPLEMENTS "tap level" & THE LEVEL CHART
-          ==================================================================================== */}
-      {showLevelModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[90] animate-fadeIn">
-          <div className="bg-[#120E21] border-2 border-purple-500/40 rounded-3xl w-full max-w-md overflow-hidden shadow-[0_0_50px_rgba(139,92,246,0.3)]">
-            
-            {/* Modal Header */}
-            <div className="p-5 bg-gradient-to-r from-purple-900/40 via-indigo-950/40 to-purple-950/50 border-b border-purple-500/20 flex justify-between items-center relative">
-              <div className="flex items-center gap-2.5">
-                <span className="text-xl">🏆</span>
-                <div>
-                  <h4 className="text-sm font-black uppercase tracking-wider text-stone-200">
-                    My Creator Level Card
-                  </h4>
-                  <p className="text-[9px] text-[#A855F7] font-semibold uppercase tracking-widest leading-none mt-0.5">
-                    Tap level / Milestone testing
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowLevelModal(false)}
-                className="w-7 h-7 rounded-full bg-stone-900/60 hover:bg-stone-800 text-stone-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto scrollbar-thin">
-              
-              {/* CURRENT LEVEL STATUS CARD */}
-              <div className="bg-[#1c1833] border border-purple-500/10 rounded-2xl p-4 text-center space-y-3 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl pointer-events-none"></div>
-                
-                <div className="flex items-center justify-center gap-3">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-yellow-400 via-amber-400 to-yellow-500 p-0.5 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.25)] animate-bounce-slow">
-                    <div className="w-full h-full rounded-full bg-stone-950 flex flex-col items-center justify-center">
-                      <span className="text-[9px] text-amber-500 font-bold uppercase leading-none font-mono">LV</span>
-                      <span className="text-lg font-black text-amber-300 leading-none">{currentUser.level}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="text-left">
-                    <span className="text-[10px] text-purple-300 font-extrabold uppercase tracking-wider block">XP Progression</span>
-                    <span className="text-xs font-mono font-black text-stone-200 block">
-                      {currentUser.xp.toLocaleString()} / {currentUser.xpToNextLevel.toLocaleString()} XP
-                    </span>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="space-y-1 text-left">
-                  <div className="w-full h-2.5 bg-stone-950 rounded-full overflow-hidden border border-purple-500/10">
-                    <div 
-                      className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-amber-400 transition-all duration-500 ease-out rounded-full shadow-[0_0_10px_radial]"
-                      style={{ width: `${Math.min(100, Math.max(3, (currentUser.xp / (currentUser.xpToNextLevel || 100)) * 100))}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[8px] font-bold text-stone-400 uppercase tracking-widest pt-0.5">
-                    <span>{Math.round((currentUser.xp / (currentUser.xpToNextLevel || 100)) * 100)}% Complete</span>
-                    <span className="text-amber-400">Next LV: {(currentUser.level || 0) + 1}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* LEVEL CHEAT SHEET / SYSTEM THRESHOLDS */}
-              <div className="space-y-2 text-left">
-                <span className="text-[9px] font-black uppercase text-purple-400 tracking-widest block pl-1">Level Targets Config (Requested)</span>
-                
-                <div className="bg-stone-950 border border-stone-900 rounded-xl divide-y divide-stone-900/60 font-mono text-[9.5px]">
-                  {LEVEL_REQUIREMENTS.map((rule, idx) => {
-                    const isActive = currentUser.level.toString() === rule.level.toString() || 
-                      (rule.level === "8-50" && currentUser.level >= 8 && currentUser.level <= 50);
-                    return (
-                      <div 
-                        key={idx} 
-                        className={`p-2.5 flex items-center justify-between transition-colors ${
-                          isActive 
-                            ? "bg-purple-950/20 text-[#A855F7] border-l-2 border-purple-500" 
-                            : "text-stone-400"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 font-bold">
-                          <span className={isActive ? "text-amber-400" : "text-stone-600"}>👑</span>
-                          <span>Level {rule.level}:</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-extrabold text-stone-300 font-mono text-[10px] block">
-                            {rule.xp.toLocaleString()} XP
-                          </span>
-                          <span className="text-[8px] text-stone-500 block uppercase tracking-tight">{rule.label}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* INTERACTIVE LEVEL UP DESIGN LAB ACTIONS */}
-              <div className="space-y-3 pt-1 border-t border-purple-950 text-left">
-                <span className="text-[9px] font-black uppercase text-purple-400 tracking-widest block pl-1">Interactive Sandbox Controls</span>
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      let nextXp = currentUser.xp + 500;
-                      let nextLevel = currentUser.level;
-                      let nextTarget = getXpNeededForLevel(nextLevel);
-                      
-                      while (nextXp >= nextTarget) {
-                        nextXp -= nextTarget;
-                        nextLevel += 1;
-                        nextTarget = getXpNeededForLevel(nextLevel);
-                      }
-
-                      onProfileUpdate({
-                        ...currentUser,
-                        level: nextLevel,
-                        xp: nextXp,
-                        xpToNextLevel: nextTarget
-                      });
-                    }}
-                    className="p-2 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-200 text-[10px] font-black uppercase rounded-xl tracking-wider transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm text-center flex flex-col justify-center items-center gap-0.5"
-                  >
-                    <span>⚡ Gain XP</span>
-                    <span className="text-[8px] text-purple-400 font-bold font-mono">+500 XP</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      let nextXp = currentUser.xp + 2500;
-                      let nextLevel = currentUser.level;
-                      let nextTarget = getXpNeededForLevel(nextLevel);
-                      
-                      while (nextXp >= nextTarget) {
-                        nextXp -= nextTarget;
-                        nextLevel += 1;
-                        nextTarget = getXpNeededForLevel(nextLevel);
-                      }
-
-                      onProfileUpdate({
-                        ...currentUser,
-                        level: nextLevel,
-                        xp: nextXp,
-                        xpToNextLevel: nextTarget
-                      });
-                    }}
-                    className="p-2 bg-gradient-to-r from-amber-500/10 to-yellow-400/10 hover:from-amber-500/20 border border-amber-500/30 text-amber-300 text-[10px] font-black uppercase rounded-xl tracking-wider transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm text-center flex flex-col justify-center items-center gap-0.5"
-                  >
-                    <span>🌟 Extreme XP</span>
-                    <span className="text-[8px] text-amber-400 font-bold font-mono">+2,500 XP</span>
-                  </button>
-                </div>
-
-                {/* Direct level setting tool */}
-                <div className="bg-[#1c1833]/40 border border-[#2d2254]/40 rounded-xl p-2.5 flex items-center justify-between gap-3">
-                  <div className="text-left shrink-0">
-                    <label className="text-[8.5px] font-black uppercase text-stone-400 tracking-wider block">Set Specific Level</label>
-                    <span className="text-[7.5px] text-purple-400 leading-none">Jump to Level 1 - 50</span>
-                  </div>
-                  
-                  <div className="flex gap-1.5 items-center">
-                    <input
-                      type="number"
-                      placeholder="e.g. 5"
-                      min={1}
-                      max={50}
-                      value={customLevelInput}
-                      onChange={(e) => setCustomLevelInput(e.target.value)}
-                      className="w-14 bg-stone-950 border border-purple-500/20 rounded-lg p-1 text-center text-xs font-mono font-black text-stone-200 focus:outline-none focus:border-purple-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const lvl = parseInt(customLevelInput, 10);
-                        if (!lvl || lvl < 1 || lvl > 50) return;
-                        const nextTarget = getXpNeededForLevel(lvl);
-                        
-                        onProfileUpdate({
-                          ...currentUser,
-                          level: lvl,
-                          xp: 0,
-                          xpToNextLevel: nextTarget
-                        });
-                        setCustomLevelInput("");
-                      }}
-                      className="px-2.5 py-1.5 bg-gradient-to-r from-purple-600 to-[#923FEF] hover:from-[#A855F7] text-white text-[9px] font-black uppercase rounded-lg tracking-wider active:scale-95 transition-all cursor-pointer shadow"
-                    >
-                      GO
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 bg-stone-950 border-t border-purple-950 text-center">
-              <span className="text-[8px] font-bold text-stone-500 uppercase tracking-widest">
-                Level system values synced database-wide!
-              </span>
-            </div>
-
-          </div>
-        </div>
-      )}
 
     </div>
   );

@@ -33,12 +33,13 @@ import {
   QrCode,
   MessageSquare,
   Play,
-  ArrowLeft
+  ArrowLeft,
+  Send
 } from "lucide-react";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<"home" | "live" | "profile">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "live" | "chat" | "profile">("home");
   const [selectedStreamer, setSelectedStreamer] = useState<Streamer | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [isCoinsModalOpen, setIsCoinsModalOpen] = useState(false);
@@ -217,13 +218,13 @@ export default function App() {
   // Ref for debouncing Firestore writes
   const persistenceTimeoutRef = React.useRef<any>(null);
 
-  // Sync user state with local storage & Firestore (DEBOUNCED)
-  const handleUserUpdate = async (updatedUser: User) => {
+  // Sync user state with local storage & Firestore (DEBOUNCED with optional immediate speed-save)
+  const handleUserUpdate = async (updatedUser: User, immediate = false) => {
     // 1. Update local reactive state immediately for snappy UI
     setCurrentUser(updatedUser);
     localStorage.setItem("loopchat_current_user", JSON.stringify(updatedUser));
     
-    // 2. Debounce Firestore persistence to save write units (15-second window for heavy simulation)
+    // 2. Persist to Firestore
     if (firestoreStatus.isQuotaExceeded) {
        return;
     }
@@ -232,19 +233,22 @@ export default function App() {
       clearTimeout(persistenceTimeoutRef.current);
     }
 
-    persistenceTimeoutRef.current = setTimeout(async () => {
-      // Re-check quota right before execution
+    const saveToFirestore = async () => {
       if (firestoreStatus.isQuotaExceeded) return;
-
       try {
         const userRef = doc(db, "users", updatedUser.id);
         await setDoc(userRef, updatedUser, { merge: true });
         console.debug("User profile successfully synced to Cloud Firestore.");
       } catch (err) {
-        // Handle quota issues gracefully using shared handler
         handleFirestoreError(err, OperationType.UPDATE, `users/${updatedUser.id}`);
       }
-    }, 15000); // 15-second debounce window to prevent quota exhaustion
+    };
+
+    if (immediate) {
+      await saveToFirestore();
+    } else {
+      persistenceTimeoutRef.current = setTimeout(saveToFirestore, 15000);
+    }
   };
 
   const handleCoinsPurchased = (coinsCount: number) => {
@@ -253,7 +257,7 @@ export default function App() {
       ...currentUser,
       coins: currentUser.coins + coinsCount
     };
-    handleUserUpdate(updated);
+    handleUserUpdate(updated, true); // save coin/balance immediately!
   };
 
   const handleLevelXpUpdate = (newLevel: number, newXp: number) => {
@@ -272,7 +276,7 @@ export default function App() {
       ...currentUser,
       coins: newCoinsCount
     };
-    handleUserUpdate(updated);
+    handleUserUpdate(updated, true); // Save coin immediately!
   };
 
   const handleDiamondsUpdate = (newDiamondsCount: number) => {
@@ -281,7 +285,7 @@ export default function App() {
       ...currentUser,
       diamonds: newDiamondsCount
     };
-    handleUserUpdate(updated);
+    handleUserUpdate(updated, true); // Save immediately!
   };
 
   const handleGiftSentNotification = () => {
@@ -290,7 +294,7 @@ export default function App() {
     handleUserUpdate({
       ...currentUser,
       giftsSentCount: newGiftsSentCount
-    });
+    }, true); // Save immediately!
   };
 
   const handleClaimReward = (missionId: string, coinsGold: number, diamondsCyan: number) => {
@@ -637,36 +641,7 @@ export default function App() {
              </div>
           </div>
 
-          {/* Beautiful Horizontal Scrollable Tap Bar (Sub-tab Selector for Categories) */}
-          <div id="live-categories-tapbar" className="bg-[#0c0816]/90 border-b border-[#2d2254]/30 backdrop-blur-md px-4 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar sticky top-[72px] z-20 select-none">
-             {[
-               { name: "All", icon: "🌌" },
-               { name: "IRL Chatting", icon: "💬" },
-               { name: "Music & Beats", icon: "🎵" },
-               { name: "Gaming & Esports", icon: "🎮" },
-               { name: "Creative & Art", icon: "🎨" },
-               { name: "Tech & Coding", icon: "💻" }
-             ].map((cat) => {
-               const isActive = selectedCategory === cat.name;
-               return (
-                 <button
-                   key={cat.name}
-                   onClick={() => setSelectedCategory(cat.name)}
-                   className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-300 transform active:scale-95 cursor-pointer relative ${
-                     isActive 
-                       ? "text-white bg-gradient-to-r from-[#9366FF] to-fuchsia-500 shadow-md shadow-violet-950/50" 
-                       : "text-stone-400 hover:text-white bg-stone-900/40 hover:bg-stone-850/45 border border-stone-850/50"
-                   }`}
-                 >
-                   <span>{cat.icon}</span>
-                   <span>{cat.name}</span>
-                   {isActive && (
-                     <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-[2px] rounded-full bg-cyan-400 animate-pulse"></span>
-                   )}
-                 </button>
-               );
-             })}
-          </div>
+
 
           <div className="flex-1 overflow-y-auto px-5 py-6 space-y-10 pb-32">
              
@@ -697,11 +672,10 @@ export default function App() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                   {streamersList.filter(live => {
-                    const matchesCategory = selectedCategory === "All" || live.category === selectedCategory;
                     const matchesSearch = live.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
                       live.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                       live.title.toLowerCase().includes(searchTerm.toLowerCase());
-                    return matchesCategory && matchesSearch;
+                    return matchesSearch;
                   }).map((live) => (
                     <div 
                       key={live.id} 
@@ -754,11 +728,10 @@ export default function App() {
                   ))}
 
                     {streamersList.filter(live => {
-                      const matchesCategory = selectedCategory === "All" || live.category === selectedCategory;
                       const matchesSearch = live.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
                         live.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         live.title.toLowerCase().includes(searchTerm.toLowerCase());
-                      return matchesCategory && matchesSearch;
+                      return matchesSearch;
                     }).length === 0 && (
                      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
                         {/* Gorgeous vector-styled illustration of empty results from Image 2 */}
@@ -870,57 +843,246 @@ export default function App() {
             </div>
           )}
 
+          {/* TAB 4: PRIVATE MESSAGES CHAT CENTER */}
+          {activeTab === "chat" && (
+            <div id="messages-hub" className="animate-scaleUp max-w-4xl mx-auto p-4 space-y-4">
+              <div className="bg-[#FAF9FC] text-[#1E192B] rounded-3xl border border-[#E2E1EC] p-6 shadow-md shadow-[#ECE8F7]/40 min-h-[520px] flex flex-col">
+                
+                {/* Header with Settings Gear icon representation */}
+                <div className="flex items-center justify-between border-b border-[#F0EEF7] pb-4 mb-4">
+                  <div>
+                    <h2 className="text-xl font-black text-[#1E192B] font-sans tracking-tight">Direct Messages</h2>
+                    <p className="text-xs text-[#5C5766] font-medium font-sans mt-0.5">Connect with live stream enthusiasts and creator friends</p>
+                  </div>
+                  <div className="p-2.5 bg-[#7B3FFE]/10 rounded-full text-[#7B3FFE]">
+                    <MessageSquare className="w-5 h-5 stroke-[2.5]" />
+                  </div>
+                </div>
+
+                {/* Simulated conversations lists / active thread view */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1">
+                  
+                  {/* Left sidebar: Threads List */}
+                  <div className="md:col-span-12 lg:col-span-5 border-r border-[#F0EEF7]/85 pr-0 lg:pr-4 flex flex-col space-y-3.5">
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3" />
+                      <input 
+                        type="text" 
+                        placeholder="Search conversations..." 
+                        className="w-full bg-[#FAF9FC]/15 border border-[#E2E1EC] focus:border-[#7B3FFE] rounded-2xl py-2 pl-10 pr-4 text-xs font-semibold focus:outline-none placeholder-stone-400"
+                      />
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto space-y-1 max-h-[380px]">
+                      {[
+                        { id: "Sarah", name: "Sarah 👑", role: "Streaming Coach", lastMsg: "Check out the new avatar boutiques!", time: "10:42 AM", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80", online: true },
+                        { id: "Alex", name: "Alex ⚡", role: "Gamer League", lastMsg: "Awesome streams, let's co-host tomorrow!", time: "Yesterday", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80", online: true },
+                        { id: "Maya", name: "Maya ♦", role: "Music Producer", lastMsg: "Loved that ambient loop sound!", time: "June 8", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80", online: false },
+                        { id: "Admin", name: "Admin Bot 🤖", role: "System Support", lastMsg: "Congratulations on setting up your loop applet!", time: "June 5", avatar: "https://images.unsplash.com/photo-1546776310-eef45dd6d63c?w=120&auto=format&fit=crop&q=80", online: true }
+                      ].map((thr) => (
+                        <div
+                          key={thr.id}
+                          className="w-full text-left p-2.5 rounded-2xl hover:bg-[#F2EFFC]/60 transition-all flex items-center justify-between group cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="relative shrink-0">
+                              <img src={thr.avatar} className="w-10 h-10 rounded-full object-cover border-2 border-slate-100 shadow-sm" />
+                              {thr.online && (
+                                <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#FAF9FC]"></span>
+                              )}
+                            </div>
+                            <div className="overflow-hidden">
+                              <h4 className="text-xs font-black text-stone-800 flex items-center gap-1">{thr.name}</h4>
+                              <p className="text-[10px] text-[#7B3FFE] font-bold">{thr.role}</p>
+                              <p className="text-[10px] text-stone-500 truncate mt-0.5">{thr.lastMsg}</p>
+                            </div>
+                          </div>
+                          <span className="text-[9px] text-stone-400 font-bold shrink-0 self-start mt-1">{thr.time}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Dynamic active chat simulation panel */}
+                  <div className="md:col-span-12 lg:col-span-7 flex flex-col bg-white border border-[#E2E1EC]/60 rounded-2xl p-4 min-h-[385px] relative">
+                    <div className="flex items-center justify-between border-b border-[#F0EEF7] pb-2.5 mb-3">
+                      <div className="flex items-center gap-2">
+                        <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80" className="w-8 h-8 rounded-full object-cover" />
+                        <div>
+                          <p className="text-xs font-black text-stone-800">Sarah 👑</p>
+                          <span className="text-[8px] text-green-500 font-bold uppercase tracking-widest flex items-center gap-1 leading-none">● Online</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Chat History Container */}
+                    <div className="flex-1 overflow-y-auto space-y-3.5 pr-1 max-h-[220px]">
+                      <div className="flex justify-center my-1">
+                        <span className="px-2.5 py-0.5 bg-slate-100 text-[8px] font-black text-stone-400 uppercase tracking-widest rounded-full">Today at 10:40 AM</span>
+                      </div>
+
+                      {/* Received message layout */}
+                      <div className="flex items-start gap-2.5 max-w-[85%]">
+                        <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80" className="w-6 h-6 rounded-full object-cover mt-0.5" />
+                        <div className="bg-[#ECEEFB]/95 text-[#1a142e] rounded-2xl rounded-tl-none p-3 shadow-sm">
+                          <p className="text-xs font-medium leading-relaxed">Hey! Welcome to the loop streaming chat arena. Have you checked out the custom avatars frames yet?</p>
+                        </div>
+                      </div>
+
+                      {/* Outgoing message */}
+                      <div className="flex items-start gap-2.5 max-w-[85%] ml-auto justify-end">
+                        <div className="bg-[#7B3FFE] text-white rounded-2xl rounded-tr-none p-3 shadow-md">
+                          <p className="text-xs font-medium leading-relaxed">Yes I have! This live simulator is extremely responsive, and the loop coins wallet update instantly!</p>
+                        </div>
+                        <span className="w-6 h-6 rounded-full bg-indigo-150 flex items-center justify-center text-[10px] mt-0.5 select-none">👤</span>
+                      </div>
+
+                      {/* Real-time responses array */}
+                      <div className="flex items-start gap-2.5 max-w-[85%]">
+                        <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80" className="w-6 h-6 rounded-full object-cover mt-0.5" />
+                        <div className="bg-[#ECEEFB]/95 text-[#1a142e] rounded-2xl rounded-tl-none p-3 shadow-sm">
+                          <p className="text-xs font-medium leading-relaxed">Perfect! Check out the All User Live directory. Launch your own broadcast or interact with others securely anytime! 🌟</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Input message form in bottom */}
+                    <div className="mt-3.5 pt-3 border-t border-[#F0EEF7] flex items-center gap-2">
+                      <input 
+                        type="text" 
+                        placeholder="Type a custom message..." 
+                        id="messages-direct-send-input"
+                        className="flex-1 bg-stone-50 border border-slate-200 focus:border-[#7B3FFE] rounded-xl py-2 px-3 text-xs font-semibold focus:outline-none placeholder-stone-400 text-stone-850"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            (e.target as HTMLInputElement).value = "";
+                          }
+                        }}
+                      />
+                      <button 
+                        onClick={() => {
+                          const input = document.getElementById("messages-direct-send-input") as HTMLInputElement;
+                          if (input) input.value = "";
+                        }}
+                        className="p-2 bg-[#7B3FFE] hover:bg-[#6833E0] text-white rounded-xl shadow transition-transform active:scale-95 duration-100 cursor-pointer"
+                      >
+                        <Send className="w-3.5 h-3.5 fill-white text-white" />
+                      </button>
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+          )}
+
         </main>
       )}
 
-      {/* DETAILED BOTTOM DOCKED NAVIGATION BUTTON BAR - Hidden in Live experiences */}
-      {selectedStreamer === null && activeTab !== "live" && (
-        <footer id="loopchat-nav-footer" className="sticky bottom-0 z-40 bg-stone-900 border-t border-stone-800/80 p-3 sm:p-4 backdrop-blur-md">
-          <div className="max-w-md mx-auto flex items-center justify-around gap-2">
+      {/* DETAILED BOTTOM DOCKED NAVIGATION BUTTON BAR - Matches Image 1 / Image 2 custom tap bar */}
+      {selectedStreamer === null && (
+        <footer id="loopchat-nav-footer" className="sticky bottom-0 z-40 bg-[#FAF9FC] border-t border-[#F0EEF7] py-2 sm:py-3.5 px-4 shadow-[0_-4px_16px_rgba(0,0,0,0.03)] select-none">
+          <div className="max-w-md mx-auto flex items-center justify-between gap-1">
             
+            {/* Tab 1: Explore/Home (Play Speech Bubble Gradient Icon) */}
             <button
               onClick={() => {
                 setSelectedStreamer(null);
                 setActiveTab("home");
               }}
-              className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer flex-1 select-none ${
-                activeTab === "home"
-                  ? "text-amber-400 bg-amber-500/5"
-                  : "text-stone-400 hover:text-stone-200 hover:bg-stone-850/40"
-              }`}
+              className="flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer relative shrink-0 active:scale-95 duration-150"
+              title="Explore/Home"
             >
-              <Home className="w-5 h-5 mb-1.5" />
-              <span className="text-[10px] font-bold tracking-wider font-sans uppercase">Explore</span>
+              <svg className="w-8 h-8 sm:w-9 sm:h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="bubbleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#8b5cf6" />
+                    <stop offset="100%" stopColor="#ec4899" />
+                  </linearGradient>
+                </defs>
+                <path 
+                  d="M18 6C10.268 6 4 11.373 4 18c0 3.018 1.304 5.77 3.422 7.828l-1.122 3.366a1 1 0 001.296 1.258l4.032-1.728C13.565 29.567 15.717 30 18 30c7.732 0 14-5.373 14-12S25.732 6 18 6z" 
+                  fill={activeTab === "home" ? "url(#bubbleGrad)" : "#B2B7D9"} 
+                  className="transition-colors duration-250"
+                />
+                <path d="M15 13.5v9l7.5-4.5-7.5-4.5z" fill="white" />
+              </svg>
             </button>
 
+            {/* Tab 2: Go Live/Watch Streams List (TV with twin antennas icon) */}
             <button
               onClick={() => {
                 setSelectedStreamer(null);
                 setActiveTab("live");
               }}
-              className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer flex-1 select-none ${
-                activeTab === "live"
-                  ? "text-amber-400 bg-amber-500/5"
-                  : "text-stone-400 hover:text-stone-200 hover:bg-stone-850/40"
-              }`}
+              className="flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer relative shrink-0 active:scale-95 duration-150"
+              title="Livestreams"
             >
-              <Video className="w-5 h-5 mb-1.5" />
-              <span className="text-[10px] font-bold tracking-wider font-sans uppercase">Go Live</span>
+              <svg className="w-8 h-8 sm:w-9 sm:h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11 6.5l4 4.5M25 6.5l-4 4.5" stroke={activeTab === "live" ? "#9333EA" : "#B2B7D9"} strokeWidth="2.5" strokeLinecap="round" />
+                <rect x="5" y="11" width="26" height="19" rx="6" fill={activeTab === "live" ? "#ECE9FA" : "#D4D9F0"} stroke={activeTab === "live" ? "#8B5CF6" : "#A6AECE"} strokeWidth="2" />
+                <path d="M13 20.5a3 3 0 010-4M23 16.5a3 3 0 010 4" stroke={activeTab === "live" ? "#8B5CF6" : "#727BB5"} strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M16 16v9l6-4.5-6-4.5z" fill={activeTab === "live" ? "#8B5CF6" : "#727BB5"} />
+              </svg>
             </button>
 
+            {/* Tab 3: Central Broadcast Button (Plus action trigger to Add Live) */}
+            <button
+              onClick={() => {
+                setIsAddCreatorLiveOpen(true);
+              }}
+              className="flex items-center justify-center p-1 cursor-pointer select-none active:scale-90 duration-200 shrink-0 transform -translate-y-1.5"
+              title="Add simulated stream to database"
+            >
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#9366ff] to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/30 relative">
+                {/* Dashed outer orbit matching first image */}
+                <div className="absolute inset-1 rounded-full border border-dashed border-white/60 animate-spin-slow"></div>
+                {/* Inner white circle */}
+                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-white flex items-center justify-center shadow-inner">
+                  <Plus className="w-4 h-4 text-[#9366ff] stroke-[3]" />
+                </div>
+              </div>
+            </button>
+
+            {/* Tab 4: Messages Overlay / Chat center */}
+            <button
+              onClick={() => {
+                setSelectedStreamer(null);
+                setActiveTab("chat");
+              }}
+              className="flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer relative shrink-0 active:scale-95 duration-150"
+              title="Chat Messages"
+            >
+              <svg className="w-8 h-8 sm:w-9 sm:h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 13.5c4.694 0 8.5 2.91 8.5 6.5s-3.806 6.5-8.5 6.5c-1.393 0-2.67-.257-3.791-.708L10.5 27.5a.4.4 0 01-.518-.504l.712-2.136C9.524 23.712 9 22.17 9 20c0-3.59 3.806-6.5 8.5-6.5z" fill={activeTab === "chat" ? "#7C3AED" : "#D4D9F0"} />
+                <path d="M14 8c4.694 0 8.5 2.91 8.5 6.5a6.007 6.007 0 01-1.353 3.738l.712 2.137a.4.4 0 01-.518.503l-3.791-.708c-1.12.45-2.398.707-3.791.707-4.694 0-8.5-2.91-8.5-6.5S9.306 8 14 8z" fill={activeTab === "chat" ? "#8B5CF6" : "#BAC3EA"} />
+                <circle cx="10" cy="14.5" r="1.2" fill="white" />
+                <circle cx="14" cy="14.5" r="1.2" fill="white" />
+                <circle cx="18" cy="14.5" r="1.2" fill="white" />
+              </svg>
+            </button>
+
+            {/* Tab 5: Profile Panel (Silhouette circle badge) */}
             <button
               onClick={() => {
                 setSelectedStreamer(null);
                 setActiveTab("profile");
               }}
-              className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer flex-1 select-none ${
-                activeTab === "profile"
-                  ? "text-amber-400 bg-amber-500/5"
-                  : "text-stone-400 hover:text-stone-200 hover:bg-stone-850/40"
-              }`}
+              className="flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer relative shrink-0 active:scale-95 duration-150"
+              title="Profile"
             >
-              <UserIcon className="w-5 h-5 mb-1.5" />
-              <span className="text-[10px] font-bold tracking-wider font-sans uppercase">Profile</span>
+              <svg className="w-8 h-8 sm:w-9 sm:h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="18" cy="18" r="14" fill={activeTab === "profile" ? "#8B5CF6" : "#BAC3EA"} />
+                <mask id="profMask" maskUnits="userSpaceOnUse" x="4" y="4" width="28" height="28">
+                  <circle cx="18" cy="18" r="14" fill="white" />
+                </mask>
+                <g mask="url(#profMask)">
+                  <circle cx="18" cy="14.5" r="4.5" fill="white" />
+                  <path d="M18 21.5c-5.5 0-10 4.2-10 9.5h20c0-5.3-4.5-9.5-10-9.5z" fill="white" />
+                </g>
+              </svg>
             </button>
 
           </div>

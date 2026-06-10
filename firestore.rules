@@ -27,18 +27,30 @@ service cloud.firestore {
         && data.id is string && data.id.size() <= 128
         && data.username is string && data.username.size() <= 100
         && data.fullName is string && data.fullName.size() <= 150
-        && data.avatarUrl is string && data.avatarUrl.size() <= 2000
+        && data.avatarUrl is string && data.avatarUrl.size() <= 3000000
         && isNumeric(data.coins)
         && isNumeric(data.level)
         && isNumeric(data.xp)
-        // Optional fields check
-        && (!('bio' in data) || data.bio is string)
-        && (!('diamonds' in data) || isNumeric(data.diamonds))
-        && (!('xpToNextLevel' in data) || isNumeric(data.xpToNextLevel))
-        && (!('followers' in data) || isNumeric(data.followers))
-        && (!('following' in data) || isNumeric(data.following))
-        && (!('createdAt' in data) || data.createdAt is string)
-        && (!('identificationCode' in data) || data.identificationCode is string);
+        // Optional fields check - resilient to null or missing values
+        && (!('bio' in data) || data.bio == null || (data.bio is string && data.bio.size() <= 2000))
+        && (!('diamonds' in data) || data.diamonds == null || isNumeric(data.diamonds))
+        && (!('xpToNextLevel' in data) || data.xpToNextLevel == null || isNumeric(data.xpToNextLevel))
+        && (!('followers' in data) || data.followers == null || isNumeric(data.followers))
+        && (!('following' in data) || data.following == null || isNumeric(data.following))
+        && (!('createdAt' in data) || data.createdAt == null || data.createdAt is string)
+        && (!('identificationCode' in data) || data.identificationCode == null || data.identificationCode is string)
+        && (!('email' in data) || data.email == null || (data.email is string && data.email.size() <= 320))
+        && (!('activeFrameId' in data) || data.activeFrameId == null || (data.activeFrameId is string && data.activeFrameId.size() <= 128))
+        && (!('unlockedFrames' in data) || data.unlockedFrames == null || data.unlockedFrames is list)
+        && (!('countryFlag' in data) || data.countryFlag == null || (data.countryFlag is string && data.countryFlag.size() <= 20))
+        && (!('gender' in data) || data.gender == null || (data.gender is string && data.gender.size() <= 20))
+        && (!('likesCount' in data) || data.likesCount == null || isNumeric(data.likesCount))
+        && (!('friendsCount' in data) || data.friendsCount == null || isNumeric(data.friendsCount))
+        && (!('referralCode' in data) || data.referralCode == null || (data.referralCode is string && data.referralCode.size() <= 128))
+        && (!('watchedCount' in data) || data.watchedCount == null || isNumeric(data.watchedCount))
+        && (!('giftsSentCount' in data) || data.giftsSentCount == null || isNumeric(data.giftsSentCount))
+        && (!('equippedCount' in data) || data.equippedCount == null || isNumeric(data.equippedCount))
+        && (!('claimedMissions' in data) || data.claimedMissions == null || data.claimedMissions is list);
     }
 
     match /users/{userId} {

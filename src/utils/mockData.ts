@@ -7,100 +7,108 @@ import { Gift, Streamer, CoinPackage } from "../types";
 
 export const VIRTUAL_GIFTS: Gift[] = [
   {
-    id: "gift-rose",
-    name: "Rose",
-    icon: "🌹",
-    cost: 50,
+    id: "gift-teapot",
+    name: "teapot set",
+    icon: "🫖",
+    cost: 3,
     category: "starter",
     animationStyle: "animate-bounce"
   },
   {
-    id: "gift-flowers",
-    name: "Flowers",
-    icon: "💐",
-    cost: 70,
+    id: "gift-lovebox",
+    name: "love box",
+    icon: "🎁",
+    cost: 29,
     category: "starter",
     animationStyle: "animate-pulse"
   },
   {
-    id: "gift-foryou",
-    name: "For you",
-    icon: "🎐",
-    cost: 100,
+    id: "gift-rosaline",
+    name: "Rosaline",
+    icon: "🌹",
+    cost: 199,
     category: "starter",
-    animationStyle: "animate-ping"
+    animationStyle: "animate-bounce"
   },
   {
-    id: "gift-heart",
-    name: "Heart",
-    icon: "❤️",
-    cost: 500,
+    id: "gift-99roses",
+    name: "99 roses",
+    icon: "💐",
+    cost: 99,
     category: "starter",
-    animationStyle: "animate-ping"
+    animationStyle: "animate-pulse"
   },
   {
-    id: "gift-mic",
-    name: "Singing Mic",
-    icon: "🎤",
-    cost: 999,
+    id: "gift-jewel",
+    name: "Jewel",
+    icon: "💎",
+    cost: 199,
     category: "premium",
     animationStyle: "scale-125 duration-500"
   },
   {
-    id: "gift-mony",
-    name: "Mony Loop",
-    icon: "🔫",
-    cost: 1000,
-    category: "premium",
-    animationStyle: "translate-y-[-10px]"
+    id: "gift-loveballoon",
+    name: "love balloon",
+    icon: "🎈",
+    cost: 299,
+    category: "starter",
+    animationStyle: "animate-ping"
   },
   {
-    id: "gift-deer",
-    name: "Baby deer",
-    icon: "🦌",
-    cost: 1000,
+    id: "gift-snackbucket",
+    name: "Snack bucket",
+    icon: "🍪",
+    cost: 499,
     category: "premium",
     animationStyle: "scale-110"
   },
   {
-    id: "gift-rocket-new",
-    name: "Rocket",
-    icon: "🚀",
-    cost: 2000,
+    id: "gift-heartshape",
+    name: "heart shape",
+    icon: "🫶",
+    cost: 599,
+    category: "starter",
+    animationStyle: "animate-ping"
+  },
+  {
+    id: "gift-amourballoon",
+    name: "Amour Balloon",
+    icon: "💌",
+    cost: 699,
+    category: "premium",
+    animationStyle: "scale-125 duration-500"
+  },
+  {
+    id: "gift-starjar",
+    name: "Star Jar",
+    icon: "🔮",
+    cost: 899,
+    category: "premium",
+    animationStyle: "scale-125 duration-500"
+  },
+  {
+    id: "gift-tulips",
+    name: "tulips",
+    icon: "🌷",
+    cost: 999,
+    category: "legendary",
+    animationStyle: "translate-y-[-50px] duration-1000"
+  },
+  {
+    id: "gift-pearls",
+    name: "pearls",
+    icon: "🐚",
+    cost: 1222,
     category: "legendary",
     animationStyle: "translate-y-[-100px] duration-1000"
   },
   {
-    id: "gift-ball",
-    name: "Ball",
-    icon: "⚽",
-    cost: 2000,
-    category: "legendary",
-    animationStyle: "animate-spin"
-  },
-  {
-    id: "gift-gold-flower",
-    name: "Golden flower",
-    icon: "🌻",
-    cost: 2000,
-    category: "legendary",
-    animationStyle: "scale-125 transition-transform"
-  },
-  {
-    id: "gift-cruise",
-    name: "Cruise Ship",
-    icon: "🚢",
-    cost: 3000,
+    id: "gift-undersea",
+    name: "Undersea",
+    icon: "🌊",
+    cost: 1500,
     category: "legendary",
     animationStyle: "translate-x-[20px]"
-  },
-  {
-    id: "gift-gold-watch",
-    name: "Gold Watch",
-    icon: "⌚",
-    cost: 3000,
-    category: "legendary",
-    animationStyle: "rotate-12"
   },
   {
     id: "gift-lion",

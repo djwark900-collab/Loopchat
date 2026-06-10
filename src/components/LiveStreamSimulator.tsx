@@ -26,7 +26,12 @@ import {
   Video,
   Lock,
   UserPlus,
-  Home
+  Home,
+  Maximize2,
+  Minimize2,
+  Volume2,
+  VolumeX,
+  Menu
 } from "lucide-react";
 
 const KurdistanFlagSVG = () => (
@@ -60,16 +65,46 @@ const KurdistanFlagSVG = () => (
   </svg>
 );
 
-const get3DGiftImage = (giftName: string, defaultIcon: string) => {
+const get3DGiftImage = (giftName: string, defaultIcon?: string) => {
   const name = giftName.toLowerCase();
-  if (name.includes("rose")) {
+  if (name.includes("teapot") || name.includes("tea set") || name.includes("cup of tea")) {
+    return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Teapot/3D/teapot_3d.png";
+  }
+  if (name.includes("love box") || name.includes("heart ribbon")) {
+    return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Heart%20with%20ribbon/3D/heart_with_ribbon_3d.png";
+  }
+  if (name.includes("rosaline") || name.includes("rose")) {
     return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Rose/3D/rose_3d.png";
   }
-  if (name.includes("flower") || name.includes("bouquet") || name.includes("bunch")) {
+  if (name.includes("99 roses") || name.includes("flowers") || name.includes("bouquet") || name.includes("bunch")) {
     return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Bouquet/3D/bouquet_3d.png";
   }
-  if (name.includes("heart")) {
-    return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Red%20heart/3D/red_heart_3d.png";
+  if (name.includes("jewel") || name.includes("crystal") || name.includes("gem")) {
+    return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Gem%20stone/3D/gem_stone_3d.png";
+  }
+  if (name.includes("love balloon") || name.includes("balloon")) {
+    return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Balloon/3D/balloon_3d.png";
+  }
+  if (name.includes("snack bucket") || name.includes("snack") || name.includes("cookie")) {
+    return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Cookie/3D/cookie_3d.png";
+  }
+  if (name.includes("heart shape") || name.includes("heart hands") || name.includes("heart")) {
+    return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Heart%20hands/3D/heart_hands_3d.png";
+  }
+  if (name.includes("amour balloon") || name.includes("love letter")) {
+    return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Love%20letter/3D/love_letter_3d.png";
+  }
+  if (name.includes("star jar") || name.includes("star") || name.includes("crystal ball")) {
+    return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Crystal%20ball/3D/crystal_ball_3d.png";
+  }
+  if (name.includes("tulips") || name.includes("tulip")) {
+    return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Tulip/3D/tulip_3d.png";
+  }
+  if (name.includes("pearls") || name.includes("pearl") || name.includes("shell")) {
+    return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Spiral%20shell/3D/spiral_shell_3d.png";
+  }
+  if (name.includes("undersea") || name.includes("ocean")) {
+    return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Water%20wave/3D/water_wave_3d.png";
   }
   if (name.includes("for you") || name.includes("chime")) {
     return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Wind%20chime/3D/wind_chime_3d.png";
@@ -83,10 +118,36 @@ const get3DGiftImage = (giftName: string, defaultIcon: string) => {
   if (name.includes("deer")) {
     return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Deer/3D/deer_3d.png";
   }
+  if (name.includes("lion")) {
+    return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Lion/3D/lion_3d.png";
+  }
   if (defaultIcon && (defaultIcon.startsWith("http") || defaultIcon.startsWith("data:") || defaultIcon.startsWith("blob:"))) {
     return defaultIcon;
   }
-  return null;
+  return "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Wrapped%2520gift/3D/wrapped_gift_3d.png";
+};
+
+const getDefaultGiftVideoUrl = (giftName: string): string => {
+  const name = giftName.toLowerCase();
+  
+  if (name.includes("love box") || name.includes("heart shape") || name.includes("amour balloon")) {
+    return "https://assets.mixkit.co/videos/preview/mixkit-floating-pink-hearts-background-42171-large.mp4";
+  }
+  if (name.includes("rosaline") || name.includes("roses") || name.includes("tulips") || name.includes("rose")) {
+    return "https://assets.mixkit.co/videos/preview/mixkit-red-rose-petals-falling-on-a-black-background-41484-large.mp4";
+  }
+  if (name.includes("undersea") || name.includes("pearls") || name.includes("ocean") || name.includes("sea")) {
+    return "https://assets.mixkit.co/videos/preview/mixkit-water-under-the-ocean-41619-large.mp4";
+  }
+  if (name.includes("star jar") || name.includes("balloon")) {
+    return "https://assets.mixkit.co/videos/preview/mixkit-nebula-in-space-41223-large.mp4";
+  }
+  if (name.includes("lion") || name.includes("king lion") || name.includes("snack bucket") || name.includes("fire")) {
+    return "https://assets.mixkit.co/videos/preview/mixkit-glowing-particles-of-fire-abstract-background-41133-large.mp4";
+  }
+  
+  // Default: shimmering luxury gold particle loop
+  return "https://assets.mixkit.co/videos/preview/mixkit-shimmering-gold-particles-on-a-black-background-41808-large.mp4";
 };
 
 const saveVideoToIndexedDB = async (id: string, file: File): Promise<void> => {
@@ -195,6 +256,7 @@ export default function LiveStreamSimulator({
   onGiftSent,
 }: LiveStreamSimulatorProps) {
   const isBroadcasting = activeStreamer === null;
+  const [isMuted, setIsMuted] = useState(false);
 
   // Stream States
   const [setupTitle, setSetupTitle] = useState("PUBG Mobile - Road to Conqueror! 🔫🍗");
@@ -213,6 +275,269 @@ export default function LiveStreamSimulator({
   const [isLevelModalOpen, setIsLevelModalOpen] = useState(false); // under "tap level"
   const [customLevelInput, setCustomLevelInput] = useState("");
   const commentsEndRef = useRef<HTMLDivElement>(null);
+
+  // User Tap Menu Drawer for "Tools & Interactive Features" (matching mockup screenshot 1)
+  const [isTapMenuOpen, setIsTapMenuOpen] = useState(false);
+  const [luckyBagActive, setLuckyBagActive] = useState(false);
+  const [luckyBagCountdown, setLuckyBagCountdown] = useState(5);
+  const [luckyBagClaimed, setLuckyBagClaimed] = useState(false);
+  
+  const [diceResult, setDiceResult] = useState<number | null>(null);
+  const [isRollingDice, setIsRollingDice] = useState(false);
+  
+  const [luckyNumber, setLuckyNumber] = useState<number | null>(7);
+  const [showLuckyNumberBadge, setShowLuckyNumberBadge] = useState(false);
+  
+  const [isMusicSynthPlaying, setIsMusicSynthPlaying] = useState(false);
+  const [synthBeatType, setSynthBeatType] = useState("Lofi Beat ☕");
+  
+  const [activeVfxFilter, setActiveVfxFilter] = useState<string | null>(null);
+  
+  const [currentDrawLot, setCurrentDrawLot] = useState<string | null>(null);
+  
+  const [activePoll, setActivePoll] = useState<{ question: string; options: { text: string; votes: number }[]; totalVotes: number } | null>(null);
+  const [isLotteryBoxPresent, setIsLotteryBoxPresent] = useState(false);
+  const [lotteryBoxState, setLotteryBoxState] = useState<"closed" | "opening" | "opened">("closed");
+  const [isFeedbackCardOpen, setIsFeedbackCardOpen] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  
+  const [activeAuction, setActiveAuction] = useState<{ itemName: string; currentBid: number; highBidder: string; timeSecs: number; isActive: boolean } | null>(null);
+  const [pkBattle, setPkBattle] = useState<{ player1Score: number; player2Score: number; timeLeft: number; isActive: boolean; opponent: { name: string; avatar: string; level: number } } | null>(null);
+  const [liveScore, setLiveScore] = useState<{ teamRed: number; teamBlue: number; active: boolean } | null>(null);
+  const [isSpinningWheel, setIsSpinningWheel] = useState(false);
+  const [wheelAngle, setWheelAngle] = useState(0);
+  const [wheelResult, setWheelResult] = useState<string | null>(null);
+
+  // Audio Synth Player Loop References
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const synthIntervalRef = useRef<any>(null);
+
+  const startSynthLoop = (beatType: string) => {
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") {
+        ctx.resume();
+      }
+
+      if (synthIntervalRef.current) {
+        clearInterval(synthIntervalRef.current);
+      }
+
+      let step = 0;
+      const freqsMap: Record<string, number[]> = {
+        "Lofi Beat ☕": [196.00, 220.00, 261.63, 293.66, 329.63, 392.00], // G3, A3, C4, D4, E4, G4
+        "Festival EDM 🎸": [220.00, 261.63, 293.66, 349.23, 392.00, 440.00], // A3, C4, D4, F4, G4, A4
+        "Ambient Chill 🌌": [130.81, 164.81, 196.00, 246.94, 293.66, 392.00]  // C3, E3, G3, B3, D4, G4
+      };
+
+      const notes = freqsMap[beatType] || freqsMap["Lofi Beat ☕"];
+
+      const playNote = (freq: number, duration: number, type: "sine" | "triangle" | "sawtooth" = "sine") => {
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        osc.type = type;
+        osc.frequency.value = freq;
+
+        gainNode.gain.setValueAtTime(0, ctx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.05); // low volume proxy
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      };
+
+      synthIntervalRef.current = setInterval(() => {
+        if (beatType === "Festival EDM 🎸") {
+          if (step % 4 === 0) {
+            playNote(notes[0] / 2, 0.4, "triangle"); // bass
+          }
+          const randomNoteIdx = Math.floor(Math.random() * notes.length);
+          playNote(notes[randomNoteIdx], 0.25, "sine");
+        } else if (beatType === "Ambient Chill 🌌") {
+          if (step % 8 === 0) {
+            const chord = [notes[0], notes[2], notes[4]];
+            chord.forEach(n => playNote(n, 1.8, "sine"));
+          }
+        } else {
+          if (step % 4 === 0) {
+            playNote(notes[1] / 2, 0.6, "triangle"); // low A
+          }
+          if (step % 2 === 1) {
+            const randomNoteIdx = Math.floor(Math.random() * 3) + 2; // C4, D4, E4
+            playNote(notes[randomNoteIdx], 0.35, "sine");
+          }
+        }
+        step++;
+      }, beatType === "Festival EDM 🎸" ? 220 : beatType === "Ambient Chill 🌌" ? 800 : 450);
+
+    } catch (err) {
+      console.warn("Synthesizer failed to spin up due to browser audio locks:", err);
+    }
+  };
+
+  const stopSynthLoop = () => {
+    if (synthIntervalRef.current) {
+      clearInterval(synthIntervalRef.current);
+      synthIntervalRef.current = null;
+    }
+    if (audioCtxRef.current) {
+      try {
+        audioCtxRef.current.close();
+      } catch (e) {}
+      audioCtxRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    if (isMusicSynthPlaying) {
+      startSynthLoop(synthBeatType);
+    } else {
+      stopSynthLoop();
+    }
+    return () => stopSynthLoop();
+  }, [isMusicSynthPlaying, synthBeatType]);
+
+  // Real-time Simulation Engine for active stream interactive features
+  useEffect(() => {
+    let timer: any;
+    if (luckyBagActive && luckyBagCountdown > 0 && !luckyBagClaimed) {
+      timer = setInterval(() => {
+        setLuckyBagCountdown(prev => {
+          if (prev <= 1) {
+            setLuckyBagActive(false);
+            setChatMessages(c => [...c, {
+              id: `system-lucky-bag-end-${Date.now()}`,
+              username: "📢 SYSTEM",
+              text: "Lucky Bag Coin Drop has expired! Claim yours faster next time 🧧",
+              isSystem: true,
+              avatarUrl: "",
+              timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            }]);
+            return 5;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [luckyBagActive, luckyBagCountdown, luckyBagClaimed]);
+
+  // PK Battle progress timer
+  useEffect(() => {
+    let timer: any;
+    if (pkBattle && pkBattle.isActive) {
+      timer = setInterval(() => {
+        setPkBattle(prev => {
+          if (!prev) return null;
+          if (prev.timeLeft <= 1) {
+            const won = prev.player1Score >= prev.player2Score;
+            const resultMsg = won 
+              ? `🏆 CONGRATULATIONS! You won the PK battle against @${prev.opponent.name}! 🌟 Score: ${prev.player1Score} vs ${prev.player2Score}`
+              : `💔 PK BATTLE COMPLETED. @${prev.opponent.name} won! 🛡️ Score: ${prev.player2Score} vs ${prev.player1Score}`;
+            
+            setChatMessages(c => [...c, {
+              id: `system-pk-end-${Date.now()}`,
+              username: "🏆 PK REFEREE",
+              text: resultMsg,
+              isSystem: true,
+              avatarUrl: "",
+              timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            }]);
+
+            return { ...prev, timeLeft: 0, isActive: false };
+          }
+
+          const p2Gain = Math.floor(Math.random() * 150) + 20;
+          const p1Gain = Math.floor(Math.random() * 120) + 15;
+          return {
+            ...prev,
+            player1Score: prev.player1Score + p1Gain,
+            player2Score: prev.player2Score + p2Gain,
+            timeLeft: prev.timeLeft - 1
+          };
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [pkBattle?.isActive, pkBattle?.timeLeft]);
+
+  // Auction simulation timer
+  useEffect(() => {
+    let timer: any;
+    if (activeAuction && activeAuction.isActive) {
+      timer = setInterval(() => {
+        setActiveAuction(prev => {
+          if (!prev) return null;
+          if (prev.timeSecs <= 1) {
+            const finalBidderMsg = `🔨 GAVEL DOWN! Item [${prev.itemName}] sold to @${prev.highBidder} for ${prev.currentBid.toLocaleString()} Coins! 🥳`;
+            setChatMessages(c => [...c, {
+              id: `system-auction-end-${Date.now()}`,
+              username: "📢 AUCTIONEER",
+              text: finalBidderMsg,
+              isSystem: true,
+              avatarUrl: "",
+              timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            }]);
+            return { ...prev, timeSecs: 0, isActive: false };
+          }
+
+          if (Math.random() > 0.65) {
+            const randomUser = CHATTER_USERNAMES[Math.floor(Math.random() * CHATTER_USERNAMES.length)];
+            const newBid = prev.currentBid + (Math.floor(Math.random() * 3) + 1) * 50;
+            
+            setChatMessages(c => [...c, {
+              id: `chatbot-bid-${Date.now()}`,
+              username: `@${randomUser}`,
+              text: `🙋‍♂️ Just placed a bid of ${newBid.toLocaleString()} Coins on the ${prev.itemName}!`,
+              avatarUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${randomUser}`,
+              timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            }]);
+
+            return {
+              ...prev,
+              currentBid: newBid,
+              highBidder: randomUser,
+              timeSecs: prev.timeSecs - 1
+            };
+          }
+
+          return {
+            ...prev,
+            timeSecs: prev.timeSecs - 1
+          };
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [activeAuction?.isActive, activeAuction?.timeSecs]);
+
+  // Poll simulator voters increment
+  useEffect(() => {
+    let timer: any;
+    if (activePoll) {
+      timer = setInterval(() => {
+        setActivePoll(prev => {
+          if (!prev) return null;
+          const optIndex = Math.random() > 0.55 ? 0 : 1;
+          const updatedOptions = prev.options.map((opt, i) => i === optIndex ? { ...opt, votes: opt.votes + 1 } : opt);
+          return {
+            ...prev,
+            options: updatedOptions,
+            totalVotes: prev.totalVotes + 1
+          };
+        });
+      }, 2500);
+    }
+    return () => clearInterval(timer);
+  }, [activePoll]);
 
   // Auto scroll to bottom of comments
   useEffect(() => {
@@ -300,6 +625,30 @@ export default function LiveStreamSimulator({
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(false); // Default false (deleting camera)
   const [sharesCount, setSharesCount] = useState(0);
+
+  // CUSTOM USER UPDATES FOR SCREEN TAKEOVERS & BOTS DISABLE
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [noBotComments, setNoBotComments] = useState(true);
+  const [noBotGuests, setNoBotGuests] = useState(true);
+  const [directGiftRedeemCode, setDirectGiftRedeemCode] = useState("");
+  const [giftPaymentMethod, setGiftPaymentMethod] = useState<"coin" | "diamond">("coin");
+  const [redeemAlert, setRedeemAlert] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // High fidelity "Video Gift Front Overlay" Trigger
+  const [activeSuperVideoGift, setActiveSuperVideoGift] = useState<{
+    id: string;
+    sender: string;
+    name: string;
+    icon: string;
+    multiplier: number;
+    timestamp: number;
+  } | null>(null);
+
+  // Manual Invite/Add Real Guest (No Bot) Dialogs
+  const [showAddRealGuestModal, setShowAddRealGuestModal] = useState(false);
+  const [selectedSlotForRealGuest, setSelectedSlotForRealGuest] = useState<number | null>(null);
+  const [newGuestName, setNewGuestName] = useState("");
+  const [newGuestAvatar, setNewGuestAvatar] = useState("");
 
   // Floating Gifts Visual Alert Bubble (multiplier responsive)
   const [activeGiftAlert, setActiveGiftAlert] = useState<{
@@ -571,10 +920,9 @@ export default function LiveStreamSimulator({
     };
   }, [isLiveActive, activeStreamer, isBroadcasting]);
 
-  // Simulated Comments Feed (DISABLED - Fake delete)
+  // Simulated Comments Feed (Conditioned on noBotComments being false)
   useEffect(() => {
-    /* Simulation disabled by user request
-    if (isLiveActive && !isBroadcasting && activeStreamer) {
+    if (isLiveActive && !noBotComments) {
       chatIntervalRef.current = window.setInterval(() => {
         const randomUser = CHATTER_USERNAMES[Math.floor(Math.random() * CHATTER_USERNAMES.length)];
         const randomComment = SIMULATED_CHAT_MESSAGES[Math.floor(Math.random() * SIMULATED_CHAT_MESSAGES.length)];
@@ -588,32 +936,29 @@ export default function LiveStreamSimulator({
         };
 
         setChatMessages((prev) => [...prev.slice(-25), newMessage]);
-      }, 2500);
+      }, 3000);
     }
-    */
 
     return () => {
       if (chatIntervalRef.current) clearInterval(chatIntervalRef.current);
     };
-  }, [isLiveActive, activeStreamer, isBroadcasting]);
+  }, [isLiveActive, noBotComments]);
 
-  // Viewer fluctuation (DISABLED - Fake delete)
+  // Viewer fluctuation (Conditioned on noBotComments being false)
   useEffect(() => {
-    /* Simulation disabled by user request
-    if (isLiveActive && !isBroadcasting && activeStreamer) {
+    if (isLiveActive && !noBotComments) {
       viewerIntervalRef.current = window.setInterval(() => {
         setViewersCount((prev) => {
           const delta = Math.floor(Math.random() * 5) - 2;
-          return Math.max(8, prev + delta);
+          return Math.max(12, prev + delta);
         });
       }, 5000);
     }
-    */
 
     return () => {
       if (viewerIntervalRef.current) clearInterval(viewerIntervalRef.current);
     };
-  }, [isLiveActive, activeStreamer, isBroadcasting]);
+  }, [isLiveActive, noBotComments]);
 
   // Particle Engine Loop
   useEffect(() => {
@@ -904,17 +1249,42 @@ export default function LiveStreamSimulator({
     // For extreme combo-tapping, each tap represents a single gift (or multiple if multiplier selected). Let's use 1 * cost for single successive combo increments to be coin-friendly!
     const effectiveCostPerInstance = overrideMultiplier !== undefined ? gift.cost : (gift.cost * multiplier);
     const totalCost = effectiveCostPerInstance * targetCount;
+    const finalCost = giftPaymentMethod === "coin" ? totalCost : Math.ceil(totalCost / 10);
 
-    if (currentUser.coins < totalCost) {
-      setNotEnoughCoinsMsg(true);
-      setTimeout(() => setNotEnoughCoinsMsg(false), 3500);
-      return;
+    if (giftPaymentMethod === "coin") {
+      if (currentUser.coins < finalCost) {
+        setNotEnoughCoinsMsg(true);
+        setTimeout(() => setNotEnoughCoinsMsg(false), 3500);
+        return;
+      }
+      // Deduct coins dynamically (tap sent gift -coin)
+      const remaining = currentUser.coins - finalCost;
+      onCoinsUpdate(remaining);
+    } else {
+      const currentDiamonds = currentUser.diamonds || 0;
+      if (currentDiamonds < finalCost) {
+        setNotEnoughCoinsMsg(true);
+        setTimeout(() => setNotEnoughCoinsMsg(false), 3500);
+        return;
+      }
+      onDiamondsUpdate?.(currentDiamonds - finalCost);
     }
 
-    // Deduct coins dynamically (tap sent gift -coin)
-    const remaining = currentUser.coins - totalCost;
-    onCoinsUpdate(remaining);
     onGiftSent?.();
+
+    // Trigger premium FRONT-SCREEN video gift visual effect
+    const superGiftTimestamp = Date.now();
+    setActiveSuperVideoGift({
+      id: `svg-${Date.now()}-${Math.random()}`,
+      sender: `${currentUser.username} (You)`,
+      name: gift.name,
+      icon: gift.icon,
+      multiplier,
+      timestamp: superGiftTimestamp
+    });
+    setTimeout(() => {
+      setActiveSuperVideoGift((prev) => prev?.timestamp === superGiftTimestamp ? null : prev);
+    }, 5000);
 
     // Burst particles animation for high fidelity
     spawnGiftBurst(gift.icon, Math.min(65, 20 * multiplier));
@@ -942,7 +1312,16 @@ export default function LiveStreamSimulator({
         setTimeout(() => {
           setOverrideVideoUrl(null);
         }, 8000);
-      } else if ((gift as any).videoFeedTheme) {
+      } else {
+        // Fallback to gorgeous default high-fidelity video loop for sent gift!
+        const defaultVideo = getDefaultGiftVideoUrl(gift.name);
+        setOverrideVideoUrl(defaultVideo);
+        setTimeout(() => {
+          setOverrideVideoUrl(null);
+        }, 8000);
+      }
+
+      if ((gift as any).videoFeedTheme) {
         setOverrideVideoFeedTheme((gift as any).videoFeedTheme);
         setTimeout(() => {
           setOverrideVideoFeedTheme(null);
@@ -1069,43 +1448,84 @@ export default function LiveStreamSimulator({
       });
       setIsGiftDrawerOpen(true);
     } else {
-      // Tapping an empty guest slot immediately simulates that slot getting occupied!
-      // Pick a random chatter name who isn't already in coHostSlots
-      const randomChatters = CHATTER_USERNAMES.filter(
-        username => !coHostSlots.some(s => s.username === `@${username}`)
-      );
-      const chosenChatter = randomChatters.length > 0 
-        ? randomChatters[Math.floor(Math.random() * randomChatters.length)] 
-        : CHATTER_USERNAMES[Math.floor(Math.random() * CHATTER_USERNAMES.length)];
-      
-      const guestUsername = `@${chosenChatter}`;
-      const guestAvatar = `https://picsum.photos/seed/${chosenChatter}/100/100`;
+      if (isBroadcasting) {
+        // Tapping empty slot as host triggers manual Real Guest setup modal (Add User No Bot)
+        setSelectedSlotForRealGuest(slotId);
+        setNewGuestName("");
+        setNewGuestAvatar(`https://api.dicebear.com/7.x/adventurer/svg?seed=Guest-${slotId}`);
+        setShowAddRealGuestModal(true);
+      } else {
+        // Otherwise connect the actual user (You) to the tapped slot so no bot joins automatically
+        if (isJoinedOnMic) {
+          alert("You are already on a microphone slot!");
+          return;
+        }
 
-      setCoHostSlots((prevSlots) =>
-        prevSlots.map((s) =>
-          s.id === slotId
-            ? {
-                ...s,
-                username: guestUsername,
-                avatarUrl: guestAvatar,
-                isOccupied: true,
-                isRequesting: false,
-                score: 0,
-                statusText: "Guest"
-              }
-            : s
-        )
-      );
+        setCoHostSlots((prevSlots) =>
+          prevSlots.map((s) =>
+            s.id === slotId
+              ? {
+                  ...s,
+                  username: `${currentUser.username} (You)`,
+                  avatarUrl: currentUser.avatarUrl,
+                  isOccupied: true,
+                  isRequesting: false,
+                  score: 0,
+                  statusText: "On Mic 🎤",
+                  statusTextExtra: "REAL"
+                }
+              : s
+          )
+        );
 
-      // Trigger a chat message that they joined the mic cohost room
-      const joinMsg: ChatMessage = {
-        id: `chat-join-mic-${Date.now()}-${Math.random()}`,
-        username: guestUsername,
-        text: `joined Guest Slot ${slotId - 1}! 🎤⚡`,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      };
-      setChatMessages((prev) => [...prev, joinMsg]);
+        setIsJoinedOnMic(true);
+        setIsMicVoiceOn(true);
+
+        const joinMsg: ChatMessage = {
+          id: `chat-join-mic-user-${Date.now()}-${Math.random()}`,
+          username: `${currentUser.username} (You)`,
+          text: `joined Guest Slot #${slotId - 1}! 🎤⚡`,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setChatMessages((prev) => [...prev, joinMsg]);
+      }
     }
+  };
+
+  const handleAddRealGuestSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSlotForRealGuest) return;
+
+    const guestNameInput = newGuestName.trim() || `Guest_${selectedSlotForRealGuest - 1}`;
+    const formattedUsername = guestNameInput.startsWith("@") ? guestNameInput : `@${guestNameInput}`;
+
+    setCoHostSlots((prevSlots) =>
+      prevSlots.map((s) =>
+        s.id === selectedSlotForRealGuest
+          ? {
+              ...s,
+              username: formattedUsername,
+              avatarUrl: newGuestAvatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${guestNameInput}`,
+              isOccupied: true,
+              isRequesting: false,
+              score: 0,
+              statusText: "REAL"
+            }
+          : s
+      )
+    );
+
+    const joinMsg: ChatMessage = {
+      id: `chat-real-join-${Date.now()}-${Math.random()}`,
+      username: formattedUsername,
+      text: "joined on microphone live! 🎤 (REAL USER)",
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+    setChatMessages((prev) => [...prev, joinMsg]);
+
+    setShowAddRealGuestModal(false);
+    setSelectedSlotForRealGuest(null);
+    setNewGuestName("");
   };
 
   const startBroadcasting = async (e: React.FormEvent) => {
@@ -1268,7 +1688,14 @@ export default function LiveStreamSimulator({
   }
 
   return (
-    <div id="live-cohost-arena-parent" className="w-full min-h-screen md:min-h-0 md:max-w-md mx-auto relative font-sans text-stone-100 md:py-3 py-0 md:px-2 px-0">
+    <div 
+      id="live-cohost-arena-parent" 
+      className={
+        isFullscreen 
+          ? "fixed inset-0 z-[65] w-screen h-screen bg-black font-sans text-stone-100 flex flex-col justify-between overflow-hidden p-0 m-0 border-0 rounded-none shadow-none"
+          : "w-full min-h-screen md:min-h-0 md:max-w-md mx-auto relative font-sans text-stone-100 md:py-3 py-0 md:px-2 px-0"
+      }
+    >
       
       {/* 1. SETUP OVERLAY DIALOG IF UNINITIALIZED BROADCASTER */}
       {isBroadcasting && !isLiveActive ? (
@@ -1632,30 +2059,27 @@ export default function LiveStreamSimulator({
             </div>
           )}
 
-          {/* Video Takeover Overlay (Front & Sound) */}
-          {overrideVideoUrl && (
-            <div className="absolute inset-0 z-[60] pointer-events-none select-none overflow-hidden h-full w-full bg-black">
-              <video
-                autoPlay
-                loop
-                playsInline
-                src={overrideVideoUrl}
-                className="w-full h-full object-cover animate-fadeIn"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-              <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-rose-600/90 backdrop-blur rounded-xl shadow-[0_0_20px_rgba(225,29,72,0.4)] animate-bounce">
-                <Video className="w-3.5 h-3.5 text-white" />
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-white font-black uppercase tracking-tighter leading-none">PREMIUM VIDEO GIFT</span>
-                  <span className="text-[7px] text-rose-100 font-bold uppercase tracking-widest leading-none mt-0.5">Live Takeover Active</span>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Simulated Backdrop live video layer */}
           <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden h-full w-full">
-            {(() => {
+            {overrideVideoUrl ? (
+              <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center">
+                <video
+                  src={overrideVideoUrl}
+                  autoPlay
+                  loop
+                  muted={isMuted}
+                  playsInline
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover"
+                />
+                {/* Immersive real-time gift video takeover tag */}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/75 border border-[#FE2C55]/60 text-[10px] font-black tracking-widest text-[#FE2C55] px-3.5 py-1.5 rounded-full uppercase z-30 animate-pulse shadow-lg flex items-center gap-2 backdrop-blur-md">
+                  <span className="w-2 h-2 rounded-full bg-[#FE2C55] animate-ping" />
+                  <span>🌟 LIVE GIFT VIDEO SCREEN INCOMING</span>
+                </div>
+              </div>
+            ) : (() => {
               const theme = overrideVideoFeedTheme || activeStreamer?.videoFeedType || setupVideoFeed || "Cosmic Nebula Loop 🌌";
               if (theme.includes("Battlefield High-Action Warzone")) {
                 return (
@@ -1762,6 +2186,50 @@ export default function LiveStreamSimulator({
                 );
               }
             })()}
+
+            {/* Active VFX Overlay Video Filter */}
+            {activeVfxFilter && (
+              <div 
+                className={`absolute inset-0 pointer-events-none z-1 overflow-hidden h-full w-full ${
+                  activeVfxFilter === "retro-crt" 
+                    ? "bg-amber-500/[0.03] before:absolute before:inset-0 before:bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.18)_50%)] before:bg-[length:100%_4px] animate-pulse" 
+                    : activeVfxFilter === "neon-rainbow"
+                      ? "bg-gradient-to-tr from-pink-500/10 via-purple-500/10 to-cyan-500/10 mix-blend-color-dodge animate-pulse"
+                      : activeVfxFilter === "vhs-snow"
+                        ? "bg-zinc-800/[0.04] skew-x-1"
+                        : activeVfxFilter === "sparkling-stars"
+                          ? "bg-indigo-950/10"
+                          : ""
+                }`}
+              >
+                {activeVfxFilter === "vhs-snow" && (
+                  <div className="absolute inset-0 bg-transparent opacity-[0.06] pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] before:from-transparent before:via-stone-900 before:to-stone-900 animate-pulse bg-cover" 
+                       style={{ backgroundImage: "url('https://media.giphy.com/media/oEI9uBXS9geNq/giphy.gif')" }} />
+                )}
+                {activeVfxFilter === "sparkling-stars" && (
+                  <div className="absolute inset-0 overflow-hidden">
+                    {[...Array(12)].map((_, idx) => (
+                      <div 
+                        key={idx} 
+                        className="absolute text-[10px] text-yellow-250 animate-ping"
+                        style={{
+                          top: `${Math.random() * 100}%`,
+                          left: `${Math.random() * 100}%`,
+                          animationDelay: `${idx * 200}ms`,
+                          animationDuration: `${1 + Math.random() * 2}s`
+                        }}
+                      >
+                        ✨
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Highlight scanning line */}
+                {activeVfxFilter === "retro-crt" && (
+                  <div className="absolute w-full h-1 bg-white/10 top-0 left-0 animate-[fallAndSpin_4s_linear_infinite]" />
+                )}
+              </div>
+            )}
           </div>
 
           {/* Canvas Floating Gifts Particles Layer */}
@@ -1783,14 +2251,11 @@ export default function LiveStreamSimulator({
                   {isBroadcasting ? currentUser.username : activeStreamer?.username || "ndnd"}
                 </h5>
                 <div className="flex items-center gap-1 mt-1">
-                  <button
-                    type="button"
-                    onClick={() => setIsLevelModalOpen(true)}
-                    className="px-2 py-0.5 bg-gradient-to-r from-[#8B5CF6] via-[#EC4899] to-[#F59E0B] border border-white/20 text-white text-[7px] font-black uppercase rounded-lg font-mono pointer-events-auto hover:scale-105 active:scale-95 transition-all shadow-md flex items-center gap-0.5 select-none"
-                    title="Tap Level config targets!"
+                  <div
+                    className="px-2 py-0.5 bg-gradient-to-r from-[#8B5CF6] via-[#EC4899] to-[#F59E0B] border border-white/20 text-white text-[7px] font-black uppercase rounded-lg font-mono flex items-center gap-0.5 select-none"
                   >
                     ⭐ LV {isBroadcasting ? currentLevel : activeStreamer?.level || 1}
-                  </button>
+                  </div>
                 </div>
               </div>
 
@@ -1823,6 +2288,20 @@ export default function LiveStreamSimulator({
                 title="Beauty Effects Menu"
               >
                 <Wand2 className="w-4 h-4" />
+              </button>
+
+              {/* Fullscreen Toggle Switch (live fall screen setup) */}
+              <button 
+                type="button"
+                onClick={() => setIsFullscreen((prev) => !prev)}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 border cursor-pointer ${
+                  isFullscreen 
+                    ? "bg-rose-600 border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.4)]" 
+                    : "bg-stone-900 border-stone-800 hover:border-purple-500"
+                }`}
+                title={isFullscreen ? "Exit Immersive Full Screen" : "Immersive Fall Screen / Full Screen"}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
 
               {/* Exit streamer button */}
@@ -2022,6 +2501,11 @@ export default function LiveStreamSimulator({
                             className="w-full h-full object-cover rounded-full"
                           />
                         </div>
+                        {slot.statusText === "REAL" && (
+                          <span className="absolute -top-1 -left-1 px-1 py-0.5 bg-emerald-500 text-stone-950 font-sans text-[5.5px] rounded-md font-black tracking-wider uppercase shadow scale-90 z-20">
+                            🌐 REAL
+                          </span>
+                        )}
                       </div>
                       
                       {/* Live mic score badge (live mic add score gift) */}
@@ -2035,6 +2519,14 @@ export default function LiveStreamSimulator({
                       <span className="text-[8px] text-stone-200 font-extrabold truncate w-[75px] text-center tracking-tight leading-none mt-0.5">
                         {slot.username}
                       </span>
+
+                      {/* Active bouncing audio sound waves (live audio microphone streaming feedback) */}
+                      <div className="flex gap-[1.5px] items-end justify-center pointer-events-none mt-0.5 min-h-[6px] shrink-0 z-10 opacity-85">
+                        <span className="w-[1.5px] h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: "0ms", animationDuration: "0.6s" }} />
+                        <span className="w-[1.5px] h-2.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: "150ms", animationDuration: "0.8s" }} />
+                        <span className="w-[1.5px] h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: "300ms", animationDuration: "0.5s" }} />
+                        <span className="w-[1.5px] h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: "450ms", animationDuration: "0.7s" }} />
+                      </div>
 
                       {isBroadcasting ? (
                         <button
@@ -2178,6 +2670,45 @@ export default function LiveStreamSimulator({
             <div ref={commentsEndRef} />
           </div>
 
+          {/* Real-time Bot Filter and Settings Control Panel Bar */}
+          <div className="px-3 mb-2 flex items-center justify-between gap-2 select-none relative z-10 text-[9px] shrink-0">
+            <div className="flex gap-1.5 items-center">
+              <span className="text-stone-400 font-extrabold uppercase tracking-wider text-[8px]">Filters:</span>
+              <button
+                type="button"
+                onClick={() => setNoBotComments((prev) => !prev)}
+                className={`py-1 px-2.5 rounded-full border text-[8px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                  noBotComments 
+                    ? "bg-emerald-950/80 border-emerald-500/40 text-emerald-400" 
+                    : "bg-stone-900 border-stone-800 text-stone-400"
+                }`}
+                title={noBotComments ? "Authentication active: Simulated bot comments disabled." : "Simulation enabled"}
+              >
+                <span>{noBotComments ? "🌐 No Bot Chat" : "🤖 Bots Posting"}</span>
+              </button>
+              
+              {isBroadcasting && (
+                <button
+                  type="button"
+                  onClick={() => setNoBotGuests((prev) => !prev)}
+                  className={`py-1 px-2.5 rounded-full border text-[8px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                    noBotGuests 
+                      ? "bg-sky-950/80 border-sky-500/40 text-sky-400" 
+                      : "bg-stone-900 border-stone-800 text-stone-400"
+                  }`}
+                  title={noBotGuests ? "Guest mic slots will only connect manually added real user profiles" : "Auto connect active"}
+                >
+                  <span>{noBotGuests ? "🎤 No Bot Mic Slots" : "🤖 Mic Bots"}</span>
+                </button>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse mr-0.5" />
+              <span className="text-stone-300 font-mono text-[7px] uppercase font-bold tracking-wider">ROOM ENGAGED</span>
+            </div>
+          </div>
+
           {/* Quick preset live comments taps */}
           <div className="px-3 mb-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 select-none relative z-10">
             {["🔥 WoW!", "Nice Stream! 🎮", "Hype! 🎉", "Support! ❤️", "Go Streamer! 🚀", "Legendary! 👑", "Amazing! ✨"].map((text) => (
@@ -2201,154 +2732,91 @@ export default function LiveStreamSimulator({
             ))}
           </div>
 
-          {/* ================= BOTTOM COMMAND CONTROLS BAR (Screenshot 1 bottom) ================= */}
-          <div id="stream-footer-pane" className="relative z-20 px-3 pb-4 pt-2 bg-black/60 border-t border-stone-850/60 backdrop-blur-md flex items-center justify-between gap-1.5">
+          {/* ================= BOTTOM COMMAND CONTROLS BAR (Screenshot 2 premium tap bar layout) ================= */}
+          <div id="stream-footer-pane" className="relative z-20 px-4 py-3 bg-black/40 border-t border-white/5 backdrop-blur-md flex items-center justify-between gap-3">
             
-            {/* Type Comments box (Rounded white styling with icons inside) */}
-            <form onSubmit={handleSendMessage} className="flex-1 max-w-[42%]">
-              <div className="relative flex items-center bg-white/10 border border-stone-800 rounded-full py-1.5 px-3">
-                <span className="text-[#A78BFA] shrink-0 pointer-events-none mr-1">💬</span>
+            {/* Audio Volume / Speaker Mute Icon with active ripple indicator */}
+            <button
+              type="button"
+              onClick={() => setIsMuted(!isMuted)}
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 hover:scale-105 active:scale-95 transition-all text-white cursor-pointer"
+              title={isMuted ? "Unmute Stream Audio" : "Mute Stream Audio"}
+            >
+              {isMuted ? (
+                <VolumeX className="w-5 h-5 text-red-400 stroke-[2.5]" />
+              ) : (
+                <Volume2 className="w-5 h-5 text-white stroke-[2.5] animate-pulse" />
+              )}
+            </button>
+
+            {/* Spacious "Say something..." input container */}
+            <form onSubmit={handleSendMessage} className="flex-1">
+              <div className="relative flex items-center bg-black/35 hover:bg-black/55 border border-white/10 rounded-full py-2.5 px-4 transition-all">
                 <input
+                  id="chat-field-input"
                   type="text"
-                  placeholder="Comentar..."
+                  placeholder="Say something..."
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   maxLength={60}
-                  className="w-full bg-transparent text-white text-[11px] placeholder-stone-500 font-semibold focus:outline-none min-w-0"
+                  className="w-full bg-transparent text-white text-[13px] placeholder-stone-400 font-medium focus:outline-none min-w-0"
                 />
-                <button 
-                  type="submit" 
-                  className="text-stone-300 hover:text-white shrink-0 ml-1 cursor-pointer"
-                  title="Send Comment"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                </button>
+                {inputMessage.trim() && (
+                  <button 
+                    type="submit" 
+                    className="text-purple-400 hover:text-white shrink-0 ml-1.5 cursor-pointer transition-colors"
+                    title="Send Comment"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </form>
 
-            {/* Quick Action buttons */}
-            <div className="flex items-center gap-2.5 shrink-0">
-              
-              {/* Star / Subscribe Button with real stats alert */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (isSubscribed) {
-                    setIsSubscribed(false);
-                    // Add system message
-                    setChatMessages((prev) => [
-                      ...prev,
-                      {
-                        id: `sys-sub-${Date.now()}`,
-                        username: "System",
-                        text: `${currentUser.username} is no longer subscribed.`,
-                        isSystem: true,
-                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                      }
-                    ]);
-                  } else {
-                    setIsSubscribed(true);
-                    setShowSubscriptionAlert(true);
-                    setTimeout(() => setShowSubscriptionAlert(false), 3200);
-                    // Add system chat message of subscribe
-                    setChatMessages((prev) => [
-                      ...prev,
-                      {
-                        id: `sys-sub-${Date.now()}`,
-                        username: "System",
-                        text: `🌟 ${currentUser.username} SUBSCRIBED to this creator! 🌟`,
-                        isSystem: true,
-                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                      }
-                    ]);
-                  }
-                }}
-                className={`flex flex-col items-center gap-0.5 hover:scale-110 active:scale-95 transition-all cursor-pointer ${
-                  isSubscribed ? "text-amber-400 font-bold" : "text-stone-300"
-                }`}
-                title="Star Subscribe creator"
-              >
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs shadow border transition-all ${
-                  isSubscribed 
-                    ? "bg-amber-500/20 border-amber-500 text-amber-400 animate-pulse font-bold" 
-                    : "bg-amber-950/20 border-amber-600/30 text-amber-550"
-                }`}>
-                  ⭐
-                </div>
-                <span className="text-[8px] font-bold text-stone-400">{isSubscribed ? "Subbed" : "Star"}</span>
-              </button>
+            {/* Hamburger Menu toggle icon opens the newly built premium Stream Tools Tap Menu UI matching mockup */}
+            <button
+              id="stream-tools-menu-btn"
+              type="button"
+              onClick={() => setIsTapMenuOpen(true)}
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-[#7B3FFE]/10 border border-[#7B3FFE]/30 hover:bg-[#7B3FFE]/20 hover:scale-105 active:scale-95 transition-all text-[#C884FE] cursor-pointer"
+              title="Stream Tools & Features Menu"
+            >
+              <Menu className="w-5 h-5 stroke-[2.5]" />
+            </button>
 
-              {/* Shortcut Rose button */}
-              <button
-                type="button"
-                onClick={() => {
-                  const roseGift = giftsList.find((g) => g.id === "gift-rose");
-                  if (roseGift) {
-                    handleSendGiftLocal(roseGift);
-                  }
-                }}
-                className="flex flex-col items-center gap-0.5 hover:scale-110 active:scale-95 transition-all text-white cursor-pointer"
-                title="Send Quick Rose"
-              >
-                <div className="w-7 h-7 rounded-full bg-pink-500/20 border border-pink-500/40 flex items-center justify-center text-xs shadow hover:bg-pink-500/35">
-                  🌹
-                </div>
-                <span className="text-[8px] font-bold text-stone-400">Rose</span>
-              </button>
+            {/* Premium Magnificent 3D Pink Gift Box with red ribbon (loads from Microsoft Fluent 3D Emoji) */}
+            <button
+              type="button"
+              onClick={() => setIsGiftDrawerOpen(true)}
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 hover:scale-110 active:scale-95 transition-all cursor-pointer relative group"
+              title="Open Virtual Gifts Selector"
+            >
+              <img 
+                src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Wrapped%20gift/3D/wrapped_gift_3d.png" 
+                alt="3D virtual gift" 
+                referrerPolicy="no-referrer"
+                className="w-7 h-7 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] group-hover:scale-110 transition-transform duration-350"
+              />
+            </button>
 
-              {/* Present / Gift Box toggle */}
-              <button
-                type="button"
-                onClick={() => setIsGiftDrawerOpen(true)}
-                className="flex flex-col items-center gap-0.5 hover:scale-110 active:scale-95 transition-all text-white cursor-pointer"
-              >
-                <div className="w-7 h-7 rounded-full bg-red-600 border border-red-500 flex items-center justify-center text-xs shadow">
-                  🎁
-                </div>
-                <span className="text-[8px] font-bold text-stone-400">Gift</span>
-              </button>
-
-              {/* Guest invitations button */}
-              <button
-                type="button"
-                onClick={() => handleInteractSlot(2)}
-                className="flex flex-col items-center gap-0.5 hover:scale-110 active:scale-95 transition-all text-stone-300 cursor-pointer"
-              >
-                <div className="w-7 h-7 rounded-full bg-purple-700/80 hover:bg-purple-750 flex items-center justify-center">
-                  <Users className="w-3.5 h-3.5 text-purple-200" />
-                </div>
-                <span className="text-[8px] font-bold text-stone-400">Guest</span>
-              </button>
-
-              {/* Mic mute switch */}
-              <button
-                type="button"
-                onClick={() => setIsMicOn(!isMicOn)}
-                className={`flex flex-col items-center gap-0.5 hover:scale-110 active:scale-95 transition-all cursor-pointer ${
-                  isMicOn ? "text-stone-300" : "text-red-500"
-                }`}
-              >
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center border transition-all ${
-                  isMicOn ? "bg-stone-800 border-stone-700" : "bg-red-950 border-red-800"
-                }`}>
-                  <Mic className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-[8px] font-bold text-stone-400">Mic</span>
-              </button>
-
-              {/* Share count option */}
-              <button
-                type="button"
-                onClick={() => setSharesCount(prev => prev + 1)}
-                className="flex flex-col items-center gap-0.5 hover:scale-110 active:scale-95 transition-all text-stone-300 cursor-pointer"
-              >
-                <div className="w-7 h-7 rounded-full bg-stone-800 border border-stone-700 flex items-center justify-center">
-                  <Share2 className="w-3.5 h-3.5 text-stone-200" />
-                </div>
-                <span className="text-[8px] font-bold text-stone-500 font-mono">{sharesCount}</span>
-              </button>
-
-            </div>
+            {/* Interactive Comment notification badge with a red "5" bubble indicator */}
+            <button
+              type="button"
+              onClick={() => {
+                // Focus the text comment input field directly
+                const chatField = document.getElementById("chat-field-input");
+                if (chatField) {
+                  chatField.focus();
+                }
+              }}
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 hover:scale-105 active:scale-95 transition-all text-white cursor-pointer relative"
+              title="Add Interactive Discussion Thread"
+            >
+              <MessageSquare className="w-5 h-5 text-white stroke-[2.5]" />
+              <span className="absolute -top-1 -right-1 bg-red-650 text-white font-sans font-black text-[9px] w-5 h-5 rounded-full flex items-center justify-center border border-black/80 shadow-md">
+                5
+              </span>
+            </button>
 
           </div>
 
@@ -2493,79 +2961,71 @@ export default function LiveStreamSimulator({
                       <div
                         key={gift.id}
                         onClick={() => setSelectedGiftId(gift.id)}
-                        className={`relative p-2 rounded-xl flex flex-col items-center justify-center transition-all duration-300 cursor-pointer select-none ${
+                        className={`relative p-1.5 min-h-[96px] rounded-2xl flex flex-col items-center justify-between transition-all duration-300 cursor-pointer select-none ${
                           isSelected 
-                            ? "bg-[#632890]/25 border-2 border-purple-500 scale-95 shadow-md" 
-                            : "bg-stone-950 border border-stone-900 hover:border-purple-900"
+                            ? "bg-[#632890]/15 border-2 border-[#FE2C55]/90 scale-95 shadow-md" 
+                            : "bg-stone-950/90 border border-stone-900 hover:border-purple-900/50"
                         }`}
                       >
-                        {/* Animated Floating preview for high fidelity */}
-                        <span className="text-2xl mb-1 drop-shadow flex items-center justify-center h-8 w-8">
-                          {gift.icon && (gift.icon.startsWith("blob:") || gift.icon.startsWith("data:") || gift.icon.startsWith("http")) ? (
-                            <img src={gift.icon} alt="" className="w-8 h-8 object-contain rounded" />
+                        {/* Animated Floating preview for high-resolution 3D images */}
+                        <div className="w-12 h-12 flex items-center justify-center shrink-0">
+                          {get3DGiftImage(gift.name, gift.icon) ? (
+                            <img 
+                              src={get3DGiftImage(gift.name, gift.icon)!} 
+                              alt={gift.name} 
+                              referrerPolicy="no-referrer"
+                              className="w-[42px] h-[42px] object-contain drop-shadow"
+                            />
                           ) : (
-                            gift.icon
+                            <span className="text-2xl filter drop-shadow">{gift.icon}</span>
                           )}
-                        </span>
-                        <span className="text-[9px] font-black text-white text-center truncate w-full mb-0.5 leading-none">
-                          {gift.name}
-                        </span>
-                        <span className="text-[8px] font-extrabold text-amber-500 font-mono tracking-tight flex items-center justify-center gap-0.5">
-                          ⭐ {gift.cost < 1000 ? gift.cost : `${(gift.cost / 1000).toFixed(1)}k`}
-                        </span>
+                        </div>
 
-                        {/* Display dedicated PURPLE "Send" button block inside selected tile - MATCHES SCREENSHOT 2 */}
-                        {isSelected && (
+                        {isSelected ? (
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSendGiftLocal(gift);
                             }}
-                            className="mt-1 w-full py-1 text-[8px] font-black uppercase text-white bg-gradient-to-r from-purple-600 to-[#923FEF] hover:from-[#A855F7] rounded-md tracking-wider animate-scaleUp cursor-pointer shadow border border-white/5"
+                            className="w-full py-1 text-[10px] font-black uppercase text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 rounded-lg tracking-wider transition-all scale-100 active:scale-95 cursor-pointer shadow-md mt-1 animate-scaleUp"
                           >
                             Send
                           </button>
+                        ) : (
+                          <div className="w-full flex flex-col items-center">
+                            <span className="text-[10px] font-bold text-stone-200 text-center truncate w-full px-1 leading-none">
+                              {gift.name}
+                            </span>
+                            <span className="text-[8.5px] font-extrabold text-[#ECC94B] tracking-tight flex items-center justify-center gap-0.5 mt-0.5">
+                              🪙 {gift.cost < 1000 ? gift.cost : `${(gift.cost / 1000).toFixed(1)}k`}
+                            </span>
+                          </div>
                         )}
                       </div>
                     );
                   })}
                 </div>
-              </div>
+            </div>
 
-              {/* Bottom footer bar: Golden buy coin pill indicator with Combo action */}
+            {/* Bottom footer bar: Golden buy coin pill indicator with Combo action */}
               <div className="mt-3 py-3 border-t border-stone-900 flex items-center justify-between gap-4 shrink-0">
                 <div className="flex flex-col text-left">
                   <span className="text-[10px] text-stone-500 font-medium uppercase tracking-wide">Wallet Balance</span>
                   {/* Coin and Diamond balance static display */}
                   <div className="flex items-center gap-1.5 mt-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onCoinsUpdate(currentUser.coins + 5000);
-                      }}
-                      className="py-1 px-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-400 rounded-full flex items-center gap-1.5 text-[10px] font-black text-amber-400 font-mono transition-all active:scale-95 cursor-pointer group"
-                      title="Click to instantly get +5000 Free Coins!"
+                    <div
+                      className="py-1 px-2.5 bg-amber-500/10 border border-amber-500/30 rounded-full flex items-center gap-1.5 text-[10px] font-black text-amber-400 font-mono transition-all select-none"
                     >
-                      <span className="group-hover:animate-bounce">🪙</span>
+                      <span>🪙</span>
                       <span>{currentUser.coins}</span>
-                      <span className="text-[7.5px] bg-amber-500 text-stone-950 font-sans px-1 rounded-md font-bold uppercase tracking-wider scale-90 -mr-0.5">+5k</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const diamonds = currentUser.diamonds || 0;
-                        if (onDiamondsUpdate) {
-                          onDiamondsUpdate(diamonds + 1000);
-                        }
-                      }}
-                      className="py-1 px-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-400 rounded-full flex items-center gap-1.5 text-[10px] font-black text-cyan-400 font-mono transition-all active:scale-95 cursor-pointer group"
-                      title="Click to instantly get +1000 Free Diamonds!"
+                    </div>
+                    <div
+                      className="py-1 px-2.5 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center gap-1.5 text-[10px] font-black text-cyan-400 font-mono transition-all select-none"
                     >
-                      <span className="group-hover:animate-pulse">💎</span>
+                      <span>💎</span>
                       <span>{currentUser.diamonds || 0}</span>
-                      <span className="text-[7.5px] bg-cyan-500 text-stone-950 font-sans px-1 rounded-md font-bold uppercase tracking-wider scale-90 -mr-0.5">+1k</span>
-                    </button>
+                    </div>
                   </div>
                 </div>
 
@@ -2905,211 +3365,1293 @@ export default function LiveStreamSimulator({
             </div>
           )}
 
+          {/* ========================================================================================
+              ACTIVE FLOATING CHANNELS & INTERACTIVE FEATURES WIDGETS
+              ======================================================================================== */}
+
+          {/* A. Lucky Bag / Red Envelope Claim widget */}
+          {luckyBagActive && !luckyBagClaimed && (
+            <div className="px-3.5 mb-2 relative z-30">
+              <div className="bg-gradient-to-r from-red-650 to-rose-550 border border-red-500 rounded-2xl p-3 shadow-xl flex items-center justify-between text-left animate-bounce select-none">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center text-xl shadow-inner">
+                    🧧
+                  </div>
+                  <div>
+                    <h5 className="text-[11px] font-black text-white uppercase tracking-wider">Lucky Bag Coin Drop!</h5>
+                    <p className="text-[9px] text-amber-200 font-bold leading-none mt-1">Claim free gift coins before expire!</p>
+                  </div>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    const winCoins = Math.floor(Math.random() * 320) + 120;
+                    setLuckyBagClaimed(true);
+                    setLuckyBagActive(false);
+                    onCoinsUpdate(currentUser.coins + winCoins);
+                    
+                    setChatMessages(c => [...c, {
+                      id: `system-luckybag-${Date.now()}`,
+                      username: "🎉 CONGRATS",
+                      text: `You just opened the stream Lucky Bag and claimed ${winCoins} free coins! 🪙🎁`,
+                      isSystem: true,
+                      avatarUrl: "",
+                      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                    }]);
+
+                    try {
+                      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                      const osc = ctx.createOscillator();
+                      const gain = ctx.createGain();
+                      osc.type = "sine";
+                      osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                      osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+                      osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2);
+                      gain.gain.setValueAtTime(0.06, ctx.currentTime);
+                      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.55);
+                      osc.connect(gain);
+                      gain.connect(ctx.destination);
+                      osc.start();
+                      osc.stop(ctx.currentTime + 0.6);
+                    } catch (e) {}
+                  }}
+                  className="px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-stone-950 text-[10px] font-black uppercase rounded-lg shadow-md tracking-wider active:scale-95 transition-all cursor-pointer leading-none flex items-center gap-1"
+                >
+                  <span>CLAIM ({luckyBagCountdown}s)</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* B. Rolling Dice Shake Simulation Overlay */}
+          {isRollingDice && (
+            <div className="absolute inset-x-4 top-[35%] z-[47] flex justify-center pointer-events-none select-none">
+              <div className="bg-black/85 border border-purple-500/40 p-4 rounded-full flex items-center gap-3 shadow-2xl animate-pulse">
+                <span className="text-3xl animate-bounce">🎲</span>
+                <span className="text-[11px] text-white font-mono uppercase tracking-widest font-black">Shaking Live Dice Loops...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Dice Result Badge Card */}
+          {diceResult !== null && (
+            <div className="px-3.5 mb-2 relative z-30">
+              <div className="bg-stone-900 border border-purple-500 p-2.5 rounded-2xl flex items-center justify-between text-left shadow-lg scale-95 select-none font-sans">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🎲</span>
+                  <div>
+                    <span className="block text-[8px] text-purple-400 font-extrabold uppercase">DICE ROLL SETTLED</span>
+                    <span className="block text-[11.5px] text-white font-black">Rolled Score: {diceResult}</span>
+                  </div>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setDiceResult(null)} 
+                  className="p-1 text-stone-400 hover:text-white font-black text-xs cursor-pointer"
+                >
+                  X
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* C. Lucky Number Badge Card overlay */}
+          {showLuckyNumberBadge && luckyNumber !== null && (
+            <div className="px-3.5 mb-2 relative z-30">
+              <div 
+                onClick={() => {
+                  const num = Math.floor(Math.random() * 99) + 1;
+                  setLuckyNumber(num);
+                  setChatMessages(c => [...c, {
+                    id: `lucky-num-change-${Date.now()}`,
+                    username: "🍀 LUCKY REF",
+                    text: `Broadcaster re-rolled the daily lucky number to ${num}! 🎉 Double tap to claim luck!`,
+                    isSystem: true,
+                    avatarUrl: "",
+                    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                  }]);
+                }}
+                className="bg-emerald-950/80 border border-emerald-500/40 rounded-2xl py-2 px-3.5 flex items-center justify-between text-left shadow-lg scale-95 hover:border-emerald-400 cursor-pointer active:scale-95 transition-all select-none"
+                title="Tap to re-roll lucky stream number!"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">🍀</span>
+                  <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest leading-none">
+                    LUCKY NUMBER ACTIVE
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-mono font-black py-0.5 px-2.5 bg-emerald-500 text-stone-950 rounded-full animate-pulse shadow-md">
+                    {luckyNumber}
+                  </span>
+                  <span className="text-[8px] text-stone-400">Tap to reroll</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* D. Synthesizer Beat Track play bar */}
+          {isMusicSynthPlaying && (
+            <div className="px-3.5 mb-2 relative z-30">
+              <div className="bg-[#1a0f30]/90 border border-[#8B5CF6]/30 rounded-2xl p-2 flex items-center justify-between shadow-lg select-none text-left font-sans">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 bg-[#8B5CF6]/15 rounded-full flex items-center justify-center p-[1px] border border-[#8B5CF6]/35 animate-spin">
+                    <span className="text-sm select-none">💿</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-purple-300 font-black uppercase tracking-widest leading-none">STREAM SYNTH ACTIVE</span>
+                    <span className="block text-[10px] text-white font-extrabold mt-0.5 whitespace-nowrap">{synthBeatType} Loop</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-1">
+                  {["Lofi Beat ☕", "Festival EDM 🎸", "Ambient Chill 🌌"].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setSynthBeatType(type)}
+                      className={`px-1.5 py-1 text-[7.5px] font-black uppercase rounded-lg transition-all cursor-pointer ${
+                        synthBeatType === type 
+                          ? "bg-[#8B5CF6] text-white shadow-md border border-[#a78bfa]" 
+                          : "bg-stone-900 border border-stone-800 text-stone-400 hover:text-white"
+                      }`}
+                    >
+                      {type.split(' ')[0]}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setIsMusicSynthPlaying(false)}
+                    className="p-1 text-red-400 bg-red-950/25 border border-red-800/35 rounded-lg hover:bg-red-900/10 transition-colors cursor-pointer"
+                    title="Stop Synthesizer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* E. Active Stream Poll Widget */}
+          {activePoll && (
+            <div className="px-3.5 mb-2 relative z-35 text-left font-sans">
+              <div className="bg-gradient-to-tr from-[#020617] to-[#0f172a] border border-[#3b82f6]/30 rounded-2xl p-3 shadow-xl select-none text-left relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-[#3b82f6]/5 rounded-full blur-xl pointer-events-none"></div>
+                <div className="flex items-center justify-between mb-1.5 border-b border-[#1e293b] pb-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs animate-pulse">📊</span>
+                    <span className="text-[9px] font-black uppercase text-[#3b82f6] tracking-wider leading-none">Active Channel Poll</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActivePoll(null)}
+                    className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded-md transition"
+                    title="Close Poll"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+
+                <h6 className="text-[11px] font-extrabold text-[#edf2f7] mb-2 leading-tight">
+                  {activePoll.question}
+                </h6>
+
+                <div className="space-y-1.5">
+                  {activePoll.options.map((opt, i) => {
+                    const percent = activePoll.totalVotes > 0 ? Math.round((opt.votes / activePoll.totalVotes) * 100) : 0;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          const updated = activePoll.options.map((o, idx) => idx === i ? { ...o, votes: o.votes + 1 } : o);
+                          setActivePoll({
+                            ...activePoll,
+                            options: updated,
+                            totalVotes: activePoll.totalVotes + 1
+                          });
+                        }}
+                        className="w-full relative py-1.5 px-3 bg-[#1e293b]/55 hover:bg-[#1e293b]/85 rounded-xl border border-[#334155] text-left overflow-hidden cursor-pointer transition-all active:scale-[0.98] focus:outline-none flex items-center justify-between text-[10px] font-bold text-white shadow-sm"
+                      >
+                        <div 
+                          className="absolute inset-y-0 left-0 bg-[#3b82f6]/20 transition-all duration-500 rounded-l-xl animate-pulse" 
+                          style={{ width: `${percent}%` }}
+                        />
+                        <span className="relative z-10 font-bold truncate pr-3">{opt.text}</span>
+                        <span className="relative z-10 font-mono text-[9px] font-black text-[#60a5fa]">{opt.votes} ({percent}%)</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                
+                <span className="block text-[7px] text-slate-500 font-bold text-right mt-1.5 uppercase font-mono tracking-widest">
+                  Total votes polled: {activePoll.totalVotes}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* F. Draw Lots Result Overlay popover */}
+          {currentDrawLot && (
+            <div className="absolute inset-x-4 top-[30%] z-[48] flex justify-center animate-scaleUp text-left select-none font-sans pointer-events-auto">
+              <div className="bg-gradient-to-tr from-[#1E2511] to-[#0D1204] border border-[#84cc16]/40 p-4.5 rounded-3xl w-[85%] text-center shadow-2xl">
+                <span className="text-3xl animate-spin-slow inline-block">🔮</span>
+                <h4 className="text-[11px] font-black text-lime-400 uppercase tracking-widest mt-2">Your Fortune Draw settled!</h4>
+                <p className="text-xs font-semibold text-white mt-2.5 leading-relaxed bg-black/45 p-2 rounded-xl border border-lime-500/10">
+                   "{currentDrawLot}"
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setCurrentDrawLot(null)}
+                  className="mt-3.5 w-full py-1.5 bg-lime-500 hover:bg-lime-400 text-stone-950 font-black text-[10px] uppercase rounded-xl transition cursor-pointer"
+                >
+                  REDEEM GOOD LUCK
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* G. Broadcaster Stream Auction Widget */}
+          {activeAuction && activeAuction.isActive && (
+            <div className="px-3.5 mb-2 relative z-30 text-left font-sans">
+              <div className="bg-gradient-to-tr from-[#1c1917] to-[#292524] border border-[#f59e0b]/40 rounded-2xl p-3 shadow-xl select-none text-left relative">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-stone-880">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs">🔨</span>
+                    <span className="text-[9px] font-black uppercase text-[#e7a221] tracking-wider leading-none">Interactive Auction</span>
+                  </div>
+                  <div className="text-[8.5px] font-bold text-red-400 tracking-wider bg-red-950/40 border border-red-900/30 py-0.5 px-2 rounded-full font-mono animate-pulse">
+                     TIME LEFT: {activeAuction.timeSecs}s
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-12 gap-2 items-center">
+                  <div className="col-span-8 space-y-0.5 text-left">
+                    <span className="text-[8px] text-stone-500 font-extrabold uppercase">STREAMER NO. 1 EXCLUSIVE ITEM:</span>
+                    <h5 className="text-[11px] font-black text-amber-250 uppercase tracking-wide leading-none">{activeAuction.itemName}</h5>
+                    <p className="text-[10px] font-semibold text-stone-300 mt-1">
+                      Highest Bidder: <span className="font-bold text-[#FCD34D] bg-[#FCD34D]/10 px-1.5 py-0.5 rounded">@{activeAuction.highBidder}</span>
+                    </p>
+                  </div>
+
+                  <div className="col-span-4 text-right">
+                    <span className="block text-[8px] text-stone-500 font-extrabold uppercase">CURRENT BID</span>
+                    <span className="text-sm font-black text-amber-400 font-mono tracking-tight leading-none">
+                       {activeAuction.currentBid.toLocaleString()}
+                    </span>
+                    <span className="block text-[7px] text-amber-500/70 font-semibold uppercase">coins</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 mt-3 text-[10px] font-black shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newBid = activeAuction.currentBid + 100;
+                      setActiveAuction({
+                        ...activeAuction,
+                        currentBid: newBid,
+                        highBidder: "You"
+                      });
+                      
+                      setChatMessages(c => [...c, {
+                        id: `self-bid-${Date.now()}`,
+                        username: `${currentUser.username} (You)`,
+                        text: `🙋‍♂️ Bid ${newBid.toLocaleString()} Coins on the ${activeAuction.itemName}! Let's win!`,
+                        avatarUrl: currentUser.avatarUrl,
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      }]);
+
+                      try {
+                        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                        const osc = ctx.createOscillator();
+                        osc.frequency.setValueAtTime(440, ctx.currentTime);
+                        osc.connect(ctx.destination);
+                        osc.start();
+                        osc.stop(ctx.currentTime + 0.1);
+                      } catch (e) {}
+                    }}
+                    className="flex-1 py-1.5 px-2.5 bg-[#f59e0b] hover:bg-[#d97706] text-stone-950 rounded-xl transition duration-200 uppercase cursor-pointer text-center leading-none flex items-center justify-center font-extrabold border border-[#fef08a]"
+                  >
+                     BID +100 Coins
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAuction(prev => {
+                        if (!prev) return null;
+                        const finalBidderMsg = `🔨 SOLD! Broadcaster ended the auction. Item [${prev.itemName}] was awarded to @${prev.highBidder} for ${prev.currentBid.toLocaleString()} Coins! 🎉🥳`;
+                        setChatMessages(c => [...c, {
+                          id: `system-auction-finish-${Date.now()}`,
+                          username: "📢 AUCTIONEER",
+                          text: finalBidderMsg,
+                          isSystem: true,
+                          avatarUrl: "",
+                          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                        }]);
+                        return { ...prev, timeSecs: 0, isActive: false };
+                      });
+                      
+                      setRoseShowerActive(true);
+                      setTimeout(() => setRoseShowerActive(false), 400);
+                    }}
+                    className="flex-1 py-1.5 px-2.5 bg-rose-650 hover:bg-rose-500 border border-red-800 text-white font-extrabold rounded-r-xl transition duration-200 uppercase cursor-pointer text-center leading-none"
+                  >
+                     🔨 HAMMER DOWN
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* H. PK Battle Arena score dashboard */}
+          {pkBattle && pkBattle.isActive && (
+            <div className="px-3.5 mb-2 relative z-30 text-left font-sans">
+              <div className="bg-gradient-to-r from-red-950/80 via-black/85 to-indigo-950/80 border border-purple-500/30 rounded-2xl p-2.5 shadow-xl select-none">
+                <div className="flex items-center justify-between text-[8px] font-black uppercase text-purple-300 tracking-widest mb-1 leading-none font-mono">
+                  <span>🔴 TEAM US (Lv{currentLevel})</span>
+                  <span className="text-amber-400 animate-pulse text-[9px]">⚔️ PK BATTLE TIMEOUT: {pkBattle.timeLeft}s ⚔️</span>
+                  <span>🔵 OPPONENT (Lv{pkBattle.opponent.level})</span>
+                </div>
+
+                <div className="h-4 bg-stone-900 border border-stone-800 rounded-full overflow-hidden flex relative shadow-inner">
+                  <div 
+                    className="h-full bg-gradient-to-r from-red-650 to-rose-550 transition-all duration-300 shadow-md relative"
+                    style={{ width: `${Math.max(10, Math.min(90, (pkBattle.player1Score / (pkBattle.player1Score + pkBattle.player2Score || 1)) * 100))}%` }}
+                  >
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] font-mono font-black text-white italic tracking-wider">
+                       {pkBattle.player1Score} XP
+                    </span>
+                  </div>
+
+                  <div className="h-full bg-gradient-to-l from-indigo-650 to-sky-550 transition-all duration-300 shadow-md flex-1 relative">
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-mono font-black text-white italic tracking-wider">
+                       {pkBattle.player2Score} XP
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between mt-2 select-none">
+                  <div className="flex items-center gap-1 font-sans">
+                    <span className="text-xs">🛡️</span>
+                    <span className="text-[9.5px] font-extrabold text-stone-200">@You</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 select-none">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPkBattle(p => p ? { ...p, player1Score: p.player1Score + 180 } : null);
+                        try {
+                          const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                          const osc = ctx.createOscillator();
+                          osc.frequency.setValueAtTime(800, ctx.currentTime);
+                          osc.connect(ctx.destination);
+                          osc.start();
+                          osc.stop(ctx.currentTime + 0.08);
+                        } catch (e) {}
+                      }}
+                      className="py-1 px-3 bg-red-600 hover:bg-red-500 border border-red-550/40 text-white font-black uppercase text-[9px] rounded-lg tracking-wider transition active:scale-95 cursor-pointer leading-none"
+                    >
+                      ✊ Push Red! (+180)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPkBattle(p => p ? { ...p, player2Score: p.player2Score + 190 } : null);
+                      }}
+                      className="py-1 px-3 bg-indigo-650 hover:bg-indigo-550 border border-indigo-550/40 text-white font-black uppercase text-[9px] rounded-lg tracking-wider transition active:scale-95 cursor-pointer leading-none"
+                    >
+                      🙌 Push Opponent
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9.5px] font-extrabold text-[#7B3FFE]">@Legend_PK</span>
+                    <img src={pkBattle.opponent.avatar} className="w-5.5 h-5.5 rounded-full object-cover border border-purple-500/35 bg-indigo-900" alt="" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* I. Interactive Matches Scoreboard Display Tally */}
+          {liveScore && liveScore.active && (
+            <div className="px-3.5 mb-2 relative z-30 text-left font-sans">
+              <div className="bg-gradient-to-tr from-[#3f2512] to-[#513017] border-2 border-[#b57d42] p-2.5 rounded-2xl shadow-xl flex items-center justify-between select-none">
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xl">🏆</span>
+                  <div className="text-left font-sans">
+                    <span className="block text-[8px] text-amber-200 font-extrabold tracking-widest uppercase leading-none">STREAM SCOREBOARD</span>
+                    <span className="block text-[10.5px] text-white font-black mt-0.5 whitespace-nowrap">Interactive Tally</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 text-center">
+                  <div className="flex items-center gap-1.5 bg-black/45 py-1 px-2 rounded-xl border border-red-900/30">
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-0.5" />
+                    <span className="text-[9px] text-[#FF4D4D] font-extrabold">RED:</span>
+                    <span className="text-xs font-mono font-black text-white">{liveScore.teamRed}</span>
+                    <div className="flex flex-col gap-0.5 ml-1 select-none leading-none">
+                      <button 
+                        type="button" 
+                        onClick={() => setLiveScore(p => p ? { ...p, teamRed: p.teamRed + 1 } : null)}
+                        className="p-0.5 bg-red-500/25 text-red-300 hover:text-white rounded text-[8px] font-black w-3.5 h-3.5 flex items-center justify-center leading-none"
+                      >+</button>
+                      <button 
+                        type="button" 
+                        onClick={() => setLiveScore(p => p ? { ...p, teamRed: Math.max(0, p.teamRed - 1) } : null)}
+                        className="p-0.5 bg-red-950/40 text-red-400 hover:text-white rounded text-[8px] font-black w-3.5 h-3.5 flex items-center justify-center leading-none"
+                      >-</button>
+                    </div>
+                  </div>
+
+                  <span className="text-stone-300 font-black text-[9px] font-mono select-none">VS</span>
+
+                  <div className="flex items-center gap-1.5 bg-black/45 py-1 px-2 rounded-xl border border-sky-900/30">
+                    <span className="w-2 h-2 bg-sky-500 rounded-full animate-pulse mr-0.5" />
+                    <span className="text-[9px] text-[#4D94FF] font-extrabold font-sans">BLUE:</span>
+                    <span className="text-xs font-mono font-black text-white">{liveScore.teamBlue}</span>
+                    <div className="flex flex-col gap-0.5 ml-1 select-none leading-none">
+                      <button 
+                        type="button" 
+                        onClick={() => setLiveScore(p => p ? { ...p, teamBlue: p.teamBlue + 1 } : null)}
+                        className="p-0.5 bg-sky-500/25 text-sky-400 hover:text-white rounded text-[8px] font-black w-3.5 h-3.5 flex items-center justify-center leading-none"
+                      >+</button>
+                      <button 
+                        type="button" 
+                        onClick={() => setLiveScore(p => p ? { ...p, teamBlue: Math.max(0, p.teamBlue - 1) } : null)}
+                        className="p-0.5 bg-sky-950/40 text-sky-400 hover:text-white rounded text-[8px] font-black w-3.5 h-3.5 flex items-center justify-center leading-none"
+                      >-</button>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setLiveScore(null)}
+                  className="p-1 px-1.5 bg-amber-950/40 text-amber-400 hover:text-white rounded-lg hover:scale-105 active:scale-95 font-black text-[9px] uppercase cursor-pointer"
+                  title="Close Tally Board"
+                >
+                  X
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* J. Special Lottery Box chests dropped on feed */}
+          {isLotteryBoxPresent && (
+            <div className="absolute inset-0 z-[46] bg-black/65 backdrop-blur-[2px] flex items-center justify-center animate-fadeIn p-4 pointer-events-auto">
+              <div className="bg-gradient-to-tr from-[#1E112A] to-[#0D041A] border-2 border-purple-500/40 p-5 rounded-3xl w-[80%] text-center shadow-xl select-none font-sans">
+                <div className="text-center space-y-2">
+                  <span className="text-[8px] uppercase tracking-widest text-purple-400 font-extrabold bg-purple-900/30 px-2.5 py-1 rounded-full border border-purple-500/25">
+                     🎁 STREAM CHANNELS TREASURE BOX 
+                  </span>
+                  
+                  <div className="py-4 flex flex-col items-center justify-center">
+                    <img
+                      src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Chest/3D/chest_3d.png"
+                      alt="Treasures chest"
+                      className={`w-28 h-28 object-contain drop-shadow-[0_8px_16px_rgba(139,92,246,0.3)] select-none ${
+                        lotteryBoxState === "opening" 
+                          ? "animate-ping opacity-80 duration-1000" 
+                          : "animate-bounce"
+                      }`}
+                    />
+                    
+                    {lotteryBoxState === "closed" && (
+                      <p className="text-[10px] text-stone-300 font-medium leading-normal max-w-xs mt-3">
+                         Broadcaster dropped a lucky chest treasure! Standard viewers can unlock for free and capture premium loot!
+                      </p>
+                    )}
+
+                    {lotteryBoxState === "opened" && (
+                      <div className="mt-4 bg-[#8b5cf6]/10 p-3 rounded-2xl border border-purple-500/25 animate-scaleUp text-center w-full">
+                        <span className="block text-[8px] text-purple-300 font-black">TREASURE BOX UNLOCKED!</span>
+                        <span className="text-xs font-black text-yellow-300 block mt-1">💎 Claimed 1,500 FREE Coins + 10x multiplier voucher! 🎉</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 leading-none">
+                    {lotteryBoxState === "closed" ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLotteryBoxState("opening");
+                          try {
+                            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                            const osc = ctx.createOscillator();
+                            osc.frequency.setValueAtTime(440, ctx.currentTime);
+                            osc.connect(ctx.destination);
+                            osc.start();
+                            osc.stop(ctx.currentTime + 0.4);
+                          } catch (e) {}
+
+                          setTimeout(() => {
+                            setLotteryBoxState("opened");
+                            onCoinsUpdate(currentUser.coins + 1500);
+                            
+                            setChatMessages(c => [...c, {
+                              id: `chest-redeem-${Date.now()}`,
+                              username: `${currentUser.username} (You)`,
+                              text: `🪙 just unlocked the stream lucky lottery chest and collected 1,500 free Coins! 🎁💎`,
+                              avatarUrl: currentUser.avatarUrl,
+                              timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                            }]);
+                          }, 1200);
+                        }}
+                        className="flex-1 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-stone-950 text-[10px] font-black uppercase rounded-2xl shadow-md cursor-pointer transition active:scale-95 leading-none"
+                      >
+                         🔓 UNLOCK BOX
+                      </button>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLotteryBoxPresent(false);
+                        setLotteryBoxState("closed");
+                      }}
+                      className="flex-1 py-2.5 bg-stone-900 border border-stone-850 text-stone-300 text-[10px] uppercase font-bold rounded-2xl cursor-pointer hover:bg-stone-800"
+                    >
+                       CLOSE
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* K. Interactive Wheel of Fortune spin overlay popup (Super Winner) */}
+          {isSpinningWheel && (
+            <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center animate-fadeIn p-4 pointer-events-auto">
+              <div className="bg-gradient-to-b from-[#1b083b] to-[#0d0321] border-2 border-purple-500 rounded-[32px] p-5 w-[85%] relative overflow-hidden text-center shadow-[0_12px_44px_rgba(139,92,246,0.3)] font-sans">
+                <div className="absolute -top-12 -left-12 w-44 h-44 bg-purple-500/15 rounded-full blur-2xl pointer-events-none"></div>
+                <div className="absolute top-2 right-2 flex items-center justify-end z-25">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSpinningWheel(false);
+                      setWheelResult(null);
+                    }}
+                    className="p-1.5 bg-purple-950 text-purple-300 hover:text-white border border-purple-800 rounded-full cursor-pointer hover:scale-105 active:scale-95 transition"
+                    title="Close Spinner"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="text-center space-y-1">
+                    <span className="text-[9px] bg-purple-500/20 text-purple-300 font-extrabold uppercase tracking-widest px-3 py-1 rounded-full border border-purple-500/20">
+                      🎯 Super Winner Daily Loot
+                    </span>
+                    <h4 className="text-sm font-black text-white uppercase tracking-wider mt-1.5">
+                       Wheel of Fortune
+                    </h4>
+                    <p className="text-[10px] text-stone-400 leading-tight">Spin to gain free gift coins, badges, and multipliers!</p>
+                  </div>
+
+                  {/* Visual Spinning Wheel UI representation */}
+                  <div className="relative select-none my-2">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1.5 z-20 text-xl select-none filter drop-shadow animate-bounce">
+                      👇
+                    </div>
+
+                    <div 
+                      className="w-36 h-36 rounded-full border-[6px] border-[#FFA300] bg-gradient-to-tr from-[#2A054F] via-[#3a0670] to-[#6d13ab] shadow-2xl relative flex items-center justify-center overflow-hidden transition-transform ease-out duration-3500"
+                      style={{ transform: `rotate(${wheelAngle}deg)` }}
+                    >
+                      <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 opacity-85">
+                        <div className="border border-purple-500/15 flex flex-col items-center justify-center p-2 pt-4 bg-[#7B3FFE]/10 text-center">
+                          <span className="text-sm">🪙</span>
+                          <span className="text-[7px] font-black text-white mt-1 uppercase">150 Coins</span>
+                        </div>
+                        <div className="border border-purple-500/15 flex flex-col items-center justify-center p-2 pt-4 bg-pink-500/10 text-center">
+                          <span className="text-sm">👑</span>
+                          <span className="text-[7px] font-black text-white mt-1 uppercase">Star Badge</span>
+                        </div>
+                        <div className="border border-purple-500/15 flex flex-col items-center justify-center p-2 pb-4 bg-cyan-500/10 text-center">
+                          <span className="text-sm">⚡</span>
+                          <span className="text-[7px] font-black text-white mt-1 uppercase">2X Multi</span>
+                        </div>
+                        <div className="border border-purple-500/15 flex flex-col items-center justify-center p-2 pb-4 bg-emerald-500/10 text-center">
+                          <span className="text-sm">💎</span>
+                          <span className="text-[7px] font-black text-white mt-1 uppercase text-rose-350">50 Gems</span>
+                        </div>
+                      </div>
+
+                      <div className="absolute w-10 h-10 rounded-full bg-gradient-to-r from-yellow-400 to-[#FF8C00] border-2 border-white flex items-center justify-center shadow-lg font-sans font-black text-[8px] text-[#2c0500] uppercase tracking-tighter">
+                         LUCKY
+                      </div>
+                    </div>
+                  </div>
+
+                  {wheelResult ? (
+                    <div className="bg-purple-950/60 border border-purple-500/40 p-2 text-center animate-scaleUp rounded-2xl w-full">
+                      <span className="block text-[8px] text-purple-300 font-extrabold uppercase">CONGRATULATIONS REDEEMED!</span>
+                      <span className="text-xs font-black text-yellow-350 block mt-1">{wheelResult}</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const outcomes = [
+                          { text: "💰 150 Gift Coins credited! 🪙", coins: 150 },
+                          { text: "👑 VIP Star Badge Trophy awarded! ⭐", coins: 0 },
+                          { text: "⚡ 2X Gift Multiplier voucher unlocked! 💎", coins: 0 },
+                          { text: "💎 50 Premium Stream Diamonds awarded! 🎉", coins: 0 }
+                        ];
+                        const rand = Math.floor(Math.random() * outcomes.length);
+                        const targetAngle = 1800 + rand * 90;
+                        setWheelAngle(targetAngle);
+                        
+                        setTimeout(() => {
+                          const item = outcomes[rand];
+                          setWheelResult(item.text);
+                          
+                          if (item.coins > 0) {
+                            onCoinsUpdate(currentUser.coins + item.coins);
+                          }
+                          
+                          setChatMessages(c => [...c, {
+                            id: `wheel-loot-${Date.now()}`,
+                            username: "🎯 SUPER WINNER",
+                            text: `Broadcaster rolled the Wheel of fortune loot: ${item.text}! 🥳`,
+                            isSystem: true,
+                            avatarUrl: "",
+                            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                          }]);
+                          
+                          try {
+                            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                            const osc = ctx.createOscillator();
+                            osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                            osc.connect(ctx.destination);
+                            osc.start();
+                            osc.stop(ctx.currentTime + 0.15);
+                          } catch (e) {}
+
+                        }, 3600);
+                      }}
+                      className="w-full py-2 bg-gradient-to-r from-[#FFA300] to-[#E31A19] hover:from-amber-400 hover:to-rose-500 rounded-2xl text-white font-black uppercase text-[10px] tracking-wider transition active:scale-95 cursor-pointer shadow-lg leading-none"
+                    >
+                      🚀 Spin the Lucky Wheel!
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* L. Feedback submissions form model overlay */}
+          {isFeedbackCardOpen && (
+            <div className="absolute inset-x-4 top-[25%] z-50 bg-[#140E24]/95 border-2 border-purple-500/35 rounded-[28px] p-5 shadow-2xl animate-scaleUp text-left font-sans pointer-events-auto">
+              <div className="flex items-center justify-between border-b border-purple-500/20 pb-2 mb-3">
+                <span className="text-xs">📮</span>
+                <span className="text-[10px] font-black text-purple-300 uppercase tracking-widest leading-none">Stream Feedback & report</span>
+                <button type="button" onClick={() => setIsFeedbackCardOpen(false)} className="text-stone-400 hover:text-white cursor-pointer"><X className="w-4 h-4" /></button>
+              </div>
+              <h5 className="text-[11px] font-black text-stone-100 mb-2 leading-tight">Help improve our livestream simulator platform!</h5>
+              <textarea
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="Type your feedback message here..."
+                rows={3}
+                className="w-full p-2.5 bg-black/45 hover:bg-black/60 border border-purple-500/20 rounded-xl focus:outline-none focus:border-purple-400 text-xs text-white placeholder-stone-400 mb-3"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!feedbackText.trim()) return;
+                  setFeedbackText("");
+                  setIsFeedbackCardOpen(false);
+                  
+                  setChatMessages(c => [...c, {
+                    id: `feedback-success-${Date.now()}`,
+                    username: "📢 SYSTEM",
+                    text: "Thank you for your feedback! It was delivered successfully to development servers 📬✨",
+                    isSystem: true,
+                    avatarUrl: "",
+                    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                  }]);
+                }}
+                className="w-full py-2 bg-gradient-to-r from-[#7B3FFE] to-[#C884FE] text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition active:scale-95 cursor-pointer leading-none text-center"
+              >
+                Submit Feedback Loop
+              </button>
+            </div>
+          )}
+
+          {/* ========================================================================================
+              4. "TOOLS & INTERACTIVE MENU" HIGHEST-FIDELITY BOTTOM SHEET OVERLAY PANEL (Matches Mockup exact item layout)
+              ======================================================================================== */}
+          {isTapMenuOpen && (
+            <div 
+              id="stream-tools-tap-sheet" 
+              className="absolute inset-x-0 bottom-0 z-50 bg-white rounded-t-[36px] p-5 shadow-[0_-12px_44px_rgba(139,92,246,0.18)] flex flex-col justify-between font-sans text-slate-800 pointer-events-auto"
+              style={{ maxHeight: "75dvh", overflowY: "auto" }}
+            >
+              
+              {/* Swipe handle indicator */}
+              <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-14 h-1 bg-slate-200 rounded-full"></div>
+
+              {/* Header Title styled with supreme elegance */}
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 mb-2.5 shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🛠️</span>
+                  <h4 className="text-xs font-black uppercase tracking-widest text-[#2A2633]">
+                     Stream Actions
+                  </h4>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsTapMenuOpen(false)}
+                  className="p-1 px-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-md cursor-pointer hover:scale-105 active:scale-95 transition-all text-[10px] font-bold"
+                  title="Close Menu"
+                >
+                  X
+                </button>
+              </div>
+
+              {/* SECTION 1: Tools Grid (9 elements) */}
+              <div className="text-left shrink-0">
+                <h5 className="text-[11px] font-black uppercase text-[#9290A6] tracking-wider mb-2.5">
+                   Tools
+                </h5>
+
+                <div className="grid grid-cols-4 gap-y-4 gap-x-2 pb-4 border-b border-slate-100 select-none">
+                  
+                  {/* Item 1: Lucky bag */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      setLuckyBagActive(true);
+                      setLuckyBagCountdown(6);
+                      setLuckyBagClaimed(false);
+                      
+                      setChatMessages(c => [...c, {
+                        id: `system-lucky-bag-start-${Date.now()}`,
+                        username: "🧧 LUCKY DROP",
+                        text: `@You just threw a Lucky Bag into the stream! Tap CLAIM inside live feed to receive Gold Coins! 🪙🎉`,
+                        isSystem: true,
+                        avatarUrl: "",
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      }]);
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#FAF9FC] hover:bg-purple-100/50 flex flex-center items-center justify-center border border-slate-200/50 shadow-sm transition-all group-hover:scale-105 active:scale-95">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Red%20envelope/3D/red_envelope_3d.png" 
+                        alt="Lucky bag" 
+                        className="w-7 h-7 object-contain"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 text-center leading-none">
+                      Lucky bag
+                    </span>
+                  </button>
+
+                  {/* Item 2: Dice */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      setIsRollingDice(true);
+                      setDiceResult(null);
+                      
+                      try {
+                        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                        const osc = ctx.createOscillator();
+                        osc.frequency.setValueAtTime(400, ctx.currentTime);
+                        osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.3);
+                        osc.connect(ctx.destination);
+                        osc.start();
+                        osc.stop(ctx.currentTime + 0.3);
+                      } catch (e) {}
+
+                      setTimeout(() => {
+                        const res = Math.floor(Math.random() * 6) + 1;
+                        setIsRollingDice(false);
+                        setDiceResult(res);
+                        
+                        setChatMessages(c => [...c, {
+                          id: `dice-roll-${Date.now()}`,
+                          username: `${currentUser.username} (You)`,
+                          text: `🎲 rolled the Live-Stream Dice and scored a ${res}! 🤩🔥`,
+                          avatarUrl: currentUser.avatarUrl,
+                          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                        }]);
+
+                        setTimeout(() => setDiceResult(null), 4000);
+                      }, 1500);
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#FAF9FC] hover:bg-purple-100/50 flex flex-center items-center justify-center border border-slate-200/50 shadow-sm transition-all group-hover:scale-105 active:scale-95">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Game%20die/3D/game_die_3d.png" 
+                        alt="Dice" 
+                        className="w-7 h-7 object-contain"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 text-center leading-none">
+                      Dice
+                    </span>
+                  </button>
+
+                  {/* Item 3: lucky number */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      const num = Math.floor(Math.random() * 98) + 1;
+                      setLuckyNumber(num);
+                      setShowLuckyNumberBadge(true);
+                      
+                      setChatMessages(c => [...c, {
+                        id: `lucky-number-set-${Date.now()}`,
+                        username: "🍀 LUCKY REF",
+                        text: `@You pulled clover lucky stream index number ${num}! Viewers can support in real-time!`,
+                        isSystem: true,
+                        avatarUrl: "",
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      }]);
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#FAF9FC] hover:bg-purple-100/50 flex flex-center items-center justify-center border border-slate-200/50 shadow-sm transition-all group-hover:scale-105 active:scale-95">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Four%20leaf%20clover/3D/four_leaf_clover_3d.png" 
+                        alt="lucky number" 
+                        className="w-7 h-7 object-contain"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 text-center leading-none">
+                      lucky number
+                    </span>
+                  </button>
+
+                  {/* Item 4: Music */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      setIsMusicSynthPlaying(!isMusicSynthPlaying);
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#FAF9FC] hover:bg-purple-100/50 flex flex-center items-center justify-center border border-slate-200/50 shadow-sm transition-all group-hover:scale-105 active:scale-95">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Optical%20disk/3D/optical_disk_3d.png" 
+                        alt="Music" 
+                        className="w-7 h-7 object-contain animate-spin"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 text-center leading-none">
+                      Music
+                    </span>
+                  </button>
+
+                  {/* Item 5: Effect */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      const filters = ["retro-crt", "neon-rainbow", "vhs-snow", "sparkling-stars", null];
+                      const currentIdx = filters.indexOf(activeVfxFilter as any);
+                      const nextFilter = filters[(currentIdx + 1) % filters.length];
+                      setActiveVfxFilter(nextFilter);
+                      
+                      setChatMessages(c => [...c, {
+                        id: `vfx-change-${Date.now()}`,
+                        username: "📽️ CAMERA",
+                        text: nextFilter 
+                          ? `Broadcaster applied camera filter: [${nextFilter.toUpperCase()}]!` 
+                          : "Broadcaster reset camera filters.",
+                        isSystem: true,
+                        avatarUrl: "",
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      }]);
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#FAF9FC] hover:bg-purple-100/50 flex flex-center items-center justify-center border border-slate-200/50 shadow-sm transition-all group-hover:scale-105 active:scale-95">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Gear/3D/gear_3d.png" 
+                        alt="Effect" 
+                        className="w-7 h-7 object-contain"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 text-center leading-none">
+                      Effect
+                    </span>
+                  </button>
+
+                  {/* Item 6: Draw Lots */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      const fortunePool = [
+                        "🔥 Legendary Streak: Views spike 200%!",
+                        "🪙 Treasure Rain: Double Gold coin tips incoming!",
+                        "🦄 Unicorn Vibe: Extreme stream rating!",
+                        "💎 Diamond Chest: A fan sends a Castle gift!",
+                        "⭐ Golden Aura: Beautiful vibes active!"
+                      ];
+                      const pickedLot = fortunePool[Math.floor(Math.random() * fortunePool.length)];
+                      setCurrentDrawLot(pickedLot);
+                      
+                      setChatMessages(c => [...c, {
+                        id: `lots-drawn-${Date.now()}`,
+                        username: `${currentUser.username} (You)`,
+                        text: `🔮 Drew live fortune: [${pickedLot}]! 🎉`,
+                        avatarUrl: currentUser.avatarUrl,
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      }]);
+
+                      try {
+                        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                        const osc = ctx.createOscillator();
+                        osc.frequency.setValueAtTime(600, ctx.currentTime);
+                        osc.frequency.setValueAtTime(800, ctx.currentTime + 0.1);
+                        osc.connect(ctx.destination);
+                        osc.start();
+                        osc.stop(ctx.currentTime + 0.2);
+                      } catch (e) {}
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#FAF9FC] hover:bg-purple-100/50 flex flex-center items-center justify-center border border-slate-200/50 shadow-sm transition-all group-hover:scale-105 active:scale-95">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Memo/3D/memo_3d.png" 
+                        alt="Draw Lots" 
+                        className="w-7 h-7 object-contain"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 text-center leading-none">
+                      Draw Lots
+                    </span>
+                  </button>
+
+                  {/* Item 7: Vote */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      setActivePoll({
+                        question: "Should we extend today's live stream by 2 more hours? 🕰️🎮",
+                        options: [
+                          { text: "Option A: Absolutely YES! 😍", votes: 12 },
+                          { text: "Option B: Standard wrap up 😴", votes: 8 }
+                        ],
+                        totalVotes: 20
+                      });
+
+                      setChatMessages(c => [...c, {
+                        id: `poll-start-${Date.now()}`,
+                        username: "📊 BOT CHECK",
+                        text: `📢 LIVE STREAM POLL INITIATED: 'Should we extend hours?' Tap options inside floating Poll card to vote live!`,
+                        isSystem: true,
+                        avatarUrl: "",
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      }]);
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#FAF9FC] hover:bg-purple-100/50 flex flex-center items-center justify-center border border-slate-200/50 shadow-sm transition-all group-hover:scale-105 active:scale-95">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Clipboard/3D/clipboard_3d.png" 
+                        alt="Vote" 
+                        className="w-7 h-7 object-contain"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 text-center leading-none">
+                      Vote
+                    </span>
+                  </button>
+
+                  {/* Item 8: Lottery Gift */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      setIsLotteryBoxPresent(true);
+                      setLotteryBoxState("closed");
+
+                      setChatMessages(c => [...c, {
+                        id: `lottery-gift-init-${Date.now()}`,
+                        username: "📢 SYSTEM",
+                        text: `🎁 Broadcaster dropped a Golden Mystery Chest onto stream screen! Click the chest in the arena to open it!`,
+                        isSystem: true,
+                        avatarUrl: "",
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      }]);
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#FAF9FC] hover:bg-purple-100/50 flex flex-center items-center justify-center border border-slate-200/50 shadow-sm transition-all group-hover:scale-105 active:scale-95">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Chest/3D/chest_3d.png" 
+                        alt="Lottery Gift" 
+                        className="w-7 h-7 object-contain"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 text-center leading-none">
+                      Lottery Gift
+                    </span>
+                  </button>
+
+                  {/* Item 9: Feedback */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      setIsFeedbackCardOpen(true);
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#FAF9FC] hover:bg-purple-100/50 flex flex-center items-center justify-center border border-slate-200/50 shadow-sm transition-all group-hover:scale-105 active:scale-95">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Envelope%20with%20arrow/3D/envelope_with_arrow_3d.png" 
+                        alt="Feedback" 
+                        className="w-7 h-7 object-contain"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 text-center leading-none">
+                      Feedback
+                    </span>
+                  </button>
+
+                </div>
+              </div>
+
+              {/* SECTION 2: Interactive Features */}
+              <div className="text-left mt-5 shrink-0 select-none pb-2">
+                <h5 className="text-[11px] font-black uppercase text-[#9290A6] tracking-wider mb-2.5">
+                   Interactive Features
+                </h5>
+
+                <div className="grid grid-cols-4 gap-y-5 gap-x-2 text-center select-none">
+                  
+                  {/* Choice 1: Auction */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      setActiveAuction({
+                        itemName: "Golden Broadcaster Crown 👑✨",
+                        currentBid: 500,
+                        highBidder: "Alex99",
+                        timeSecs: 25,
+                        isActive: true
+                      });
+
+                      setChatMessages(c => [...c, {
+                        id: `system-auction-start-${Date.now()}`,
+                        username: "📢 AUCTIONEER",
+                        text: `🔮 INTERACTIVE LIVE STREAM BIDDING INITIATED! Item: [Golden Broadcaster Crown] is active! Starting Bid: 500 Coins. Join and place bids live!`,
+                        isSystem: true,
+                        avatarUrl: "",
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      }]);
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#3b82f6] to-[#8b5cf6] flex items-center justify-center cursor-pointer shadow-md mx-auto group-hover:scale-105 active:scale-95 transition-all">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Hammer/3D/hammer_3d.png" 
+                        alt="Auction" 
+                        className="w-8 h-8 object-contain"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 leading-none text-center">
+                      Auction
+                    </span>
+                  </button>
+
+                  {/* Choice 2: PK Battle */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      setPkBattle({
+                        player1Score: 400,
+                        player2Score: 450,
+                        timeLeft: 35,
+                        isActive: true,
+                        opponent: {
+                          name: "KurdishLegend_PK 👑",
+                          avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=KurdishLegend",
+                          level: 48
+                        }
+                      });
+
+                      setChatMessages(c => [...c, {
+                        id: `system-pk-start-${Date.now()}`,
+                        username: "🏆 PK REFEREE",
+                        text: `⚔️ PK BATTLE DETECTED! You vs @KurdishLegend_PK! Support your Team by sending gifts or pushing the RED progress bar!`,
+                        isSystem: true,
+                        avatarUrl: "",
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      }]);
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#FE2C55] to-[#EC4899] flex items-center justify-center cursor-pointer shadow-md mx-auto group-hover:scale-105 active:scale-95 transition-all">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Shield/3D/shield_3d.png" 
+                        alt="PK" 
+                        className="w-8 h-8 object-contain"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 leading-none text-center">
+                      PK
+                    </span>
+                  </button>
+
+                  {/* Choice 3: Scoreboard */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      setLiveScore({
+                        teamRed: 0,
+                        teamBlue: 0,
+                        active: true
+                      });
+
+                      setChatMessages(c => [...c, {
+                        id: `system-scoreboard-${Date.now()}`,
+                        username: "📢 SCOREKEEPER",
+                        text: `📊 Interactive Match Scoreboard overlay activated on screen! Tally points for Team Red (🔴) and Team Blue (🔵) on fly.`,
+                        isSystem: true,
+                        avatarUrl: "",
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      }]);
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center cursor-pointer shadow-md mx-auto group-hover:scale-105 active:scale-95 transition-all">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Chequered%20flag/3D/chequered_flag_3d.png" 
+                        alt="Scoreboard" 
+                        className="w-8 h-8 object-contain"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 leading-none text-center">
+                      Scoreboard
+                    </span>
+                  </button>
+
+                  {/* Choice 4: Super Winner */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      setIsSpinningWheel(true);
+                      setWheelResult(null);
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-500 flex items-center justify-center cursor-pointer shadow-md mx-auto group-hover:scale-105 active:scale-95 transition-all">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Bullseye/3D/bullseye_3d.png" 
+                        alt="Super Winner" 
+                        className="w-8 h-8 object-contain"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 leading-none text-center">
+                      Super Winner
+                    </span>
+                  </button>
+
+                  {/* Choice 5: Simulate TV */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      const themes = ["Techno Beats Stream 🎵", "Neon Cybercity Sunset 🌆", "Retro Cozy Lantern 🏮", "Battlefield High-Action Warzone 🧨", "Matrix Grid Code Flow 📟"];
+                      const currentIdx = themes.indexOf(setupVideoFeed);
+                      const nextTheme = themes[(currentIdx + 1) % themes.length];
+                      setSetupVideoFeed(nextTheme);
+                      setOverrideVideoFeedTheme(nextTheme);
+
+                      setChatMessages(c => [...c, {
+                        id: `msg-tv-setup-${Date.now()}`,
+                        username: "📺 VIDEO ENG",
+                        text: `Overrided stream video template background simulation feed to [${nextTheme}] successfully!`,
+                        isSystem: true,
+                        avatarUrl: "",
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      }]);
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 to-red-650 flex items-center justify-center cursor-pointer shadow-md mx-auto group-hover:scale-105 active:scale-95 transition-all">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Television/3D/television_3d.png" 
+                        alt="Simulate TV" 
+                        className="w-8 h-8 object-contain"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 leading-none text-center">
+                       Simulate TV
+                    </span>
+                  </button>
+
+                  {/* Choice 6: Boutique Castle */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTapMenuOpen(false);
+                      const customizerDashboardEl = document.getElementById("profile-management-panel") || document.getElementById("col-customizer-dashboard");
+                      if (customizerDashboardEl) {
+                        customizerDashboardEl.scrollIntoView({ behavior: "smooth" });
+                      } else {
+                        setChatMessages(c => [...c, {
+                          id: `msg-castle-setup-${Date.now()}`,
+                          username: "🏰 BOUTIQUE",
+                          text: "Exclusive Boutique Castle loaded! Head to your Profile panel to configure avatar level and frame decorations.",
+                          isSystem: true,
+                          avatarUrl: "",
+                          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                        }]);
+                      }
+                    }}
+                    className="flex flex-col items-center group cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500 to-[#FE2C55] flex items-center justify-center cursor-pointer shadow-md mx-auto group-hover:scale-105 active:scale-95 transition-all">
+                      <img 
+                        src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Castle/3D/castle_3d.png" 
+                        alt="Boutique Castle" 
+                        className="w-8 h-8 object-contain"
+                      />
+                    </div>
+                    <span className="text-[9.5px] text-[#A4A3B1] font-bold block mt-1 leading-none text-center">
+                       Boutique Castle
+                    </span>
+                  </button>
+
+                </div>
+              </div>
+
+            </div>
+          )}
+
         </div>
       )}
 
       {/* ====================================================================================
           LEVEL & XP SYSTEM HIGH-FIDELITY ACTIVE ROOM MODAL - IMPLEMENTS "tap level" & THE LEVEL CHART
           ==================================================================================== */}
-      {isLevelModalOpen && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-[95] animate-fadeIn pointer-events-auto">
-          <div className="bg-[#120E21] border-2 border-purple-500/40 rounded-3xl w-full max-w-sm overflow-hidden shadow-[0_0_50px_rgba(139,92,246,0.3)]">
-            
-            {/* Modal Header */}
-            <div className="p-4 bg-gradient-to-r from-purple-900/40 via-indigo-950/40 to-purple-950/50 border-b border-purple-500/20 flex justify-between items-center relative">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🏆</span>
-                <div className="text-left">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-stone-200">
-                    Live Stream Level Tracker
-                  </h4>
-                  <p className="text-[8px] text-[#A855F7] font-semibold uppercase tracking-widest leading-none mt-0.5">
-                    Tap level / Progression rules
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsLevelModalOpen(false)}
-                className="w-6 h-6 rounded-full bg-stone-900/60 hover:bg-stone-800 text-stone-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer text-xs"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-4 space-y-3.5 max-h-[70vh] overflow-y-auto scrollbar-thin">
-              
-              {/* CURRENT LEVEL STATUS CARD */}
-              <div className="bg-[#1c1833] border border-purple-500/10 rounded-2xl p-3 text-center space-y-2 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/5 rounded-full blur-xl pointer-events-none"></div>
-                
-                <div className="flex items-center justify-center gap-2.5">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-yellow-400 via-amber-400 to-yellow-500 p-0.5 flex items-center justify-center shadow-[0_0_10px_rgba(245,158,11,0.25)] animate-bounce-slow">
-                    <div className="w-full h-full rounded-full bg-stone-950 flex flex-col items-center justify-center">
-                      <span className="text-[8px] text-amber-500 font-bold uppercase leading-none font-mono">LV</span>
-                      <span className="text-base font-black text-amber-300 leading-none">{currentLevel}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="text-left">
-                    <span className="text-[9px] text-purple-300 font-extrabold uppercase tracking-wider block">XP Progression</span>
-                    <span className="text-xs font-mono font-black text-stone-200 block">
-                      {currentXp.toLocaleString()} / {getXpNeededForLevel(currentLevel).toLocaleString()} XP
-                    </span>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="space-y-1 text-left">
-                  <div className="w-full h-2 bg-stone-950 rounded-full overflow-hidden border border-purple-500/10">
-                    <div 
-                      className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-amber-400 transition-all duration-500 ease-out rounded-full shadow-[0_0_10px_radial]"
-                      style={{ width: `${Math.min(100, Math.max(3, (currentXp / (getXpNeededForLevel(currentLevel) || 100)) * 100))}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[7px] font-bold text-stone-400 uppercase tracking-widest pt-0.5">
-                    <span>{Math.round((currentXp / (getXpNeededForLevel(currentLevel) || 100)) * 100)}% Complete</span>
-                    <span className="text-amber-400">Next LV: {currentLevel + 1}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* LEVEL CHEAT SHEET / SYSTEM THRESHOLDS */}
-              <div className="space-y-1.5 text-left">
-                <span className="text-[8px] font-black uppercase text-purple-400 tracking-widest block pl-1">Level Targets Config (Requested)</span>
-                
-                <div className="bg-stone-950 border border-stone-900 rounded-xl divide-y divide-stone-900/60 font-mono text-[9px] max-h-48 overflow-y-auto">
-                  {LEVEL_REQUIREMENTS.map((rule, idx) => {
-                    const isActive = currentLevel.toString() === rule.level.toString() || 
-                      (rule.level === "8-50" && currentLevel >= 8 && currentLevel <= 50);
-                    return (
-                      <div 
-                        key={idx} 
-                        className={`p-2 flex items-center justify-between transition-colors ${
-                          isActive 
-                            ? "bg-purple-950/20 text-[#A855F7] border-l-2 border-purple-500" 
-                            : "text-stone-400"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1 font-bold">
-                          <span className={isActive ? "text-amber-400" : "text-stone-600"}>👑</span>
-                          <span>Level {rule.level}:</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-extrabold text-stone-300 font-mono text-[9px] block">
-                            {rule.xp.toLocaleString()} XP
-                          </span>
-                          <span className="text-[7px] text-stone-500 block uppercase tracking-tight">{rule.label}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* INTERACTIVE LEVEL UP CONTROL ACTIONS */}
-              <div className="space-y-2 pt-1 border-t border-purple-950 text-left">
-                <span className="text-[8px] font-black uppercase text-purple-400 tracking-widest block pl-1">Milestone Simulator Controls</span>
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      let nextXp = currentXp + 500;
-                      let nextLevel = currentLevel;
-                      let nextTarget = getXpNeededForLevel(nextLevel);
-                      
-                      while (nextXp >= nextTarget) {
-                        nextXp -= nextTarget;
-                        nextLevel += 1;
-                        nextTarget = getXpNeededForLevel(nextLevel);
-                      }
-
-                      setCurrentLevel(nextLevel);
-                      setCurrentXp(nextXp);
-                      onLevelXpUpdate(nextLevel, nextXp);
-                    }}
-                    className="p-1.5 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-200 text-[9px] font-black uppercase rounded-xl tracking-wider transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm text-center flex flex-col justify-center items-center gap-0.5"
-                  >
-                    <span>⚡ Gain XP</span>
-                    <span className="text-[7.5px] text-purple-400 font-bold font-mono">+500 XP</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      let nextXp = currentXp + 2500;
-                      let nextLevel = currentLevel;
-                      let nextTarget = getXpNeededForLevel(nextLevel);
-                      
-                      while (nextXp >= nextTarget) {
-                        nextXp -= nextTarget;
-                        nextLevel += 1;
-                        nextTarget = getXpNeededForLevel(nextLevel);
-                      }
-
-                      setCurrentLevel(nextLevel);
-                      setCurrentXp(nextXp);
-                      onLevelXpUpdate(nextLevel, nextXp);
-                    }}
-                    className="p-1.5 bg-gradient-to-r from-amber-500/10 to-yellow-400/10 hover:from-amber-500/20 border border-amber-500/30 text-amber-300 text-[9px] font-black uppercase rounded-xl tracking-wider transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm text-center flex flex-col justify-center items-center gap-0.5"
-                  >
-                    <span>🌟 Extreme XP</span>
-                    <span className="text-[7.5px] text-amber-400 font-bold font-mono">+2,500 XP</span>
-                  </button>
-                </div>
-
-                {/* Direct level setting tool */}
-                <div className="bg-[#1c1833]/40 border border-[#2d2254]/40 rounded-xl p-2 flex items-center justify-between gap-2">
-                  <div className="text-left shrink-0">
-                    <label className="text-[8px] font-black uppercase text-stone-400 tracking-wider block">Set Level</label>
-                  </div>
-                  
-                  <div className="flex gap-1 items-center">
-                    <input
-                      type="number"
-                      placeholder="e.g. 5"
-                      min={1}
-                      max={50}
-                      value={customLevelInput}
-                      onChange={(e) => setCustomLevelInput(e.target.value)}
-                      className="w-12 bg-stone-950 border border-purple-500/20 rounded-md p-0.5 text-center text-xs font-mono font-black text-stone-200 focus:outline-none focus:border-purple-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const lvl = parseInt(customLevelInput, 10);
-                        if (!lvl || lvl < 1 || lvl > 50) return;
-                        const nextTarget = getXpNeededForLevel(lvl);
-                        
-                        setCurrentLevel(lvl);
-                        setCurrentXp(0);
-                        onLevelXpUpdate(lvl, 0);
-                        setCustomLevelInput("");
-                      }}
-                      className="px-2 py-1 bg-gradient-to-r from-purple-600 to-[#923FEF] hover:from-[#A855F7] text-white text-[8px] font-black uppercase rounded shadow cursor-pointer active:scale-95 transition-all"
-                    >
-                      GO
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-3 bg-stone-950 border-t border-purple-950 text-center">
-              <span className="text-[7.5px] font-bold text-stone-500 uppercase tracking-widest">
-                Updates saved database-wide in real-time!
-              </span>
-            </div>
-
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
