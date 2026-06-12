@@ -568,124 +568,38 @@ export default function App() {
           ENHANCED LIVE DISCOVERY HUB: 
           Provides immersive "all user live" experience with trending and discovery sections.
         */
-        <main className="flex-1 flex flex-col relative overflow-hidden bg-[#0c0816]">
-          {/* Immersive Header for Live Discovery - Styled exactly as Image 2 */}
-          <div className="p-4 sm:p-5 flex items-center justify-between border-b border-[#2d2254]/40 bg-black/50 backdrop-blur-xl sticky top-0 z-30">
-             <div className="flex items-center gap-2.5">
-               <button
-                 type="button"
-                 onClick={() => {
-                   setSelectedStreamer(null);
-                   setActiveTab("home");
-                 }}
-                 className="mr-1.5 p-2 bg-[#1e133c]/80 hover:bg-[#2d1e57] text-[#9366ff] hover:text-white rounded-full transition-all hover:scale-105 active:scale-95 border border-[#2d1c5a]/40 cursor-pointer flex items-center justify-center shadow"
-                 title="Back to Explore"
-               >
-                 <ArrowLeft className="w-4 h-4" />
-               </button>
-               <div className="relative">
-                 <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping absolute inset-0 opacity-75"></div>
-                 <div className="w-2.5 h-2.5 rounded-full bg-red-600 relative"></div>
-               </div>
-               <div>
-                  <h3 className="text-lg sm:text-xl font-extrabold bg-gradient-to-r from-violet-400 via-[#9366FF] to-fuchsia-400 bg-clip-text text-transparent font-sans tracking-wide">
-                     Live Streaming
-                  </h3>
-               </div>
+        <main className="flex-1 flex flex-col relative overflow-hidden bg-[#161211]">
+          {/* Immersive Header for Live Discovery - Styled exactly as Image  */}
+          <div className="flex items-center justify-between px-5 pt-8 pb-3 bg-[#161211] sticky top-0 z-30 shrink-0">
+             <div className="flex items-baseline gap-3">
+                <span className="text-stone-500 font-bold text-xl cursor-pointer">Mine</span>
+                <span className="text-white font-extrabold text-[28px] tracking-tight cursor-pointer">Explore</span>
              </div>
-
-             <div className="flex items-center gap-2">
-                {/* 1. Toggleable Search Field */}
-                {isSearchBoxOpen ? (
-                  <div className="flex items-center gap-1 bg-[#1e153a] border border-[#443180] rounded-full px-2.5 py-1 animate-scaleUp">
-                    <Search className="w-3.5 h-3.5 text-[#9366ff]" />
-                    <input
-                      type="text"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="Search live..."
-                      className="bg-transparent border-none text-[10px] text-white font-bold uppercase tracking-wider focus:outline-none w-20 sm:w-32"
-                      autoFocus
-                    />
-                    <button onClick={() => { setSearchTerm(""); setIsSearchBoxOpen(false); }} className="text-stone-400 hover:text-white">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setIsSearchBoxOpen(true)}
-                    className="p-2 bg-[#1e133c] hover:bg-[#2d1e57] text-[#9366ff] rounded-full transition-all hover:scale-105 active:scale-95"
-                    title="Search streamers"
-                  >
-                     <Search className="w-4 h-4" />
-                  </button>
-                )}
-
-                {/* 2. "Go Live" Toggle Capsule/Pill (matches screenshot radio switch) */}
-                <button
-                  onClick={() => setIsBroadcastingStudio(true)}
-                  className="px-3 py-1.5 bg-[#4c31ab] hover:bg-[#5b3bc9] text-white font-extrabold rounded-full text-[11px] font-sans transition-all hover:scale-105 active:scale-95 flex items-center gap-2 border border-[#6b49eb]"
-                >
-                  <span className="w-2.5 h-2.5 rounded-full bg-white shadow-sm block animate-pulse"></span>
-                  <span className="tracking-tight pr-1">Go Live</span>
-                </button>
-
-                {/* 3. QR Code scanner button (lavender/purple container) */}
-                <button
-                  onClick={() => setIsQRCodeOpen(true)}
-                  className="p-2 bg-[#1e133c] hover:bg-[#2d1e57] text-[#9366ff] rounded-xl transition-all border border-[#2d1c5a] hover:scale-105 active:scale-95"
-                  title="Share/Scan QR Code"
-                >
-                   <QrCode className="w-4 h-4" />
-                </button>
+             <div className="flex items-center gap-5">
+                <span className="text-2xl animate-bounce hover:scale-110 cursor-pointer">🎉</span>
+                <Search className="w-6 h-6 text-white cursor-pointer hover:scale-110" />
              </div>
           </div>
 
+          {/* Nav Pills */}
+          <div className="flex items-center gap-3 px-5 pb-4 overflow-x-auto scrollbar-none bg-[#161211] shrink-0 sticky top-[72px] z-20">
+             <button className="px-5 py-1.5 bg-[#FE6E3C] text-white font-bold rounded-full text-sm whitespace-nowrap shadow-md cursor-pointer">Recommend</button>
+             <button className="px-5 py-1.5 bg-[#3B3037] text-stone-300 font-bold rounded-full text-sm whitespace-nowrap hover:bg-[#4B4047] cursor-pointer transition-colors">PK</button>
+             <button className="px-5 py-1.5 bg-[#3B3037] text-stone-300 font-bold rounded-full text-sm whitespace-nowrap hover:bg-[#4B4047] cursor-pointer transition-colors">Game</button>
+             <button className="px-5 py-1.5 bg-[#3B3037] text-stone-300 font-bold rounded-full text-sm whitespace-nowrap hover:bg-[#4B4047] cursor-pointer transition-colors">Video</button>
+             <button className="px-5 py-1.5 bg-[#3B3037] text-stone-300 font-bold rounded-full text-sm whitespace-nowrap hover:bg-[#4B4047] cursor-pointer transition-colors">Lott</button>
+          </div>
 
-
-          <div className="flex-1 overflow-y-auto px-5 py-6 space-y-10 pb-32">
-             
-
-
-             {/* 2. DISCOVERY DIRECTORY - ALL USER LIST */}
-             <section className="space-y-5">
-                <div className="flex items-center justify-between px-1">
-                   <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-indigo-500/10 rounded-lg">
-                        <Users className="w-5 h-5 text-indigo-400" />
-                      </div>
-                      <h4 className="text-sm font-black text-white uppercase tracking-wider">All User Live</h4>
-                   </div>
-                   <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-900 border border-stone-800 rounded-xl">
-                         <Search className="w-3.5 h-3.5 text-stone-500" />
-                         <input 
-                            type="text"
-                            placeholder="SEARCH USERS..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="bg-transparent border-none text-[9px] text-white font-black uppercase tracking-widest focus:outline-none w-24 sm:w-32"
-                         />
-                      </div>
-                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                  {streamersList.filter(live => {
-                    const matchesSearch = live.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                      live.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      live.title.toLowerCase().includes(searchTerm.toLowerCase());
-                    return matchesSearch;
-                  }).map((live) => (
-                    <div 
-                      key={live.id} 
-                      onClick={() => setSelectedStreamer(live)}
-                      className="bg-[#110d1f]/60 border border-stone-850/50 rounded-2xl overflow-hidden hover:border-indigo-500/20 transition-all group cursor-pointer shadow-xl relative"
-                    >
-                      {/* Live Badge for own content if applicable */}
-                      {live.creatorId === auth.currentUser?.uid && (
-                        <div className="absolute top-2 right-2 z-20 flex items-center gap-1">
-                          <span className="px-2 py-0.5 bg-indigo-650 text-white text-[7px] font-black rounded uppercase tracking-wider backdrop-blur-sm shadow">My Live</span>
+          <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 pb-32">
+             <div className="flex flex-col gap-3">
+                {streamersList.map((live, idx) => (
+                  <div 
+                    key={live.id} 
+                    onClick={() => setSelectedStreamer(live)}
+                    className="flex items-stretch p-3.5 bg-[#1F191D] hover:bg-[#282126] transition-colors rounded-[20px] gap-3.5 cursor-pointer shadow-sm relative overflow-hidden group"
+                  >
+                    {live.creatorId === auth.currentUser?.uid && (
+                        <div className="absolute top-2 left-2 z-20 flex flex-col gap-1 items-start">
                           <button
                             type="button"
                             onClick={async (e) => {
@@ -695,80 +609,60 @@ export default function App() {
                               }
                             }}
                             className="p-1.5 bg-red-650 hover:bg-rose-500 text-white rounded-md transition-all hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center shadow-md border border-red-500/20"
-                            title="Delete Live Stream"
+                            title="Delete My Live Stream"
                           >
-                            <Trash2 className="w-2.5 h-2.5" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                      )}
-
-                      <div className="relative aspect-video">
-                         <img src={live.avatarUrl} className="w-full h-full object-cover group-hover:brightness-110 duration-500" />
-                         <div className="absolute inset-0 bg-gradient-to-t from-[#0c0816] to-transparent opacity-80" />
-                         <div className="absolute bottom-3 left-3 right-3">
-                            <p className="text-[10px] font-black text-white truncate leading-tight mb-1">{live.title}</p>
-                            <span className="text-[9px] text-indigo-400 font-bold uppercase tracking-widest">{live.category.split(' ')[0]}</span>
-                         </div>
-                      </div>
-                      <div className="p-3 flex items-center justify-between border-t border-stone-850/30">
-                         <div className="flex items-center gap-2 overflow-hidden">
-                           <img src={live.avatarUrl} className="w-7 h-7 rounded-full border border-stone-800 object-cover" />
-                           <div className="overflow-hidden">
-                              <p className="text-[10px] font-bold text-stone-200 truncate">{live.fullName}</p>
-                              <p className="text-[8px] text-stone-500 font-mono truncate">@{live.username}</p>
+                    )}
+                    
+                    <div className="relative shrink-0">
+                       <img src={live.avatarUrl} className="w-[88px] h-[88px] rounded-2xl object-cover bg-stone-900 border border-stone-800" />
+                       {idx === 0 && (
+                         <div className="absolute bottom-0 text-center w-full px-1">
+                           <div className="mx-auto bg-gradient-to-r from-red-500 to-pink-500 text-white text-[9px] font-black italic uppercase px-1 py-0.5 rounded truncate shadow-sm transform translate-y-1/2">
+                             Hourly Top 1
                            </div>
                          </div>
-                         <div className="flex flex-col items-end">
-                            <div className="text-[9px] font-black text-stone-300 flex items-center gap-1">
-                               <Users className="w-2.5 h-2.5" /> {live.viewersCount}
-                            </div>
-                         </div>
-                      </div>
+                       )}
                     </div>
-                  ))}
-
-                    {streamersList.filter(live => {
-                      const matchesSearch = live.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                        live.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        live.title.toLowerCase().includes(searchTerm.toLowerCase());
-                      return matchesSearch;
-                    }).length === 0 && (
-                     <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                        {/* Gorgeous vector-styled illustration of empty results from Image 2 */}
-                        <svg className="w-48 h-48 mx-auto mb-4 opacity-90 animate-pulse duration-4000" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                           {/* Skewed stack of document-like cards in soft lavender & purple */}
-                           <rect x="52" y="42" width="75" height="100" rx="10" fill="#1b1236" stroke="#362561" strokeWidth="2.5" transform="rotate(-6 52 42)" opacity="0.6" />
-                           <rect x="68" y="32" width="75" height="100" rx="10" fill="#24194a" stroke="#4a358c" strokeWidth="2.5" transform="rotate(3 68 32)" />
-                           
-                           {/* Decorative document grids */}
-                           <line x1="82" y1="52" x2="122" y2="52" stroke="#4a358c" strokeWidth="4.5" strokeLinecap="round" />
-                           <line x1="82" y1="67" x2="112" y2="67" stroke="#4a358c" strokeWidth="4.5" strokeLinecap="round" />
-                           <line x1="82" y1="82" x2="102" y2="82" stroke="#4a358c" strokeWidth="4.5" strokeLinecap="round" />
-                           
-                           {/* Secondary decorative elements */}
-                           <circle cx="128" cy="82" r="10" fill="#9366ff" opacity="0.15" />
-                           <circle cx="48" cy="112" r="6" fill="#9366ff" opacity="0.2" />
-                           <circle cx="158" cy="68" r="4.5" fill="#a78bfa" opacity="0.35" />
-                           <circle cx="148" cy="132" r="5" fill="#9366ff" opacity="0.1" />
-
-                           {/* Magnifying glass handle with white metallic highlight */}
-                           <path d="M 125,125 L 158,158" stroke="#8b5cf6" strokeWidth="8" strokeLinecap="round" />
-                           <path d="M 132,132 L 152,152" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
-                           
-                           {/* Magnifying glass circle frame */}
-                           <circle cx="108" cy="108" r="28" fill="#130b2e" stroke="#8b5cf6" strokeWidth="7" />
-                           <circle cx="108" cy="108" r="24" fill="#1d1245" />
-                           
-                           {/* Bold "X" inside magnifying glass */}
-                           <path d="M 96,96 L 120,120" stroke="#8b5cf6" strokeWidth="5" strokeLinecap="round" />
-                           <path d="M 120,96 L 96,120" stroke="#8b5cf6" strokeWidth="5" strokeLinecap="round" />
-                        </svg>
-                        <p className="text-base text-[#dcd7f5] font-extrabold tracking-wide mt-2">No live streaming found</p>
-                        <p className="text-xs text-stone-500 uppercase tracking-widest mt-1">Start your studio loop or modify search criteria</p>
-                     </div>
-                   )}
-                </div>
-             </section>
+                    <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
+                       <div className="flex justify-between items-start gap-2">
+                          <h3 className="text-white font-bold text-[17px] leading-tight truncate font-sans tracking-wide">
+                            {live.fullName || live.username}
+                          </h3>
+                          <div className={`shrink-0 px-1.5 py-0.5 rounded-[4px] flex items-center font-black italic text-[11px] shadow-sm tracking-wide ${idx % 3 === 0 ? 'bg-[#0D3C37] text-emerald-400' : idx % 2 === 0 ? 'bg-[#1C203A] text-[#5DE7FF] border border-[#24294F]' : 'bg-[#3A301D] text-amber-400'}`}>
+                            {idx % 3 === 0 ? '🎲' : 'PK'}
+                          </div>
+                       </div>
+                       
+                       <p className="text-[#A29A9E] text-[13px] mt-0.5 max-w-[200px] truncate block font-sans">
+                          {live.title}
+                       </p>
+                       
+                       <div className="flex items-center justify-between mt-auto pt-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                             <span className="px-1.5 py-1 bg-[#155A6A] text-[#A6FCFF] rounded text-[9px] font-bold flex items-center gap-1">
+                               <span className="text-[#A6FCFF]">🌻</span> <span className="text-white opacity-80">{live.level || 1}</span> {live.username.slice(0,4)}
+                             </span>
+                             <span className="px-2 py-0.5 bg-[#4250FF] shadow-inner font-sans text-white rounded-full text-[10px] font-black italic">
+                               Lv.{live.level || 11}
+                             </span>
+                          </div>
+                          
+                          <div className="text-[#8B8387] text-[12px] font-bold tracking-wider flex items-center gap-1 shrink-0">
+                             <div className="flex items-end gap-[2px] h-3 mr-0.5">
+                                <span className="inline-block w-[3px] h-[5px] bg-[#FE6E3C] rounded-sm animate-pulse"></span>
+                                <span className="inline-block w-[3px] h-[9px] bg-[#FE6E3C] rounded-sm animate-pulse delay-75"></span>
+                                <span className="inline-block w-[3px] h-[7px] bg-[#FE6E3C] rounded-sm animate-pulse delay-150"></span>
+                             </div>
+                             {live.viewersCount}
+                          </div>
+                       </div>
+                    </div>
+                  </div>
+                ))}
+             </div>
           </div>
 
           {/* BROADCAST STUDIO OVERLAY */}
@@ -848,17 +742,14 @@ export default function App() {
         </main>
       )}
 
-      {/* DETAILED BOTTOM DOCKED NAVIGATION BUTTON BAR - Matches Image 1 / Image 2 custom tap bar */}
+      {/* DETAILED BOTTOM DOCKED NAVIGATION BUTTON BAR */}
       {selectedStreamer === null && (
-        <footer id="loopchat-nav-footer" className="sticky bottom-0 z-40 bg-[#FAF9FC] border-t border-[#F0EEF7] py-2 sm:py-3.5 px-4 shadow-[0_-4px_16px_rgba(0,0,0,0.03)] select-none">
-          <div className="max-w-md mx-auto flex items-center justify-between gap-1">
+        <footer id="loopchat-nav-footer" className="fixed bottom-0 w-full z-40 bg-[#161211]/95 backdrop-blur-md pt-2 pb-6 px-6 border-t border-[#262024]">
+          <div className="max-w-md mx-auto flex items-end justify-between">
             
-            {/* Tab 1: Explore/Home (Play Speech Bubble Gradient Icon) */}
+            {/* Tab: Yari Konkan */}
             <button
-              onClick={() => {
-                setSelectedStreamer(null);
-                setActiveTab("home");
-              }}
+              onClick={() => setActiveTab("home")}
               className="flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer relative shrink-0 active:scale-95 duration-150"
               title="Explore/Home"
             >
@@ -878,12 +769,9 @@ export default function App() {
               </svg>
             </button>
 
-            {/* Tab 2: Go Live/Watch Streams List (TV with twin antennas icon) */}
+            {/* Tab: Room */}
             <button
-              onClick={() => {
-                setSelectedStreamer(null);
-                setActiveTab("live");
-              }}
+              onClick={() => setActiveTab("live")}
               className="flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer relative shrink-0 active:scale-95 duration-150"
               title="Livestreams"
             >
@@ -895,16 +783,14 @@ export default function App() {
               </svg>
             </button>
 
-            {/* Tab 3: Central Broadcast Button (Plus action trigger to Add Live) */}
+            {/* Middle Action / Create Live */}
             <button
-              onClick={() => {
-                setIsAddCreatorLiveOpen(true);
-              }}
+              onClick={() => setIsAddCreatorLiveOpen(true)}
               className="flex items-center justify-center p-1 cursor-pointer select-none active:scale-90 duration-200 shrink-0 transform -translate-y-1.5"
-              title="Add simulated stream to database"
+              title="Add stream"
             >
               <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#9366ff] to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/30 relative">
-                {/* Dashed outer orbit matching first image */}
+                {/* Dashed outer orbit */}
                 <div className="absolute inset-1 rounded-full border border-dashed border-white/60 animate-spin-slow"></div>
                 {/* Inner white circle */}
                 <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-white flex items-center justify-center shadow-inner">
@@ -913,14 +799,21 @@ export default function App() {
               </div>
             </button>
 
-
-
-            {/* Tab 5: Profile Panel (Silhouette circle badge) */}
+            {/* Tab: Message */}
             <button
-              onClick={() => {
-                setSelectedStreamer(null);
-                setActiveTab("profile");
-              }}
+              onClick={() => setActiveTab("chat")}
+              className="flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer relative shrink-0 active:scale-95 duration-150"
+              title="Chat"
+            >
+              <svg className="w-8 h-8 sm:w-9 sm:h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 24L7.5 28.5V24C5.567 24 4 22.433 4 20.5v-11C4 7.567 5.567 6 7.5 6h21C30.433 6 32 7.567 32 9.5v11c0 1.933-1.567 3.5-3.5 3.5H12z" fill={activeTab === "chat" ? "#8B5CF6" : "#BAC3EA"} />
+                <path d="M12 15h12M12 18h8" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            </button>
+
+            {/* Tab: Me */}
+            <button
+              onClick={() => setActiveTab("profile")}
               className="flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer relative shrink-0 active:scale-95 duration-150"
               title="Profile"
             >

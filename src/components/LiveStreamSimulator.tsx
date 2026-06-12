@@ -692,12 +692,12 @@ export default function LiveStreamSimulator({
     },
     ...Array.from({ length: 15 }, (_, i) => ({
       id: i + 2,
-      username: `Guest-${i + 2}`,
-      avatarUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=Guest-${i + 2}`,
-      isOccupied: true,
+      username: "",
+      avatarUrl: "",
+      isOccupied: false,
       isRequesting: false,
-      score: Math.floor(Math.random() * 500),
-      statusText: "REAL",
+      score: 0,
+      statusText: "",
     })),
   ]);
 
@@ -2487,14 +2487,18 @@ export default function LiveStreamSimulator({
               {coHostSlots.slice(1).map((slot) => (
                 <button
                   key={slot.id}
-                  onClick={() => handleInteractSlot(slot.id)}
-                  className={`${isMicSmall ? 'aspect-[1.3/1]' : 'aspect-square'} border rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-1 cursor-pointer transition-all duration-300 ${
+                  onClick={() => {
+                     if (isBroadcasting || slot.isOccupied) {
+                        handleInteractSlot(slot.id);
+                     }
+                  }}
+                  className={`${isMicSmall ? 'aspect-[1.3/1]' : 'aspect-square'} border rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-1 transition-all duration-300 ${
                     slot.isOccupied
-                      ? "bg-purple-950/15 border-purple-500/40"
+                      ? "bg-purple-950/15 border-purple-500/40 cursor-pointer"
                       : slot.isRequesting
                         ? "bg-stone-900 border-amber-500/40"
                         : "bg-[#20202F] border-transparent"
-                  }`}
+                  } ${(!isBroadcasting && !slot.isOccupied) ? "pointer-events-none" : "cursor-pointer"}`}
                 >
                   {slot.isOccupied ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-1 bg-gradient-to-b from-[#110e1f] to-[#06040d] z-0">
@@ -2613,40 +2617,6 @@ export default function LiveStreamSimulator({
           {/* USER MIC CONTROL PANEL (One-Tap Request, Back Mic, Voice Off/On) - Hidden for active Host */}
           {!isBroadcasting && (
             <div className="px-3.5 py-1 z-20 shrink-0">
-              {!isJoinedOnMic ? (
-                <button
-                  type="button"
-                  onClick={handleOneTapJoinMic}
-                  className="w-full py-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-green-500 hover:from-emerald-400 hover:to-green-400 text-stone-950 font-black tracking-tight text-[11px] uppercase rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 animate-pulse"
-                >
-                  <Mic className="w-3.5 h-3.5" /> One-Tap Join Mic
-                </button>
-              ) : (
-                <div className="flex items-center gap-2 w-full bg-stone-900/90 border border-purple-500/30 p-1.5 rounded-xl shadow-lg">
-                  {/* Voice On/Off toggle */}
-                  <button
-                    type="button"
-                    onClick={handleToggleMicVoice}
-                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      isMicVoiceOn 
-                        ? "bg-purple-600 text-white hover:bg-purple-500" 
-                        : "bg-red-950 text-red-400 border border-red-800/50"
-                    }`}
-                  >
-                    <span className="text-xs">{isMicVoiceOn ? "🎙️" : "🔇"}</span>
-                    Voice {isMicVoiceOn ? "On" : "Off"}
-                  </button>
-
-                  {/* Back Mic button */}
-                  <button
-                    type="button"
-                    onClick={handleLeaveMic}
-                    className="flex-1 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-stone-700"
-                  >
-                    <span className="text-xs">↩️</span> Back Mic
-                  </button>
-                </div>
-              )}
             </div>
           )}
 
@@ -2778,15 +2748,17 @@ export default function LiveStreamSimulator({
             </form>
 
             {/* Hamburger Menu toggle icon opens the newly built premium Stream Tools Tap Menu UI matching mockup */}
-            <button
-              id="stream-tools-menu-btn"
-              type="button"
-              onClick={() => setIsTapMenuOpen(true)}
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-[#7B3FFE]/10 border border-[#7B3FFE]/30 hover:bg-[#7B3FFE]/20 hover:scale-105 active:scale-95 transition-all text-[#C884FE] cursor-pointer"
-              title="Stream Tools & Features Menu"
-            >
-              <Menu className="w-5 h-5 stroke-[2.5]" />
-            </button>
+            {isBroadcasting && (
+              <button
+                id="stream-tools-menu-btn"
+                type="button"
+                onClick={() => setIsTapMenuOpen(true)}
+                className="w-10 h-10 rounded-full flex items-center justify-center bg-[#7B3FFE]/10 border border-[#7B3FFE]/30 hover:bg-[#7B3FFE]/20 hover:scale-105 active:scale-95 transition-all text-[#C884FE] cursor-pointer"
+                title="Stream Tools & Features Menu"
+              >
+                <Menu className="w-5 h-5 stroke-[2.5]" />
+              </button>
+            )}
 
             {/* Premium Magnificent 3D Pink Gift Box with red ribbon (loads from Microsoft Fluent 3D Emoji) */}
             <button
