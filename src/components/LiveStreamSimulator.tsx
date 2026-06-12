@@ -690,13 +690,14 @@ export default function LiveStreamSimulator({
       isRequesting: false,
       statusText: "Host",
     },
-    ...Array.from({ length: 8 }, (_, i) => ({
+    ...Array.from({ length: 15 }, (_, i) => ({
       id: i + 2,
-      username: "",
-      avatarUrl: "",
-      isOccupied: false,
+      username: `Guest-${i + 2}`,
+      avatarUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=Guest-${i + 2}`,
+      isOccupied: true,
       isRequesting: false,
-      statusText: "Request",
+      score: Math.floor(Math.random() * 500),
+      statusText: "REAL",
     })),
   ]);
 
@@ -2178,10 +2179,15 @@ export default function LiveStreamSimulator({
               } else {
                 // Default: Cosmic Nebula Loop
                 return (
-                  <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center relative">
-                    <div className="absolute -inset-[10px] bg-gradient-to-tr from-[#2d1264] via-[#090326] to-[#4c0d45] opacity-80" />
-                    <div className="absolute w-44 h-44 rounded-full bg-indigo-500/15 blur-3xl animate-pulse" />
-                    <div className="absolute w-36 h-36 rounded-full bg-pink-500/10 blur-2xl animate-spin-slow" />
+                  <div className="w-full h-full relative overflow-hidden bg-gradient-to-b from-[#6b0f1a] to-[#2a040b]">
+                    {/* Red Carpet / Stage Simulation */}
+                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1574267432553-4b4628081524?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay opacity-40"></div>
+                    
+                    {/* Spotlight effects */}
+                    <div className="absolute top-0 left-1/4 w-96 h-[800px] bg-yellow-500/10 blur-[100px] -rotate-12 transform origin-top pointer-events-none"></div>
+                    <div className="absolute top-0 right-1/4 w-96 h-[800px] bg-yellow-500/10 blur-[100px] rotate-12 transform origin-top pointer-events-none"></div>
+                    
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#8E0916]/80 via-transparent to-black/60"></div>
                   </div>
                 );
               }
@@ -2430,7 +2436,7 @@ export default function LiveStreamSimulator({
             {/* Header with size toggle button for live mic small request */}
             <div className="flex items-center justify-between gap-1 mb-2 px-1">
               <span className="text-[9px] font-black uppercase text-purple-400 tracking-wider flex items-center gap-1">
-                🎤 Co-Host Mics ({coHostSlots.filter(s=>s.isOccupied).length}/9)
+                🎤 Co-Host Mics ({coHostSlots.filter(s=>s.isOccupied).length}/16)
               </span>
               <button
                 type="button"
@@ -2442,7 +2448,7 @@ export default function LiveStreamSimulator({
               </button>
             </div>
 
-            <div className={`grid grid-cols-3 ${isMicSmall ? 'gap-1.5' : 'gap-2'} w-full transition-all`}>
+            <div className={`grid grid-cols-4 ${isMicSmall ? 'gap-1.5' : 'gap-2'} w-full transition-all`}>
               
               {/* Host / Slot 1 podium box */}
               <div className={`${isMicSmall ? 'aspect-[1.3/1]' : 'aspect-square'} bg-stone-950 border border-stone-800/80 rounded-xl relative overflow-hidden flex flex-col justify-between p-1 transition-all duration-300`}>
@@ -2578,23 +2584,21 @@ export default function LiveStreamSimulator({
                     <div className="flex flex-col items-center justify-center gap-1 select-none text-center">
                       {isBroadcasting ? (
                         <>
-                          {/* "add icon uesr" state */}
-                          <span className={`rounded-full bg-indigo-950/30 text-indigo-400 border border-indigo-900/40 flex items-center justify-center hover:bg-indigo-900/20 hover:scale-105 active:scale-95 transition-all ${isMicSmall ? 'w-5 h-5' : 'w-7 h-7'}`}>
-                            <UserPlus className={`${isMicSmall ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'}`} />
+                          <span className={`w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/50 hover:bg-white/20 transition-colors`}>
+                            <Plus className="w-4 h-4" />
                           </span>
-                          <div className="flex flex-col leading-none">
-                            <span className="text-[7.5px] text-indigo-300 font-black uppercase tracking-tight">Add User</span>
-                            <span className="text-[6.5px] text-stone-400 font-bold">Add Mic</span>
-                          </div>
+                          <span className="text-[10px] text-white/60 font-bold tracking-tight mt-1">
+                            {slot.id}
+                          </span>
                         </>
                       ) : (
                         // Standard viewer style:
                         <>
-                          <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
-                            <Plus className="w-3.5 h-3.5" />
+                          <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/50 hover:bg-white/20 transition-colors">
+                            <Plus className="w-4 h-4" />
                           </span>
-                          <span className="text-[8px] text-stone-300 font-bold tracking-tight">
-                            Request
+                          <span className="text-[10px] text-white/60 font-bold tracking-tight mt-1">
+                            {slot.id}
                           </span>
                         </>
                       )}
@@ -2954,6 +2958,21 @@ export default function LiveStreamSimulator({
                   </div>
                 </div>
                 
+                <div className="flex gap-4 overflow-x-auto pb-2 mb-2 scrollbar-none border-b border-stone-800 shrink-0">
+                  <button className="text-[12px] font-bold text-white border-b-2 border-[#FE2C55] px-1 pb-1 whitespace-nowrap shrink-0">
+                    ⭐ Classic
+                  </button>
+                  <button className="text-[12px] font-bold text-stone-500 hover:text-stone-300 px-1 pb-1 whitespace-nowrap shrink-0">
+                    Premium
+                  </button>
+                  <button className="text-[12px] font-bold text-stone-500 hover:text-stone-300 px-1 pb-1 whitespace-nowrap shrink-0">
+                    Exclusive
+                  </button>
+                  <button className="text-[12px] font-bold text-stone-500 hover:text-stone-300 px-1 pb-1 whitespace-nowrap shrink-0">
+                    Fun
+                  </button>
+                </div>
+
                 <div className="grid grid-cols-4 gap-2 h-[180px] overflow-y-auto p-0.5 scrollbar-thin scrollbar-thumb-purple-900/40">
                   {giftsList.map((gift) => {
                     const isSelected = selectedGiftId === gift.id;
@@ -3011,21 +3030,14 @@ export default function LiveStreamSimulator({
             {/* Bottom footer bar: Golden buy coin pill indicator with Combo action */}
               <div className="mt-3 py-3 border-t border-stone-900 flex items-center justify-between gap-4 shrink-0">
                 <div className="flex flex-col text-left">
-                  <span className="text-[10px] text-stone-500 font-medium uppercase tracking-wide">Wallet Balance</span>
-                  {/* Coin and Diamond balance static display */}
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <div
-                      className="py-1 px-2.5 bg-amber-500/10 border border-amber-500/30 rounded-full flex items-center gap-1.5 text-[10px] font-black text-amber-400 font-mono transition-all select-none"
-                    >
+                  <div className="flex items-center gap-1.5 cursor-pointer hover:bg-amber-500/5 rounded p-1 transition-colors" onClick={() => onCoinsUpdate(currentUser.coins)}>
+                    <div className="flex items-center gap-1 text-[12px] font-black text-amber-400">
                       <span>🪙</span>
                       <span>{currentUser.coins}</span>
                     </div>
-                    <div
-                      className="py-1 px-2.5 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center gap-1.5 text-[10px] font-black text-cyan-400 font-mono transition-all select-none"
-                    >
-                      <span>💎</span>
-                      <span>{currentUser.diamonds || 0}</span>
-                    </div>
+                    <span className="text-[12px] font-bold text-amber-500 flex items-center">
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
                   </div>
                 </div>
 
