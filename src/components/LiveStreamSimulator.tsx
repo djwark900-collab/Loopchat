@@ -2488,17 +2488,15 @@ export default function LiveStreamSimulator({
                 <button
                   key={slot.id}
                   onClick={() => {
-                     if (isBroadcasting || slot.isOccupied) {
-                        handleInteractSlot(slot.id);
-                     }
+                     handleInteractSlot(slot.id);
                   }}
                   className={`${isMicSmall ? 'aspect-[1.3/1]' : 'aspect-square'} border rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-1 transition-all duration-300 ${
                     slot.isOccupied
                       ? "bg-purple-950/15 border-purple-500/40 cursor-pointer"
                       : slot.isRequesting
                         ? "bg-stone-900 border-amber-500/40"
-                        : "bg-[#20202F] border-transparent"
-                  } ${(!isBroadcasting && !slot.isOccupied) ? "pointer-events-none" : "cursor-pointer"}`}
+                        : "bg-[#20202F] border-transparent cursor-pointer hover:bg-stone-800"
+                  }`}
                 >
                   {slot.isOccupied ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-1 bg-gradient-to-b from-[#110e1f] to-[#06040d] z-0">
@@ -2629,7 +2627,7 @@ export default function LiveStreamSimulator({
             {chatMessages.slice(-15).map((item) => (
               <div 
                 key={item.id} 
-                className={`p-1.5 rounded-lg text-[10px] inline-block max-w-full backdrop-blur-md ${
+                className={`p-1.5 rounded-lg text-[10px] inline-flex items-start max-w-full backdrop-blur-md gap-1.5 ${
                   item.isSystem 
                     ? "bg-amber-600/20 border border-amber-500/10 text-amber-300 font-bold animate-pulse"
                     : item.gift
@@ -2637,8 +2635,17 @@ export default function LiveStreamSimulator({
                       : "bg-black/55 text-stone-200 border border-stone-900/40"
                 }`}
               >
-                <span className="font-bold text-amber-400 mr-1 shrink-0">{item.username}:</span>
-                <span className="break-all">{item.text}</span>
+                {!item.isSystem && item.avatarUrl && (
+                   <img 
+                      src={item.avatarUrl} 
+                      alt={item.username} 
+                      className="w-4 h-4 rounded-full object-cover shrink-0 block border border-white/20 shadow-sm mt-0.5" 
+                   />
+                )}
+                <div className="flex-1 break-words">
+                  <span className="font-bold text-amber-400 mr-1">{item.username}:</span>
+                  <span className="break-all">{item.text}</span>
+                </div>
               </div>
             ))}
             <div ref={commentsEndRef} />

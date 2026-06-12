@@ -24,8 +24,15 @@ import {
   UserPlus,
   FolderOpen,
   ChevronLeft,
+  ChevronRight,
   ChevronDown,
-  Camera
+  Camera,
+  Eye,
+  Wallet,
+  Box,
+  Store,
+  Share2,
+  HelpCircle
 } from "lucide-react";
 import { db, handleFirestoreError, OperationType, firestoreStatus } from "../lib/firebase";
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "firebase/firestore";
@@ -618,7 +625,7 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
                 </div>
               </div>
 
-              {/* Identification Code input box (Read-only status code block) */}
+              {/* Identification Code input box */}
               <div className="relative bg-stone-100/60 border border-stone-200/40 rounded-2xl p-3 shadow-sm">
                 <label className="block text-[10px] font-extrabold uppercase text-[#828291]/85 tracking-wider mb-1 select-none">
                   Identification Code
@@ -728,748 +735,196 @@ export default function ProfilePanel({ currentUser, onProfileUpdate, onOpenCoinS
     );
   }
 
+    const renderRowItem = ({ icon, label, rightText, onClick }: {icon: React.ReactNode, label: string, rightText?: string, onClick?: () => void}) => (
+    <button 
+      onClick={onClick}
+      className="flex items-center justify-between px-5 py-4 w-full hover:bg-white/5 active:bg-white/10 transition-colors cursor-pointer outline-none"
+    >
+      <div className="flex items-center gap-4">
+        {icon}
+        <span className="text-stone-100 text-[15px] font-bold tracking-wide">{label}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        {rightText && <span className="text-stone-500 text-[13px] font-semibold">{rightText}</span>}
+        <ChevronRight className="w-5 h-5 text-stone-500" strokeWidth={2.5} />
+      </div>
+    </button>
+  );
+
   return (
-    <div id="profile-management-panel" className="max-w-7xl mx-auto px-4 py-4 font-sans text-slate-800 space-y-6">
+    <div id="profile-management-panel" className="w-full min-h-screen bg-[#110D0F] font-sans pb-24 overflow-y-auto animate-fadeIn relative">
       
       {/* Dynamic Alerts Banner */}
       {errorMsg && (
-        <div id="alert-error-banner" className="p-4 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl animate-scaleUp font-semibold shadow-sm">
+        <div id="alert-error-banner" className="m-4 p-4 bg-red-900 border border-red-700 text-red-100 text-xs rounded-xl animate-scaleUp font-semibold shadow-sm">
           {errorMsg}
         </div>
       )}
       {successMsg && (
-        <div id="alert-success-banner" className="p-4 bg-green-50 border border-green-200 text-green-600 text-xs rounded-xl animate-scaleUp font-semibold shadow-sm">
+        <div id="alert-success-banner" className="m-4 p-4 bg-green-900 border border-green-700 text-green-100 text-xs rounded-xl animate-scaleUp font-semibold shadow-sm">
           {successMsg}
         </div>
       )}
 
-      {/* Main Grid: Gorgeous Full-Screen Profiling Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        {/* ================= COLUMN 1: THE PIXEL-PERFECT IMAGE 2 PROFILE VIEW MOCKUP (COL 6) ================= */}
-        <div id="col-profile-main" className="lg:col-span-6 space-y-6">
+      {/* Top Header Section */}
+      <div className="pt-10 px-6 pb-5">
+        <div className="flex items-start gap-4">
+          {/* Avatar */}
+          <div className="relative shrink-0">
+            <img 
+              src={avatarUrl} 
+              alt="Profile" 
+              className="w-[72px] h-[72px] rounded-full object-cover bg-stone-800 border-2 border-stone-800"
+              referrerPolicy="no-referrer"
+            />
+          </div>
           
-          <div className="bg-[#FAF9FC] text-[#1E192B] rounded-[36px] overflow-hidden shadow-[0_12px_44px_rgba(202,190,230,0.18)] border border-[#E2E1EC] relative p-6 space-y-6">
+          {/* Info */}
+          <div className="flex-1 flex flex-col justify-center mt-1">
+            <div className="flex items-center gap-1.5 mb-1">
+              <h2 className="text-[17px] font-black text-white tracking-tight uppercase">
+                {fullName || "•ONLY ONE•"}
+              </h2>
+              {/* Gender icon badge - Blue Mars circle directly matching image */}
+              <div className="w-4 h-4 rounded-full bg-[#0099FF] flex items-center justify-center">
+                <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M21 9c0-4.97-4.03-9-9-9s-9 4.03-9 9c0 4.61 3.5 8.44 8 8.94V22h2v-4.06c4.5-.5 8-4.33 8-8.94zm-14 0c0-2.76 2.24-5 5-5s5 2.24 5 5-2.24 5-5 5-5-2.24-5-5z"/>
+                </svg>
+              </div>
+              {/* Verified badge */}
+              <div className="w-4 h-4 rounded-full text-[#4B85FF] flex items-center justify-center ml-0.5">
+                 <Check className="w-3.5 h-3.5" strokeWidth={3} />
+              </div>
+            </div>
             
-            {/* Top Row: Title & Action gear icon */}
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] bg-[#7B3FFE]/10 text-[#7B3FFE] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-[#7B3FFE]/20">
-                ⭐ LV {currentUser.level || 1}
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsEditing(!isEditing)}
-                className="p-2 bg-white text-[#7B3FFE] border border-stone-200/95 hover:bg-slate-50 transition-all rounded-full cursor-pointer shadow-sm active:scale-95"
-                title="Profile Editor & Settings"
-              >
-                <Settings className="w-5 h-5 text-slate-500" />
+            <div className="flex items-center gap-1.5 text-stone-500 font-bold text-[13px] mb-2 select-none">
+              <span>ID:{displayId}</span>
+              <button onClick={handleCopyId} className="hover:text-white transition-colors cursor-pointer select-none border border-stone-600 rounded-sm p-0.5" title="Copy ID">
+                 {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3 text-stone-400" />}
               </button>
             </div>
-
-            {/* Avatar & Info Segment */}
-            <div className="flex flex-col items-center text-center space-y-4">
-              {/* Premium framed avatar container */}
-              <div className="relative select-none">
-                {/* Circle base with active frame class decoration */}
-                <div className={`w-32 h-32 rounded-full flex items-center justify-center p-0.5 relative transition-all duration-300 ${activeFrame.frameStyleClass} shadow-md`}>
-                  <img
-                    src={avatarUrl}
-                    alt="User Avatar"
-                    referrerPolicy="no-referrer"
-                    className="w-[112px] h-[112px] rounded-full object-cover bg-stone-100 border border-stone-200"
-                  />
-                </div>
-
-                {/* Camera icon uploader overlay bottom-right */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-1 right-1 p-2 bg-white text-[#7B3FFE] border-2 border-[#FAF9FC] shadow-md rounded-full transition-all hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center"
-                  title="Upload photo"
-                >
-                  <svg className="w-4.5 h-4.5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 9a3.75 3.75 0 1 0 0 7.5A3.75 3.75 0 0 0 12 9Z" />
-                    <path fillRule="evenodd" d="M9.344 3.071a2.25 2.25 0 0 1 2.247-2.126h3c1.07 0 1.996.75 2.247 1.83l.23 1.05a2.25 2.25 0 0 0 1.139 1.488l3.111 1.556a3 3 0 0 1 1.683 2.683v8.7a3 3 0 0 1-3 3H3h.001c-1.657 0-3-1.343-3-3v-8.7A3 3 0 0 1 1.684 6.12l3.111-1.556a2.25 2.25 0 0 0 1.14-1.488l.23-1.05v-.012ZM12 7.5a5.25 5.25 0 1 0 0 10.5 5.25 5.25 0 0 0 0-10.5Z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* User Identity Details */}
-              <div className="space-y-1.5 w-full">
-                <div className="flex items-center justify-center gap-2">
-                  <h3 className="text-2xl font-black text-stone-900 font-sans tracking-tight">
-                    {fullName || "ndnd"}
-                  </h3>
-                  <button
-                    id="edit-profile-icon-btn"
-                    type="button"
-                    onClick={() => setIsEditing(true)}
-                    className="p-1.5 bg-purple-50 hover:bg-purple-100 text-[#7B3FFE] rounded-full transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer inline-flex items-center justify-center shadow-inner"
-                    title="Edit Profile"
-                  >
-                    <Edit2 className="w-3.5 h-3.5 stroke-[2.5]" />
-                  </button>
-                </div>
-
-                <div className="flex flex-col items-center justify-center text-stone-600 space-y-1 text-xs">
-                  {bio && (
-                    <p className="max-w-md text-[#5B5072] font-semibold tracking-wide italic leading-relaxed text-[11px] mb-1">
-                      "{bio}"
-                    </p>
-                  )}
-                  <div className="flex items-center gap-1 text-[#828291] font-sans font-bold text-[11px] bg-stone-100/75 border border-stone-200/50 py-1 px-3.5 rounded-full shadow-sm">
-                    <span>Unique Id : {displayId || "87444055"}</span>
-                    <button
-                      onClick={handleCopyId}
-                      className="p-1 hover:bg-stone-200/55 rounded-md transition-colors ml-0.5 cursor-pointer"
-                      title="Copy Unique Id"
-                    >
-                      {copied ? <Check className="w-3.5 h-3.5 text-green-600 stroke-[3]" /> : <Copy className="w-3.5 h-3.5 text-[#A4A3B1] stroke-[2.5]" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Horizontal Stats Grid: Following, Followers, Likes, Friends */}
-            <div className="bg-[#FAF9FC] border border-[#E2E1EC]/60 rounded-2xl py-3.5 px-2.5 shadow-sm">
-              <div className="flex items-center justify-between text-center select-none divide-x divide-[#E2E1EC]/70">
-                <div className="flex-1 leading-none">
-                  <span className="text-sm font-black text-stone-850 block">{statsLikes}</span>
-                  <span className="text-[9px] text-[#A4A3B1] font-black uppercase tracking-wider block mt-1">Likes</span>
-                </div>
-                <div className="flex-1 leading-none">
-                  <span className="text-sm font-black text-stone-850 block">{statsFollowing}</span>
-                  <span className="text-[9px] text-[#A4A3B1] font-black uppercase tracking-wider block mt-1">Following</span>
-                </div>
-                <div className="flex-1 leading-none">
-                  <span className="text-sm font-black text-stone-850 block">{statsFollowers}</span>
-                  <span className="text-[9px] text-[#A4A3B1] font-black uppercase tracking-wider block mt-1">Followers</span>
-                </div>
-                <div className="flex-1 leading-none">
-                  <span className="text-sm font-black text-stone-850 block">{statsFriends}</span>
-                  <span className="text-[9px] text-[#A4A3B1] font-black uppercase tracking-wider block mt-1">Friends</span>
-                </div>
-              </div>
-            </div>
-
-            {/* AVAILABLE COIN PURPLE WALLET CARD (Matches second screen exactly) */}
-            <div 
-              id="wallet-coin-gradient-card"
-              className="bg-gradient-to-r from-[#8b5cf6] to-[#ec4899] p-5 rounded-[24px] text-white relative overflow-hidden shadow-md flex items-center justify-between"
-            >
-              {/* Concentric loop background patterns */}
-              <div className="absolute top-0 right-0 w-28 h-28 bg-white/5 rounded-full border border-white/5 translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
-              
-              <div className="space-y-2 z-10 text-left">
-                <span className="text-[10px] font-sans font-black text-white/95 uppercase tracking-wider block leading-none">
-                  Available Coin
-                </span>
-                
-                <span className="text-2xl font-black font-sans tracking-tight block leading-none">
-                  {currentUser.coins.toLocaleString()}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={onOpenCoinStore}
-                  className="px-3.5 py-1.5 bg-white text-[#FF6600] hover:bg-stone-50 font-black text-[9px] uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
-                >
-                  My Wallet <span className="text-[9px]">»</span>
-                </button>
-              </div>
-
-              {/* Right side stellar 3D gold coin graphics */}
-              <div className="relative shrink-0 z-10 pr-1">
-                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center p-1.5 animate-pulse duration-3000">
-                  <div className="w-full h-full bg-[#FFBC13]/25 rounded-full flex items-center justify-center p-1">
-                    <div className="w-full h-full bg-[#FFA300] rounded-full border border-white flex items-center justify-center shadow-lg">
-                      <Coins className="w-6.5 h-6.5 text-amber-100" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Diamonds quick look pill bar */}
-            <div className="flex items-center justify-between text-xs px-4 py-3 bg-stone-50 border border-stone-200/60 rounded-xl font-sans text-[#5B5072]">
-              <span className="font-extrabold uppercase text-[10px] text-stone-500 tracking-wider">⚡ Available Diamonds (Livestream Tips)</span>
-              <span className="text-sm font-black text-stone-900 font-mono">💎 {currentUser.diamonds || 0}</span>
-            </div>
-
-            {/* DYNAMIC CONTENT SUBTABS WITH ICONS (Reels, Feeds, Collections) */}
-            <div className="bg-[#FAF9FC] text-[#1E192B] rounded-2xl p-6 shadow-md border border-stone-200/85 space-y-5">
-              
-              <div id="reels-tabs-nav" className="flex items-center justify-around border-b border-stone-200/60 font-sans select-none">
-                
-                <button
-                  type="button"
-                  onClick={() => setActiveSubTab("reels")}
-                  className={`pb-3 text-xs font-black uppercase tracking-wider relative transition-all flex flex-col items-center gap-1.5 cursor-pointer ${
-                    activeSubTab === "reels" ? "text-[#7B3FFE]" : "text-[#A4A3B1] hover:text-[#5F5A73]"
-                  }`}
-                >
-                  <div className={`p-1.5 rounded-xl ${activeSubTab === "reels" ? "bg-[#7B3FFE]/10 text-[#7B3FFE]" : "text-[#A4A3B1] bg-transparent"}`}>
-                    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.8">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  Reels
-                  {activeSubTab === "reels" && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7B3FFE] rounded-full animate-scaleUp"></span>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveSubTab("feeds")}
-                  className={`pb-3 text-xs font-black uppercase tracking-wider relative transition-all flex flex-col items-center gap-1.5 cursor-pointer ${
-                    activeSubTab === "feeds" ? "text-[#7B3FFE]" : "text-[#A4A3B1] hover:text-[#5F5A73]"
-                  }`}
-                >
-                  <div className={`p-1.5 rounded-xl ${activeSubTab === "feeds" ? "bg-[#7B3FFE]/10 text-[#7B3FFE]" : "text-[#A4A3B1] bg-transparent"}`}>
-                    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.8">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </div>
-                  Feeds
-                  {activeSubTab === "feeds" && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7B3FFE] rounded-full animate-scaleUp"></span>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveSubTab("collections")}
-                  className={`pb-3 text-xs font-black uppercase tracking-wider relative transition-all flex flex-col items-center gap-1.5 cursor-pointer ${
-                    activeSubTab === "collections" ? "text-[#7B3FFE]" : "text-[#A4A3B1] hover:text-[#5F5A73]"
-                  }`}
-                >
-                  <div className={`p-1.5 rounded-xl ${activeSubTab === "collections" ? "bg-[#7B3FFE]/10 text-[#7B3FFE]" : "text-[#A4A3B1] bg-transparent"}`}>
-                    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.8">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                  </div>
-                  Collections
-                  {activeSubTab === "collections" && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7B3FFE] rounded-full animate-scaleUp"></span>
-                  )}
-                </button>
-
-              </div>
-
-              {/* Custom Tab Content Windows */}
-            <div className="py-3 text-center flex flex-col justify-center items-center space-y-4 w-full">
-              
-              {activeSubTab === "reels" ? (
-                reelsList.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-4 w-full">
-                    {reelsList.map((reel) => (
-                      <div key={reel.id} className="aspect-[9/16] bg-stone-100 rounded-2xl flex flex-col justify-end p-4 relative overflow-hidden group shadow-md border border-stone-200/50">
-                        {/* Simulated background color/pattern with seed */}
-                        <div className="absolute inset-0 bg-stone-900 object-cover" style={{ backgroundImage: `url(${reel.bg})`, backgroundSize: "cover", backgroundPosition: "center" }} />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
-                        
-                        {/* Elite Trash Button in top right */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteReel(reel.id);
-                          }}
-                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 border border-stone-850 hover:bg-red-600 hover:border-transparent text-stone-200 hover:text-white transition-all duration-250 cursor-pointer z-20"
-                          title="Delete highlight reel"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-
-                        <div className="relative text-left text-white z-10 leading-tight space-y-1">
-                          <span className="px-2 py-0.5 bg-[#9F5FFE] text-white text-[8px] font-black uppercase tracking-wider rounded-md">
-                            {reel.tag}
-                          </span>
-                          <h5 className="font-extrabold text-xs truncate">{reel.title}</h5>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-stone-450 text-xs font-medium">
-                     🎬 No active Reels remaining.
-                  </div>
-                )
-              ) : activeSubTab === "feeds" ? (
-                feedsList.length > 0 ? (
-                  <div className="space-y-4 w-full">
-                    {feedsList.map((feed) => (
-                      <div key={feed.id} className="p-5 bg-white rounded-2xl border border-stone-200/60 shadow-sm text-left leading-normal space-y-3 relative">
-                        
-                        {/* Elite Trash Button in top right */}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteFeed(feed.id)}
-                          className="absolute top-4 right-4 p-1.5 rounded-lg bg-stone-50 border border-stone-200/80 hover:bg-red-500 hover:border-transparent text-stone-400 hover:text-white transition-all cursor-pointer z-10"
-                          title="Delete feed post"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-
-                        <div className="flex items-center gap-2.5">
-                          <img src={avatarUrl} alt="Creator Icon" className="w-8 h-8 rounded-full object-cover border border-stone-200" />
-                          <div>
-                            <span className="text-xs font-black text-stone-800 block leading-none">{fullName}</span>
-                            <span className="text-[10px] text-stone-400 mt-1 block">{feed.time}</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-stone-600 font-medium font-sans pr-8">
-                          {feed.content}
-                        </p>
-                        <div className="flex gap-4 pt-2 text-stone-400 text-[10px] font-black uppercase tracking-wider border-t border-stone-100">
-                          <span className="text-[#7B3FFE] font-extrabold">{feed.likes}</span>
-                          <span>{feed.comments}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-stone-450 text-xs font-medium">
-                     📰 No active feed updates remaining.
-                  </div>
-                )
-              ) : (
-                collectionsList.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-3 w-full">
-                    {collectionsList.map((col) => (
-                      <div key={col.id} className="p-4 bg-white rounded-2xl border border-stone-200/60 shadow-sm text-left flex items-center justify-between gap-3 relative">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl p-2 bg-[#FAF9FC] rounded-xl border border-stone-100 shrink-0">
-                            {col.icon}
-                          </span>
-                          <div className="leading-tight">
-                            <h5 className="font-extrabold text-xs text-stone-850">{col.name}</h5>
-                            <p className="text-[10px] text-stone-400 mt-1 font-sans">{col.description}</p>
-                          </div>
-                        </div>
-
-                        {/* Delete Collection Item Button */}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCollection(col.id)}
-                          className="p-1.5 rounded-lg bg-stone-50 border border-stone-200 hover:bg-red-500 hover:border-transparent text-stone-400 hover:text-white transition-all cursor-pointer shrink-0"
-                          title="Delete collection reward item"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-12 text-center flex flex-col justify-center items-center space-y-3">
-                    {/* High-fidelity Vector magnifying glass representation */}
-                    <svg className="w-24 h-24 text-[#E2E1EC]" viewBox="0 0 120 120" fill="none">
-                      <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 3" className="opacity-40" />
-                      <circle cx="85" cy="25" r="8" stroke="currentColor" strokeWidth="1.5" className="opacity-35" />
-                      <rect x="35" y="30" width="50" height="60" rx="6" fill="#F1F0F7" stroke="#D1D0DE" strokeWidth="2" />
-                      <line x1="45" y1="42" x2="75" y2="42" stroke="#D1D0DE" strokeWidth="2" strokeLinecap="round" />
-                      <line x1="45" y1="54" x2="65" y2="54" stroke="#D1D0DE" strokeWidth="2" strokeLinecap="round" />
-                      <line x1="45" y1="66" x2="75" y2="66" stroke="#D1D0DE" strokeWidth="2" strokeLinecap="round" />
-                      <g className="filter drop-shadow-[0_4px_8px_rgba(159,156,180,0.25)]">
-                        <circle cx="65" cy="65" r="18" fill="white" stroke="#9F5FFE" strokeWidth="2.5" />
-                        <path d="M59 59L71 71M71 59L59 71" stroke="#9F5FFE" strokeWidth="2.5" strokeLinecap="round" />
-                        <path d="M78 78L92 92" stroke="#B0AED2" strokeWidth="4.5" strokeLinecap="round" />
-                      </g>
-                    </svg>
-                    <div>
-                      <h5 className="text-[#a5a4b5] text-xs font-extrabold uppercase tracking-widest">
-                        Empty Collections Wallet
-                      </h5>
-                      <p className="text-[10px] text-stone-400 max-w-xs mx-auto mt-1 font-sans">
-                        No custom directories found! Try publishing stream feeds or completing creator quests.
-                      </p>
-                    </div>
-                  </div>
-                )
-              )}
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-        {/* ================= COLUMN 2: CUSTOM BOUTIQUE & METADATA CONTROLLERS (COL 6) ================= */}
-        <div id="col-customizer-dashboard" className="lg:col-span-6 space-y-6">
-          
-          {/* CARD 1: AVATAR FRAME SHOP ("profile add frame" BOUTIQUE) */}
-          <div id="avatar-frame-boutique" className="bg-stone-900 border border-stone-800 rounded-2xl p-6 shadow-xl space-y-4">
             
-            <div className="flex items-center justify-between border-b border-stone-800/85 pb-3">
-              <h4 className="text-md font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#C084FC]" />
-                Profile Avatar Frame Boutique
-              </h4>
-              <span className="text-[10px] bg-amber-500/10 text-amber-400 font-mono font-bold px-2.5 py-1 border border-amber-500/25 rounded-md">
-                Spend Coins
-              </span>
+            {/* Stars / badges */}
+            <div className="flex items-center gap-1.5">
+               <div className="text-[#FFD700] text-[14px]">⭐</div>
+               <div className="text-[#FFD700] text-[14px]">⭐</div>
+               <div className="w-4 h-4 border-2 border-stone-500 text-stone-400 rounded-full flex items-center justify-center text-[10px] font-bold">?</div>
             </div>
-
-            <p className="text-xs text-stone-400">
-              Customize your profile! Spend your LoopCoins to claim visual luxury. Your equipped frame updates dynamically in the simulated client preview instantly!
-            </p>
-
-            {/* List of frames layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {AVATAR_FRAMES.map((frm) => {
-                const isOwned = unlockedFrames.includes(frm.id);
-                const isActive = activeFrameId === frm.id;
-
-                return (
-                  <div 
-                    key={frm.id}
-                    id={`frame-item-${frm.id}`}
-                    className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${
-                      isActive 
-                        ? "bg-[#C084FC]/5 border-[#C084FC] shadow-inner" 
-                        : isOwned 
-                          ? "bg-stone-950/40 border-stone-800 hover:border-stone-700" 
-                          : "bg-stone-950/70 border-stone-850 opacity-90 hover:opacity-100"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      
-                      {/* Mini preview with user's current picture inside this specific frame */}
-                      <div className="relative shrink-0 select-none">
-                        <div className={`w-14 h-14 rounded-full flex items-center justify-center p-0.5 relative ${frm.frameStyleClass}`}>
-                          <img
-                            src={avatarUrl}
-                            alt="Mini frame preview"
-                            referrerPolicy="no-referrer"
-                            className="w-12 h-12 rounded-full object-cover bg-stone-100"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-0.5 leading-tight">
-                        <h5 className="text-sm font-bold text-white flex items-center gap-1">
-                          <span>{frm.emoji}</span> {frm.name}
-                        </h5>
-                        <p className="text-[11px] text-stone-400">
-                          {frm.description}
-                        </p>
-                      </div>
-
-                    </div>
-
-                    <div className="pt-3.5 flex items-center justify-between border-t border-stone-850 mt-3">
-                      <div>
-                        {frm.cost === 0 ? (
-                          <span className="text-[10px] text-stone-500 font-mono uppercase tracking-widest font-bold">Default Option</span>
-                        ) : (
-                          <span className="text-xs font-mono font-bold text-amber-400 flex items-center gap-1">
-                            <Coins className="w-3.5 h-3.5" /> {frm.cost.toLocaleString()} Coins
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Equip or Purchase Buttons */}
-                      <div>
-                        {isActive ? (
-                          <span className="px-3 py-1 bg-green-500/15 border border-green-500/35 text-green-400 text-[10px] font-mono font-bold uppercase rounded-lg flex items-center gap-1">
-                            <Check className="w-3.5 h-3.5" /> Equipped
-                          </span>
-                        ) : isOwned ? (
-                          <button
-                            type="button"
-                            onClick={() => handleEquipFrame(frm.id)}
-                            className="px-4 py-1.5 bg-stone-800 hover:bg-stone-750 border border-stone-700 text-stone-200 text-xs font-bold rounded-lg transition-all active:scale-95 cursor-pointer"
-                          >
-                            Equip Frame
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handlePurchaseFrame(frm)}
-                            className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-black rounded-lg transition-all active:scale-95 shadow-md flex items-center gap-1 cursor-pointer"
-                          >
-                            Buy Frame
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
           </div>
-
-          {/* CARD 3: ADMIN CRYPTOGRAPHIC SECURED GATE CONSOLE */}
-          <div id="admin-studio-segment" className="bg-stone-900 border border-stone-800/80 rounded-2xl p-6 shadow-xl">
-            <div className="flex items-center justify-between border-b border-stone-850 pb-3 mb-4">
-              <div className="flex items-center gap-2">
-                <Lock className={`w-4 h-4 ${isAdminUnlocked ? "text-green-400" : "text-amber-500 animate-pulse"}`} />
-                <h4 className="text-sm font-sans font-bold text-stone-300">Admin Control Gate Console</h4>
-              </div>
-
-              {!isAdminUnlocked ? (
-                <button
-                  type="button"
-                  onClick={() => setShowAdminGate(!showAdminGate)}
-                  className="px-3 py-1.5 bg-stone-950 border border-stone-800 rounded-xl text-xs text-stone-400 hover:text-white transition-all cursor-pointer font-bold"
-                >
-                  {showAdminGate ? "Close Verification" : "Enter Password"}
-                </button>
-              ) : (
-                <div className="flex items-center gap-1.5 text-xs text-green-400 font-mono uppercase bg-green-500/10 border border-green-500/20 px-3 py-1 rounded-xl">
-                  <Unlock className="w-3.5 h-3.5" /> ACCESS AUTHORIZED
-                </div>
-              )}
-            </div>
-
-            {/* Password Gate authentication */}
-            {showAdminGate && !isAdminUnlocked && (
-              <form onSubmit={handleAdminVerify} className="max-w-md bg-stone-950 p-4 border border-stone-850 rounded-xl space-y-4 mb-4 animate-scaleUp">
-                <div>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-[10px] text-stone-400 font-mono uppercase tracking-wider">
-                      Secure Admin Access Password
-                    </label>
-                  </div>
-                  <input
-                    type="password"
-                    required
-                    placeholder="Enter password..."
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-stone-900 border border-stone-800 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                {adminError && (
-                  <p className="text-xs text-red-400 font-mono">{adminError}</p>
-                )}
-
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs rounded-lg transition-colors cursor-pointer"
-                >
-                  Verify Credentials
-                </button>
-              </form>
-            )}
-
-            {/* Authorized Developer features */}
-            {isAdminUnlocked && (
-              <div className="space-y-6 animate-scaleUp">
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  
-                  {/* Mint LoopCoins Area */}
-                  <div className="p-4 bg-[#0a0a0a]/50 border border-stone-850 rounded-xl space-y-4 flex flex-col justify-between">
-                    <div>
-                      <h5 className="text-[11px] font-mono uppercase tracking-wider font-bold text-amber-400 flex items-center gap-1">
-                        <Coins className="w-4 h-4" /> MINT LoopCoins
-                      </h5>
-                      <p className="text-[10px] text-stone-500 mt-1">
-                        Instantly grant or delete LoopCoins from your wallet with custom values. Use these to unlock luxury luxury frames!
-                      </p>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        min={1}
-                        max={100000}
-                        value={customCoinsInput}
-                        onChange={(e) => setCustomCoinsInput(Math.max(1, Number(e.target.value)))}
-                        className="w-24 px-3 py-1.5 bg-stone-950 border border-stone-850 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-amber-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAdminAddCoins}
-                        className="flex-1 px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Instant Coins
-                      </button>
-                    </div>
-
-                    {/* Quick modify sets */}
-                    <div className="space-y-2 pt-3 border-t border-stone-800">
-                      <div>
-                        <span className="block text-[9px] font-mono uppercase text-stone-500 mb-1 font-bold">Quick add options</span>
-                        <div className="grid grid-cols-4 gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleAdminModifyCoins(200)}
-                            className="py-1 px-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/25 rounded text-[10px] font-mono text-center transition-all cursor-pointer"
-                          >
-                            +200
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAdminModifyCoins(600)}
-                            className="py-1 px-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/25 rounded text-[10px] font-mono text-center transition-all cursor-pointer"
-                          >
-                            +600
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAdminModifyCoins(1500)}
-                            className="py-1 px-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/25 rounded text-[10px] font-mono text-center transition-all cursor-pointer"
-                          >
-                            +1.5K
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAdminModifyCoins(5000)}
-                            className="py-1 px-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/25 rounded text-[10px] font-mono text-center transition-all cursor-pointer"
-                          >
-                            +5K
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <span className="block text-[9px] font-mono uppercase text-stone-500 mb-1 font-bold">Quick delete options</span>
-                        <div className="grid grid-cols-4 gap-1">
-                          <button
-                            type="button"
-                            disabled={currentUser.coins < 200}
-                            onClick={() => handleAdminModifyCoins(-200)}
-                            className="py-1 px-1.5 bg-rose-500/10 hover:bg-rose-500/20 disabled:opacity-20 text-rose-400 border border-rose-500/25 rounded text-[10px] font-mono text-center transition-all cursor-pointer"
-                          >
-                            -200
-                          </button>
-                          <button
-                            type="button"
-                            disabled={currentUser.coins < 600}
-                            onClick={() => handleAdminModifyCoins(-600)}
-                            className="py-1 px-1.5 bg-rose-500/10 hover:bg-rose-500/20 disabled:opacity-20 text-rose-400 border border-rose-500/25 rounded text-[10px] font-mono text-center transition-all cursor-pointer"
-                          >
-                            -600
-                          </button>
-                          <button
-                            type="button"
-                            disabled={currentUser.coins < 1500}
-                            onClick={() => handleAdminModifyCoins(-1500)}
-                            className="py-1 px-1.5 bg-rose-500/10 hover:bg-rose-500/20 disabled:opacity-20 text-rose-400 border border-rose-500/25 rounded text-[10px] font-mono text-center transition-all cursor-pointer"
-                          >
-                            -1.5K
-                          </button>
-                          <button
-                            type="button"
-                            disabled={currentUser.coins < 5000}
-                            onClick={() => handleAdminModifyCoins(-5000)}
-                            className="py-1 px-1.5 bg-rose-500/10 hover:bg-rose-500/20 disabled:opacity-20 text-rose-400 border border-rose-500/25 rounded text-[10px] font-mono text-center transition-all cursor-pointer"
-                          >
-                            -5K
-                          </button>
-                        </div>
-                      </div>
-
-                    </div>
-                  </div>
-
-                  {/* Creator Code Generator */}
-                  <form onSubmit={handleCreateCoinCode} className="p-4 bg-[#0a0a0a]/50 border border-stone-850 rounded-xl space-y-3">
-                    <h5 className="text-[11px] font-mono uppercase tracking-wider font-bold text-amber-400 flex items-center gap-1.5">
-                      <Ticket className="w-4 h-4" /> CREATOR CODE COUPON MAKER
-                    </h5>
-                    
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-[8px] font-mono text-stone-500 uppercase mb-1">Code Name</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            required
-                            placeholder="E.G. GEMINI"
-                            value={newCodeName}
-                            onChange={(e) => setNewCodeName(e.target.value.toUpperCase())}
-                            className="flex-1 px-2.5 py-1 bg-stone-950 border border-stone-850 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-amber-500 uppercase font-bold"
-                          />
-                          <button
-                            type="button"
-                            onClick={generateRandomCode}
-                            className="px-2 py-1 bg-stone-900 border border-stone-800 text-[9px] font-bold text-stone-300 rounded hover:text-white"
-                          >
-                            Random
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[8px] font-mono text-stone-500 uppercase mb-1">Coins Included</label>
-                        <select
-                          value={newCodeCoins}
-                          onChange={(e) => setNewCodeCoins(Number(e.target.value))}
-                          className="w-full px-2 py-1 bg-stone-950 border border-stone-850 rounded text-stone-300 font-mono text-xs focus:outline-none"
-                        >
-                          <option value={500}>500 Coins</option>
-                          <option value={1000}>1,000 Coins</option>
-                          <option value={5000}>5,000 Coins</option>
-                          <option value={10000}>10,000 Coins</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isAddingCode}
-                      className="w-full py-1.5 bg-stone-900 border border-stone-800 hover:border-amber-500/40 text-stone-300 hover:text-white rounded text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> 
-                      {isAddingCode ? "Deploying..." : "Publish Code"}
-                    </button>
-                  </form>
-
-                </div>
-
-                {/* Sub-item: Active codes list table */}
-                <div className="space-y-3 pt-2">
-                  <h6 className="text-[10px] font-mono text-stone-400 uppercase tracking-wider">
-                    Published Promo Coupons List ({activeCodes.length})
-                  </h6>
-
-                  {activeCodes.length === 0 ? (
-                    <div className="p-4 rounded-xl border border-dashed border-stone-850 text-center text-xs text-stone-500 font-mono">
-                      No active coupon promotional codes are pending.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto">
-                      {activeCodes.map((c) => (
-                        <div 
-                          key={c.id} 
-                          className="p-3.5 bg-stone-950 border border-stone-850/80 rounded-xl flex items-start justify-between gap-4 font-mono text-[11px]"
-                        >
-                          <div>
-                            <div className="text-white font-extrabold select-all uppercase tracking-wider">{c.code}</div>
-                            <div className="text-amber-400 font-bold font-sans text-xs mt-0.5">{c.coins.toLocaleString()} Coins</div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCoinCode(c.id)}
-                            className="p-1 hover:bg-stone-900 text-stone-500 hover:text-red-400 rounded-md transition-colors cursor-pointer"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-              </div>
-            )}
-          </div>
-
+          
+          {/* Edit Button */}
+          <button 
+            type="button" 
+            onClick={() => setIsEditing(!isEditing)}
+            className="flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-[12px] border border-stone-600/70 text-stone-300 text-[13px] hover:bg-stone-800 transition-colors cursor-pointer select-none font-bold"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+            Edit
+          </button>
         </div>
-
       </div>
 
+      {/* Banner / Card */}
+      <div className="px-4 mb-2">
+        <div className="relative overflow-hidden rounded-[16px] bg-[#1B2130] p-4 flex items-center shadow-lg border border-white/[0.04]">
+          <div className="absolute right-0 top-0 bottom-0 w-44 bg-gradient-to-r from-transparent to-[#1D2B44] pointer-events-none"></div>
+          
+          {/* Decorative geometric patterns matching the tribe card UI */}
+          <div className="absolute -right-6 top-[-10%] w-24 h-[120%] bg-[#253147] opacity-60 skew-x-[30deg] pointer-events-none"></div>
+          <div className="absolute -right-24 top-[-10%] w-32 h-[120%] bg-[#2C3B53] opacity-60 skew-x-[30deg] pointer-events-none"></div>
+          
+          <div className="flex bg-gradient-to-br from-[#4Da2ff] to-[#2575fc] rounded-xl mr-4 shrink-0 items-center justify-center w-[52px] h-[52px] shadow-[0_3px_10px_rgba(37,117,252,0.3)] relative z-10 border border-[#8ebcfb]/30">
+             <div className="relative flex items-center justify-center w-full h-full">
+                {/* Custom Tribe Premium Icon Box */}
+                <div className="w-7 h-7 bg-[#A6CFFF] rounded-sm flex items-center justify-center">
+                    <div className="text-[#0E49B5] text-[15px]">⭐</div>
+                </div>
+                <div className="absolute -bottom-1 -right-0.5 bg-[#4Da2ff] rounded-full p-[1px]">
+                   <div className="text-[6px]">⭐</div>
+                </div>
+             </div>
+          </div>
+          <div className="flex-1 relative z-10 p-0.5">
+             <div className="text-white font-extrabold text-[16px] mb-0.5 tracking-tight drop-shadow-sm">Join a Tribe</div>
+             <div className="text-[#8B98A9] text-sm tracking-tight font-semibold">Meet friends and get bonus</div>
+          </div>
+          <button className="relative z-10 px-6 py-2 bg-[#3B82F6] hover:bg-[#2563EB] active:scale-95 transition-all text-white font-extrabold text-[13px] rounded-[10px] shadow-[0_2px_12px_rgba(59,130,246,0.3)] cursor-pointer tracking-wide mr-1">
+            Go
+          </button>
+        </div>
+      </div>
+
+      {/* List Items Grid Space */}
+      <div className="mt-4 flex flex-col space-y-0.5 w-full">
+        
+        {renderRowItem({
+          icon: <div className="w-6 h-6 flex items-center justify-center"><Eye className="w-5 h-5 text-[#00E5FF] fill-[#00E5FF]/20" /></div>,
+          label: "Viewed me"
+        })}
+
+        <div className="h-[1px] bg-[#221C1D] my-1 ml-[52px] mr-4"></div>
+
+        {renderRowItem({
+          icon: <div className="w-6 h-6 flex items-center justify-center"><Wallet className="w-5 h-5 text-[#FF9500] fill-[#FF9500]/20" /></div>,
+          label: "My wallet",
+          onClick: onOpenCoinStore
+        })}
+
+        <div className="h-[1px] bg-[#221C1D] my-1 ml-[52px] mr-4"></div>
+
+        {renderRowItem({
+          icon: <div className="w-6 h-6 flex items-center justify-center"><Ticket className="w-5 h-5 text-[#FF4281] fill-[#FF4281]/20" transform="rotate(-45)" /></div>,
+          label: "Offer Center",
+          rightText: "To be activated: 0"
+        })}
+
+        <div className="h-[1px] bg-[#221C1D] my-1 ml-[52px] mr-4"></div>
+
+        {renderRowItem({
+          icon: <div className="w-6 h-6 flex items-center justify-center"><Award className="w-5 h-5 text-[#FFCC00] fill-[#FFCC00]/20" /></div>,
+          label: "VIP",
+          rightText: "Not VIP yet"
+        })}
+
+        <div className="h-[1px] bg-[#221C1D] my-1 ml-[52px] mr-4"></div>
+
+        {renderRowItem({
+          icon: <div className="w-6 h-6 flex items-center justify-center"><Box className="w-5 h-5 text-[#FF9500] fill-[#FF9500]/20" /></div>,
+          label: "Mine Investment",
+          rightText: "Not Invested"
+        })}
+
+        <div className="h-[1px] bg-[#221C1D] my-1 ml-[52px] mr-4"></div>
+
+        {renderRowItem({
+          icon: <div className="w-6 h-6 flex items-center justify-center"><Store className="w-5 h-5 text-[#FF4281] fill-[#FF4281]/20" /></div>,
+          label: "Shop"
+        })}
+
+        <div className="h-[1px] bg-[#221C1D] my-1 ml-[52px] mr-4"></div>
+
+        {renderRowItem({
+          icon: <div className="w-6 h-6 flex items-center justify-center"><Share2 className="w-5 h-5 text-[#00E5FF] fill-[#00E5FF]/20" /></div>,
+          label: "Invite Friends"
+        })}
+
+        <div className="h-[1px] bg-[#221C1D] my-4 ml-4 mr-4"></div>
+
+        {renderRowItem({
+          icon: <div className="w-6 h-6 flex items-center justify-center"><HelpCircle className="w-5 h-5 text-[#999999]" /></div>,
+          label: "Help"
+        })}
+
+        <div className="h-[1px] bg-[#221C1D] my-1 ml-[52px] mr-4"></div>
+
+        {renderRowItem({
+          icon: <div className="w-6 h-6 flex items-center justify-center"><Settings className="w-5 h-5 text-[#999999]" /></div>,
+          label: "Settings",
+          onClick: () => setIsEditing(true)
+        })}
+        
+      </div>
+      
     </div>
   );
 }

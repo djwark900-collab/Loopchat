@@ -4,65 +4,109 @@
  */
 
 import React from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronRight, History } from "lucide-react";
 
 interface CoinsModalProps {
   onClose: () => void;
   onCoinsPurchased: (amount: number) => void;
+  currentCoins?: number; // Passed from parent if needed
 }
 
 const WALLET_PACKS = [
-  { coins: "5.0k", rawCoins: 5000, price: "$ 0.59" },
-  { coins: "10.0k", rawCoins: 10000, price: "$ 1.0" },
-  { coins: "25.0k", rawCoins: 25000, price: "$ 2.5" },
-  { coins: "100.0k", rawCoins: 100000, price: "$ 10.0" },
-  { coins: "500.0k", rawCoins: 500000, price: "$ 50.0" },
-  { coins: "1000.0k", rawCoins: 1000000, price: "$ 100.0" },
+  { coins: "1,200", rawCoins: 1200, price: "$ 1.99", bonus: "+50" },
+  { coins: "6,500", rawCoins: 6500, price: "$ 9.99", bonus: "+300" },
+  { coins: "14,000", rawCoins: 14000, price: "$ 19.99", bonus: "+800" },
+  { coins: "35,000", rawCoins: 35000, price: "$ 49.99", bonus: "+2000", isPopular: true },
+  { coins: "75,000", rawCoins: 75000, price: "$ 99.99", bonus: "+5000" },
+  { coins: "150,000", rawCoins: 150000, price: "$ 199.99", bonus: "+12000" },
 ];
 
-export default function CoinsModal({ onClose, onCoinsPurchased }: CoinsModalProps) {
+export default function CoinsModal({ onClose, onCoinsPurchased, currentCoins = 0 }: CoinsModalProps) {
   return (
-    <div id="coins-store-modal" className="fixed inset-0 z-50 flex flex-col bg-[#FDFCFD] font-sans">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-purple-50">
-        <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-full transition cursor-pointer">
-          <ArrowLeft className="w-6 h-6 text-black" />
+    <div id="wallet-store-modal" className="fixed inset-0 z-50 flex flex-col bg-[#070412] font-sans text-white animate-scaleUp">
+      {/* Dynamic Header */}
+      <div className="flex items-center justify-between px-5 pt-6 pb-4 shrink-0 bg-[#070412]">
+        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition cursor-pointer text-white">
+          <ArrowLeft className="w-6 h-6 stroke-[2.5]" />
         </button>
-        <h2 className="text-xl font-bold text-black tracking-tight">Recharge</h2>
-        <button className="text-purple-500 font-bold text-sm tracking-wide">
-          Restore
+        <h2 className="text-[17px] font-black tracking-wide">My Wallet</h2>
+        <button className="p-2 text-[#9366ff] hover:bg-[#9366ff]/10 rounded-full transition-colors">
+          <History className="w-5 h-5 stroke-[2.5]" />
         </button>
       </div>
 
-      {/* Grid */}
-      <div className="flex-1 overflow-y-auto p-4 py-6">
-        <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
-          {WALLET_PACKS.map((pack, idx) => (
-            <div 
-              key={idx}
-              className="bg-white border border-purple-100 rounded-2xl p-4 flex flex-col items-center justify-center shadow-[0_4px_20px_rgba(200,180,255,0.15)] hover:shadow-[0_4px_24px_rgba(150,100,250,0.2)] transition-shadow cursor-pointer select-none"
-              onClick={() => {
-                onCoinsPurchased(pack.rawCoins);
-                onClose();
-              }}
-            >
-              {/* Star Coin Icon */}
-              <div className="w-16 h-16 bg-gradient-to-tr from-amber-400 to-amber-300 rounded-full flex flex-col items-center justify-center border-4 border-amber-100 shadow-md mb-3 relative overflow-hidden">
-                <div className="absolute inset-0 border-2 border-amber-400 rounded-full m-1"></div>
-                <svg className="w-8 h-8 text-white fill-amber-200 z-10" viewBox="0 0 24 24">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
-              </div>
-              
-              <span className="text-[#FFBA60] font-black text-sm bg-orange-50 px-3 py-1 rounded-md mb-3 shadow-sm whitespace-nowrap tracking-wide">
-                {pack.coins} Coins
-              </span>
-
-              <button className="w-full py-2.5 bg-gradient-to-r from-[#9462FF] to-[#D57BFF] hover:opacity-90 text-white rounded-3xl font-semibold text-[15px] shadow-sm active:scale-95 transition-all">
-                {pack.price}
-              </button>
+      <div className="flex-1 overflow-y-auto w-full max-w-md mx-auto pb-10">
+        
+        {/* CURRENT BALANCE BANNER */}
+        <div className="px-5 mb-8 mt-2">
+            <div className="bg-gradient-to-br from-[#2D1B50] to-[#120A2A] border border-[#52309C] rounded-[24px] p-6 relative overflow-hidden shadow-[0_12px_44px_rgba(111,58,230,0.18)]">
+                {/* Visual patterns */}
+                <div className="absolute right-0 top-0 w-32 h-32 bg-[#9366ff]/20 blur-[50px] rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                <div className="absolute left-0 bottom-0 w-24 h-24 bg-[#FF6A3A]/10 blur-[40px] rounded-full -translate-x-1/2 translate-y-1/2 pointer-events-none"></div>
+                
+                <div className="flex justify-between items-center relative z-10">
+                    <div className="space-y-1">
+                        <span className="text-[#A499C8] text-xs font-black uppercase tracking-widest">Available Balance</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-4xl font-black">{currentCoins.toLocaleString()}</span>
+                            <div className="w-6 h-6 bg-gradient-to-tr from-[#FEC96E] to-[#FF813A] rounded-full p-0.5 shadow-lg relative flex items-center justify-center">
+                                <span className="bg-[#120A2A] rounded-full w-full h-full border border-[#FF813A]"></span>
+                                <span className="absolute text-[#FF813A] text-xs font-black">¢</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button className="h-10 w-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md transition-colors border border-white/10 cursor-pointer">
+                        <ChevronRight className="w-5 h-5 text-white" />
+                    </button>
+                </div>
             </div>
-          ))}
+        </div>
+
+        {/* RECHARGE STORE GRID */}
+        <div className="px-5 space-y-4">
+            <h3 className="text-xs font-black text-stone-400 uppercase tracking-widest px-1">Top Up Packages</h3>
+            
+            <div className="grid grid-cols-2 gap-3.5">
+                {WALLET_PACKS.map((pack, idx) => (
+                    <div 
+                        key={idx}
+                        className="bg-[#181325] hover:bg-[#201832] border border-[#2B233C] hover:border-[#6F3AE6] rounded-[20px] p-4 flex flex-col justify-between relative transition-all cursor-pointer group active:scale-95"
+                        onClick={() => {
+                            onCoinsPurchased(pack.rawCoins);
+                            onClose();
+                        }}
+                    >
+                        {pack.isPopular && (
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-gradient-to-r from-[#FF6A3A] to-[#FF3A85] text-white text-[9px] font-black tracking-widest uppercase rounded-full shadow-lg">
+                                Popular
+                            </div>
+                        )}
+                        
+                        <div className="flex items-center gap-2 mb-4 mt-2">
+                            <div className="w-7 h-7 bg-gradient-to-tr from-[#FEC96E] to-[#FF813A] rounded-full p-0.5 shadow-lg relative flex items-center justify-center">
+                                <span className="bg-[#181325] group-hover:bg-[#201832] rounded-full w-full h-full border border-[#FF813A] transition-colors"></span>
+                                <span className="absolute text-[#FF813A] text-[10px] sm:text-xs font-black">¢</span>
+                            </div>
+                            <span className="text-white font-black text-lg tracking-tight">{pack.coins}</span>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                            {pack.bonus && (
+                                <span className="text-[#FF813A] text-[10px] font-black uppercase tracking-wider">
+                                    {pack.bonus} Bonus
+                                </span>
+                            )}
+                            <button className="w-full py-2 bg-[#9366ff]/10 group-hover:bg-[#9366ff] text-[#9366ff] group-hover:text-white rounded-[12px] font-black text-sm transition-all">
+                                {pack.price}
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            
+            <p className="text-center text-[10px] text-stone-600 font-semibold px-4 pt-6">
+                Recharge coins to send premium gifts to your favorite broadcasters. Transactions are simulated for demo mode.
+            </p>
         </div>
       </div>
     </div>

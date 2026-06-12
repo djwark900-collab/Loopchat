@@ -745,88 +745,76 @@ export default function App() {
       {/* DETAILED BOTTOM DOCKED NAVIGATION BUTTON BAR */}
       {selectedStreamer === null && (
         <footer id="loopchat-nav-footer" className="fixed bottom-0 w-full z-40 bg-[#161211]/95 backdrop-blur-md pt-2 pb-6 px-6 border-t border-[#262024]">
-          <div className="max-w-md mx-auto flex items-end justify-between">
+          <div className="max-w-md mx-auto flex items-end justify-between gap-1 pb-4">
             
             {/* Tab: Yari Konkan */}
             <button
               onClick={() => setActiveTab("home")}
-              className="flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer relative shrink-0 active:scale-95 duration-150"
-              title="Explore/Home"
+              className="flex flex-col items-center justify-center cursor-pointer transition-transform active:scale-95 w-16"
             >
-              <svg className="w-8 h-8 sm:w-9 sm:h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="bubbleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#8b5cf6" />
-                    <stop offset="100%" stopColor="#ec4899" />
-                  </linearGradient>
-                </defs>
-                <path 
-                  d="M18 6C10.268 6 4 11.373 4 18c0 3.018 1.304 5.77 3.422 7.828l-1.122 3.366a1 1 0 001.296 1.258l4.032-1.728C13.565 29.567 15.717 30 18 30c7.732 0 14-5.373 14-12S25.732 6 18 6z" 
-                  fill={activeTab === "home" ? "url(#bubbleGrad)" : "#B2B7D9"} 
-                  className="transition-colors duration-250"
-                />
-                <path d="M15 13.5v9l7.5-4.5-7.5-4.5z" fill="white" />
-              </svg>
+              <div className="w-8 h-8 flex items-center justify-center mb-1">
+                <svg className={`w-7 h-7 sm:w-8 sm:h-8 transition-colors ${activeTab === "home" ? "text-[#FE6E3C]" : "text-[#756A72]"}`} fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M21.58 12.09c-.11-.47-1.39-5.18-1.57-5.84a3.52 3.52 0 0 0-2.88-2.6A45.74 45.74 0 0 0 12 3.5a45.74 45.74 0 0 0-5.13.15 3.52 3.52 0 0 0-2.88 2.6c-.18.66-1.46 5.37-1.57 5.84a4.42 4.42 0 0 0 1.25 4.19l.71.72a3.48 3.48 0 0 0 2.45.98h.06l1.62-.27 2.04 1.83a2.65 2.65 0 0 0 2.9 0l2.04-1.83 1.62.27h.06a3.48 3.48 0 0 0 2.45-.98l.71-.72a4.42 4.42 0 0 0 1.25-4.19zM10.5 9.5H9.5V10.5a1 1 0 0 1-2 0V9.5H6.5a1 1 0 0 1 0-2H7.5V6.5a1 1 0 0 1 2 0V7.5H10.5a1 1 0 0 1 0 2zM15 11.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm2.5-2.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+                </svg>
+              </div>
+              <span className={`text-[11px] font-bold tracking-tight whitespace-nowrap ${activeTab === "home" ? "text-white" : "text-[#756A72]"}`}>Yari Konkan</span>
             </button>
 
             {/* Tab: Room */}
             <button
               onClick={() => setActiveTab("live")}
-              className="flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer relative shrink-0 active:scale-95 duration-150"
-              title="Livestreams"
+              className="flex flex-col items-center justify-center cursor-pointer transition-transform active:scale-95 w-16"
             >
-              <svg className="w-8 h-8 sm:w-9 sm:h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M11 6.5l4 4.5M25 6.5l-4 4.5" stroke={activeTab === "live" ? "#9333EA" : "#B2B7D9"} strokeWidth="2.5" strokeLinecap="round" />
-                <rect x="5" y="11" width="26" height="19" rx="6" fill={activeTab === "live" ? "#ECE9FA" : "#D4D9F0"} stroke={activeTab === "live" ? "#8B5CF6" : "#A6AECE"} strokeWidth="2" />
-                <path d="M13 20.5a3 3 0 010-4M23 16.5a3 3 0 010 4" stroke={activeTab === "live" ? "#8B5CF6" : "#727BB5"} strokeWidth="1.8" strokeLinecap="round" />
-                <path d="M16 16v9l6-4.5-6-4.5z" fill={activeTab === "live" ? "#8B5CF6" : "#727BB5"} />
-              </svg>
+              <div className="w-8 h-8 flex items-center justify-center mb-1 relative">
+                {activeTab === "live" && (
+                   <span className="w-8 h-8 bg-[#FE6E3C] rounded-full absolute inset-0 shadow-[0_4px_15px_rgba(254,110,60,0.5)]"></span>
+                )}
+                <svg className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors relative z-10 ${activeTab === "live" ? "text-white" : "text-[#756A72]"}`} fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 3v-1l-9 8v11h18V10l-9-7zm0 1l7 5.44V19H5v-9.56L12 4z M10 13h4v6h-4z"/>
+                  {activeTab === "live" && <path d="M11 13h2v6h-2z" fill="#FE6E3C"/>}
+                </svg>
+              </div>
+              <span className={`text-[11px] font-bold tracking-tight whitespace-nowrap ${activeTab === "live" ? "text-[#FE6E3C]" : "text-[#756A72]"}`}>Room</span>
             </button>
 
-            {/* Middle Action / Create Live */}
+            {/* Middle Action / Create Live (Instead of matching visual strictly to list, preserving 'Go Live' creation ability via long press or + icon) */}
             <button
               onClick={() => setIsAddCreatorLiveOpen(true)}
-              className="flex items-center justify-center p-1 cursor-pointer select-none active:scale-90 duration-200 shrink-0 transform -translate-y-1.5"
-              title="Add stream"
+              className="flex items-center justify-center cursor-pointer active:scale-95 duration-200 transform -translate-y-2"
             >
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#9366ff] to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/30 relative">
-                {/* Dashed outer orbit */}
-                <div className="absolute inset-1 rounded-full border border-dashed border-white/60 animate-spin-slow"></div>
-                {/* Inner white circle */}
-                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-white flex items-center justify-center shadow-inner">
-                  <Plus className="w-4 h-4 text-[#9366ff] stroke-[3]" />
-                </div>
-              </div>
+               <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#FE6E3C] to-[#FFA23A] flex items-center justify-center shadow-[0_4px_15px_rgba(254,110,60,0.4)]">
+                 <Plus className="w-6 h-6 text-white stroke-[3]" />
+               </div>
             </button>
 
             {/* Tab: Message */}
             <button
               onClick={() => setActiveTab("chat")}
-              className="flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer relative shrink-0 active:scale-95 duration-150"
-              title="Chat"
+              className="flex flex-col items-center justify-center cursor-pointer transition-transform active:scale-95 w-16"
             >
-              <svg className="w-8 h-8 sm:w-9 sm:h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 24L7.5 28.5V24C5.567 24 4 22.433 4 20.5v-11C4 7.567 5.567 6 7.5 6h21C30.433 6 32 7.567 32 9.5v11c0 1.933-1.567 3.5-3.5 3.5H12z" fill={activeTab === "chat" ? "#8B5CF6" : "#BAC3EA"} />
-                <path d="M12 15h12M12 18h8" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
+              <div className="w-8 h-8 flex items-center justify-center mb-1 relative">
+                <svg className={`w-6 h-6 sm:w-7 sm:h-7 transition-colors ${activeTab === "chat" ? "text-[#FE6E3C]" : "text-[#756A72]"}`} fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z"/>
+                </svg>
+                {/* Red badge "12" */}
+                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border-[1.5px] border-[#161211]">
+                  12
+                </div>
+              </div>
+              <span className={`text-[11px] font-bold tracking-tight whitespace-nowrap ${activeTab === "chat" ? "text-white" : "text-[#756A72]"}`}>Message</span>
             </button>
 
             {/* Tab: Me */}
             <button
               onClick={() => setActiveTab("profile")}
-              className="flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer relative shrink-0 active:scale-95 duration-150"
-              title="Profile"
+              className="flex flex-col items-center justify-center cursor-pointer transition-transform active:scale-95 w-16"
             >
-              <svg className="w-8 h-8 sm:w-9 sm:h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="18" cy="18" r="14" fill={activeTab === "profile" ? "#8B5CF6" : "#BAC3EA"} />
-                <mask id="profMask" maskUnits="userSpaceOnUse" x="4" y="4" width="28" height="28">
-                  <circle cx="18" cy="18" r="14" fill="white" />
-                </mask>
-                <g mask="url(#profMask)">
-                  <circle cx="18" cy="14.5" r="4.5" fill="white" />
-                  <path d="M18 21.5c-5.5 0-10 4.2-10 9.5h20c0-5.3-4.5-9.5-10-9.5z" fill="white" />
-                </g>
-              </svg>
+              <div className="w-8 h-8 flex items-center justify-center mb-1">
+                <svg className={`w-6 h-6 sm:w-7 sm:h-7 transition-colors ${activeTab === "profile" ? "text-[#FE6E3C]" : "text-[#756A72]"}`} fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                </svg>
+              </div>
+              <span className={`text-[11px] font-bold tracking-tight whitespace-nowrap ${activeTab === "profile" ? "text-white" : "text-[#756A72]"}`}>Me</span>
             </button>
 
           </div>
@@ -943,6 +931,7 @@ export default function App() {
         <CoinsModal
           onClose={() => setIsCoinsModalOpen(false)}
           onCoinsPurchased={handleCoinsPurchased}
+          currentCoins={currentUser.coins}
         />
       )}
 
